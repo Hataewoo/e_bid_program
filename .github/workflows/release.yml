@@ -39,6 +39,22 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Verify GitHub Release is public (not draft)
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $api = "https://api.github.com/repos/Hataewoo/e_bid_program/releases/tags/$tag"
+          $release = Invoke-RestMethod -Uri $api -Headers @{ "User-Agent" = "release-workflow" }
+          if ($release.draft) {
+            Write-Error "Release $tag is still a draft. Set build.publish.releaseType to release in package.json."
+            exit 1
+          }
+          if ($release.assets.Count -lt 2) {
+            Write-Error "Release $tag has too few assets ($($release.assets.Count)). Expected Setup exe, blockmap, and latest.yml."
+            exit 1
+          }
+          Write-Host "Release $tag is public with $($release.assets.Count) asset(s)."
+
       - name: Verify packaging artifacts
         run: node scripts/verify-packaging.mjs
 

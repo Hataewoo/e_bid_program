@@ -145,7 +145,8 @@
       {
         "provider": "github",
         "owner": "Hataewoo",
-        "repo": "e_bid_program"
+        "repo": "e_bid_program",
+        "releaseType": "release"
       }
     ],
     "portable": {
