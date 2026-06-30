@@ -87,7 +87,7 @@ npm run release:publish
 | 업데이트 확인 실패 | 전용 PC에서 `https://github.com` 접속 가능한지 |
 | Release workflow 실패 | Actions 탭 로그 · 저장소 Settings → Actions 활성화 |
 | 404 / 406 on update | Releases에 Setup EXE + `latest.yml` 있는지 · **Draft가 아닌 Published Release** 인지 |
-| Release가 Draft로만 생성됨 | `package.json` → `build.publish.releaseType: "release"` (기본값은 draft) |
+| Release workflow 빨간 X (verify 단계) | 이전 **Draft Release** 가 남아 있음 → 워크플로가 태그 Release 삭제 후 재업로드함. `main` push 후 태그 재 push |
 | push 거부 | GitHub 로그인 · 저장소 생성 여부 · remote URL |
 
 ---
