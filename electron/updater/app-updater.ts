@@ -1,6 +1,14 @@
+import { createRequire } from 'node:module';
 import { app, type BrowserWindow } from 'electron';
-import { autoUpdater } from 'electron-updater';
+import type { AppUpdater } from 'electron-updater';
 import { fileLogger } from '../logger/file-logger';
+
+/**
+ * Packaged Electron main runs as ESM; electron-updater is CommonJS.
+ * Named ESM imports fail at runtime — load via createRequire instead.
+ */
+const require = createRequire(import.meta.url);
+const autoUpdater = (require('electron-updater') as { autoUpdater: AppUpdater }).autoUpdater;
 
 export type AppUpdateCheckResult =
   | { ok: true; status: 'not-available'; currentVersion: string }

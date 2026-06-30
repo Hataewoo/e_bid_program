@@ -262,6 +262,12 @@ export function SettingsFeature() {
               <dt className="text-content-muted">{t('settings.db.path')}</dt>
               <dd className="break-all text-content">{dbStatus?.path || '-'}</dd>
             </div>
+            {!dbStatus?.connected && dbStatus?.error ? (
+              <div>
+                <dt className="text-content-muted">{t('settings.db.error')}</dt>
+                <dd className="break-all text-xs text-status-error">{dbStatus.error}</dd>
+              </div>
+            ) : null}
             {dbStatus?.tableCounts &&
               Object.entries(dbStatus.tableCounts).map(([table, count]) => (
                 <div key={table}>

@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
-import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { app } from 'electron';
 import type { PrismaClient as PrismaClientInstance } from '@prisma/client';
 
@@ -10,27 +10,19 @@ type PrismaClientCtor = new () => PrismaClientInstance;
 
 let cachedCtor: PrismaClientCtor | null = null;
 
-function resolvePackagedClientEntry(): string {
-  const candidates = [
-    path.join(process.resourcesPath, 'prisma-client', 'index.js'),
-    path.join(path.dirname(app.getPath('exe')), 'resources', 'prisma-client', 'index.js'),
-  ];
-
-  for (const entry of candidates) {
-    if (fs.existsSync(entry)) return entry;
+function getRequireRoot(): string {
+  if (app.isPackaged) {
+    return path.join(app.getAppPath(), 'package.json');
   }
-
-  throw new Error(
-    '[DB] Packaged Prisma client not found. Expected resources/prisma-client/index.js',
-  );
+  return path.join(fileURLToPath(new URL('../../package.json', import.meta.url)));
 }
 
 function loadPrismaClientCtor(): PrismaClientCtor {
   if (cachedCtor) return cachedCtor;
 
-  const require = createRequire(import.meta.url);
-  const entry = app.isPackaged ? resolvePackagedClientEntry() : '@prisma/client';
-  const mod = require(entry) as { PrismaClient: PrismaClientCtor };
+  // Resolve @prisma/client from app root so nested .prisma/client (asarUnpack) is found.
+  const require = createRequire(getRequireRoot());
+  const mod = require('@prisma/client') as { PrismaClient: PrismaClientCtor };
   cachedCtor = mod.PrismaClient;
   return cachedCtor;
 }

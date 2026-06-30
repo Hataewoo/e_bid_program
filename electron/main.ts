@@ -29,6 +29,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let mainWindow: BrowserWindow | null = null;
 let databaseService: DatabaseService | null = null;
+let databaseInitError: string | null = null;
 
 const isDev = !app.isPackaged && process.env.CSEBID_E2E !== '1';
 
@@ -60,7 +61,15 @@ function createWindow() {
 
 function registerIpcHandlers() {
   ipcMain.handle('db:getStatus', async () => {
-    return databaseService?.getStatus() ?? { connected: false, path: '', tableCounts: {} };
+    if (!databaseService) {
+      return {
+        connected: false,
+        path: '',
+        tableCounts: {},
+        error: databaseInitError ?? undefined,
+      };
+    }
+    return databaseService.getStatus();
   });
 
   ipcMain.handle('master:getAll', async () => {
@@ -509,6 +518,7 @@ app.whenReady().then(async () => {
     await databaseService.initialize();
     fileLogger.info('Database initialized', pathPreview.dbPath);
   } catch (err) {
+    databaseInitError = err instanceof Error ? err.message : String(err);
     console.error('[App] Database initialization failed:', err);
     fileLogger.error('Database initialization failed', err);
     databaseService = null;

@@ -27,9 +27,11 @@ export function MainLayout() {
       <div className="flex min-h-0 flex-1">
         <Sidebar />
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden p-1">
-          <Suspense fallback={<RouteFallback />}>
-            <Outlet />
-          </Suspense>
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+            <Suspense fallback={<RouteFallback />}>
+              <Outlet />
+            </Suspense>
+          </div>
         </main>
       </div>
     </div>

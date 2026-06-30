@@ -1,6 +1,6 @@
 {
   "name": "cs-e-bid-program",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "Windows 전자입찰 분석 프로그램",
   "homepage": "https://github.com/Hataewoo/e_bid_program",
@@ -108,6 +108,7 @@
     "asarUnpack": [
       "**/*.node",
       "node_modules/.prisma/**/*",
+      "node_modules/@prisma/client/**/*",
       "node_modules/@prisma/engines/**/*"
     ],
     "extraResources": [

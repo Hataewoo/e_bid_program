@@ -187,6 +187,7 @@ export const messages = {
     'settings.db.status': '상태',
     'settings.db.connected': '연결됨',
     'settings.db.disconnected': '연결 안됨',
+    'settings.db.error': '오류',
     'settings.db.path': '경로',
     'settings.db.count': '{count}건',
     'settings.prediction.disclaimer':
@@ -976,6 +977,7 @@ export const messages = {
     'settings.db.status': 'Status',
     'settings.db.connected': 'Connected',
     'settings.db.disconnected': 'Disconnected',
+    'settings.db.error': 'Error',
     'settings.db.path': 'Path',
     'settings.db.count': '{count} rows',
     'settings.prediction.disclaimer':

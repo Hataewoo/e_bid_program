@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.1] — 2026-07-01
+
+Patch release for packaged Windows installs: auto-update, Prisma DB bootstrap, and Settings UX.
+
+### Fixed
+
+- **Packaged Prisma / DB** — load `@prisma/client` via app-root `createRequire`; expand `asarUnpack` for Prisma modules.
+- **Auto-update runtime** — load `electron-updater` via `createRequire` (ESM/CJS in packaged main).
+- **Settings scroll** — main content area scrolls so update / packaging sections are reachable.
+- **DB status** — show initialization error in Settings when connect fails.
+- **NSIS installer** — install / uninstall choice on Setup re-run (`build/installer.nsh`).
+
+### Added
+
+- **GitHub Releases auto-update** — Settings → 앱 업데이트; Release CI (`.github/workflows/release.yml`).
+
+---
+
 ## [1.0.0] — 2026-06-30
 
 First packaged milestone of the Electron rewrite of the legacy MFC **전자입찰 누적카운트** tool. Delivers Master/Code management, STEP2/3 analysis, Statistics, Research Lab, and Windows NSIS packaging.
@@ -137,4 +155,5 @@ See [docs/RELEASE-1.0.0-SIGNOFF.md](docs/RELEASE-1.0.0-SIGNOFF.md) for gate audi
 
 ---
 
+[1.0.1]: https://github.com/Hataewoo/e_bid_program/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Hataewoo/e_bid_program/releases/tag/v1.0.0

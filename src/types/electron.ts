@@ -14,6 +14,7 @@ export interface DbStatus {
   connected: boolean;
   path: string;
   tableCounts: Record<string, number>;
+  error?: string;
 }
 
 export interface AppRuntimeInfo {
