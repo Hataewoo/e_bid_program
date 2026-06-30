@@ -1,0 +1,74 @@
+import { useStatisticsStore } from '../../stores/statistics-store';
+import { useI18n } from '@/i18n/use-i18n';
+import { FrequencyTable } from './FrequencyTable';
+import { FrequencySummary } from './FrequencySummary';
+
+export function FrequencyPanel() {
+  const { t } = useI18n();
+  const frequencyData = useStatisticsStore((s) => s.frequencyData);
+  const frequencyLoading = useStatisticsStore((s) => s.frequencyLoading);
+  const frequencyError = useStatisticsStore((s) => s.frequencyError);
+  const selectedDigit = useStatisticsStore((s) => s.selectedFrequencyDigit);
+  const selectedMaster = useStatisticsStore((s) => s.selectedMaster);
+  const refreshFrequency = useStatisticsStore((s) => s.refreshFrequency);
+  const copyFrequencyJson = useStatisticsStore((s) => s.copyFrequencyJson);
+  const selectFrequencyDigit = useStatisticsStore((s) => s.selectFrequencyDigit);
+
+  const hasData = frequencyData !== null && frequencyData.items.length > 0;
+  const showNoData = !frequencyLoading && (!hasData || frequencyError !== null);
+
+  return (
+    <div className="flex min-h-[280px] flex-col rounded border border-border bg-surface-elevated shadow-sm">
+      <div className="flex items-center justify-between border-b border-border px-3 py-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-content-muted">
+          {t('statistics.panel.frequency')}
+        </h3>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            className="win-button text-xs"
+            onClick={() => void refreshFrequency()}
+            disabled={frequencyLoading || !selectedMaster}
+          >
+            {t('statistics.panel.refresh')}
+          </button>
+          <button
+            type="button"
+            className="win-button text-xs"
+            onClick={() => void copyFrequencyJson()}
+            disabled={!hasData}
+          >
+            {t('statistics.panel.copy')}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col p-3">
+        {!selectedMaster && (
+          <p className="text-sm text-content-muted">{t('statistics.panel.selectMaster')}</p>
+        )}
+
+        {selectedMaster && frequencyLoading && (
+          <p className="text-sm text-content-muted">{t('statistics.panel.loading')}</p>
+        )}
+
+        {selectedMaster && showNoData && (
+          <div className="flex flex-1 items-center justify-center text-sm text-content-muted">
+            {t('statistics.panel.noData')}
+          </div>
+        )}
+
+        {selectedMaster && !frequencyLoading && hasData && frequencyData && (
+          <>
+            <FrequencyTable
+              items={frequencyData.items}
+              selectedDigit={selectedDigit}
+              onSelectDigit={selectFrequencyDigit}
+            />
+            <FrequencySummary summary={frequencyData.summary} />
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

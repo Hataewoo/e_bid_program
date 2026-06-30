@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-windows:
+    name: Build NSIS · publish GitHub Release
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint · test · regression gate · build
+        run: npm run build:check
+
+      - name: Prepare packaging (Prisma · template DB)
+        run: npm run prepare:packaging
+
+      - name: Build installer and publish to GitHub Releases
+        run: npx electron-builder --win --x64 --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify packaging artifacts
+        run: node scripts/verify-packaging.mjs
+
+      - name: Upload release artifacts (workflow summary)
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-nsis-${{ github.ref_name }}
+          path: |
+            release/*.exe
+            release/*.blockmap
+          if-no-files-found: error

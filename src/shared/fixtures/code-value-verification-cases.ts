@@ -1,0 +1,128 @@
+import type { CodeValueVerificationCase } from '@/shared/utils/codeValueVerification';
+
+/**
+ * CodeValue baseline cases (SRC-BUILTIN) — internal pattern/sequence matcher consistency.
+ * Legacy SRC-LEGACY cases: fill after MFC program observation (TEST-CATALOG §5.2).
+ */
+export const BUILTIN_CODE_VALUE_VERIFICATION_CASES: CodeValueVerificationCase[] = [
+  {
+    catalogId: 'TC-CV-001',
+    name: 'TC-CV-001 Sequence 저점,저점 on 001122',
+    source: 'SRC-BUILTIN',
+    masterNo: '00',
+    masterValue: '001122',
+    codes: [{ code: '01', type: '저점', description: '저점,저점' }],
+    expected: [{ code: '01', count: 5, matchKind: 'sequence' }],
+  },
+  {
+    catalogId: 'TC-CV-002',
+    name: 'TC-CV-002 Pattern 1 중복 on 015605',
+    source: 'SRC-BUILTIN',
+    masterNo: '00',
+    masterValue: '015605',
+    codes: [{ code: '99', type: '저점', description: '1 중복' }],
+    expected: [{ code: '99', count: 1, matchKind: 'pattern' }],
+  },
+  {
+    catalogId: 'TC-CV-003',
+    name: 'TC-CV-003 Pattern 3 이상 on 00055',
+    source: 'SRC-BUILTIN',
+    masterNo: '07',
+    masterValue: '00055',
+    codes: [{ code: '98', type: '저점', description: '3 이상' }],
+    expected: [{ code: '98', count: 1, matchKind: 'pattern' }],
+  },
+  {
+    catalogId: 'TC-CV-004',
+    name: 'TC-CV-004 Sequence 저점,고점 on 0123456789',
+    source: 'SRC-BUILTIN',
+    masterNo: '00',
+    masterValue: '0123456789',
+    codes: [{ code: '02', type: '저점', description: '저점,고점' }],
+    expected: [{ code: '02', count: 1, matchKind: 'sequence' }],
+  },
+  {
+    catalogId: 'TC-CV-005',
+    name: 'TC-CV-005 Sequence 고점,고점 on 556677',
+    source: 'SRC-BUILTIN',
+    masterNo: '00',
+    masterValue: '556677',
+    codes: [{ code: '04', type: '저점', description: '고점,고점' }],
+    expected: [{ code: '04', count: 5, matchKind: 'sequence' }],
+  },
+  {
+    catalogId: 'TC-CV-006',
+    name: 'TC-CV-006 Dual code percent split',
+    source: 'SRC-BUILTIN',
+    masterNo: '00',
+    masterValue: '00112255',
+    codes: [
+      { code: '01', type: '저점', description: '저점,저점' },
+      { code: '02', type: '저점', description: '저점,고점' },
+    ],
+    expected: [
+      { code: '01', count: 5, matchKind: 'sequence', percent: 83.3 },
+      { code: '02', count: 1, matchKind: 'sequence', percent: 16.7 },
+    ],
+  },
+  {
+    catalogId: 'TC-CV-007',
+    name: 'TC-CV-007 Pattern 2 on 112233',
+    source: 'SRC-BUILTIN',
+    masterNo: '00',
+    masterValue: '112233',
+    codes: [{ code: '97', type: '저점', description: '2' }],
+    expected: [{ code: '97', count: 0, matchKind: 'pattern' }],
+  },
+  {
+    catalogId: 'TC-CV-008',
+    name: 'TC-CV-008 Unmatched description',
+    source: 'SRC-BUILTIN',
+    masterNo: '00',
+    masterValue: '1234',
+    codes: [{ code: 'XX', type: '저점', description: 'unknown rule' }],
+    expected: [{ code: 'XX', count: 0, matchKind: 'unmatched' }],
+  },
+  {
+    catalogId: 'TC-CV-009',
+    name: 'TC-CV-009 Top code flag',
+    source: 'SRC-BUILTIN',
+    masterNo: '00',
+    masterValue: '001122',
+    codes: [
+      { code: '01', type: '저점', description: '저점,저점' },
+      { code: '08', type: '저점', description: '고점,저점,저점' },
+    ],
+    expected: [
+      { code: '01', count: 5, matchKind: 'sequence', isTop: true },
+      { code: '08', count: 0, matchKind: 'sequence', isTop: false },
+    ],
+  },
+  {
+    catalogId: 'TC-CV-010',
+    name: 'TC-CV-010 Pattern 5 중복 high on 55566',
+    source: 'SRC-BUILTIN',
+    masterNo: '00',
+    masterValue: '55566',
+    codes: [{ code: '96', type: '고점', description: '5 중복' }],
+    expected: [{ code: '96', count: 0, matchKind: 'pattern' }],
+  },
+  {
+    catalogId: 'TC-CV-011',
+    name: 'TC-CV-011 Long sequence 저점,저점,저점',
+    source: 'SRC-BUILTIN',
+    masterNo: '00',
+    masterValue: '000111222',
+    codes: [{ code: '05', type: '저점', description: '저점,저점,저점' }],
+    expected: [{ code: '05', count: 7, matchKind: 'sequence' }],
+  },
+  {
+    catalogId: 'TC-CV-012',
+    name: 'TC-CV-012 Seed code 01 on mixed',
+    source: 'SRC-BUILTIN',
+    masterNo: '00',
+    masterValue: '0101',
+    codes: [{ code: '01', type: '저점', description: '저점,저점' }],
+    expected: [{ code: '01', count: 3, matchKind: 'sequence' }],
+  },
+];

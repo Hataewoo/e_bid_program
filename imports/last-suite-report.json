@@ -1,0 +1,44 @@
+{
+  "total": 4,
+  "passed": 4,
+  "failed": 0,
+  "passRate": 100,
+  "results": [
+    {
+      "id": "verification-1",
+      "name": "TC-STEP2-010 Legacy Master 01 digits 0-9",
+      "field": "all",
+      "expected": "{\"step2\":\"01234\",\"step3\":\"56789\"}",
+      "actual": "{\n  \"step2\": \"01234\",\n  \"step3\": \"56789\",\n  \"statistics\": \"자릿수: 10 | Low: 50% | High: 50% | 최빈값: 0\",\n  \"prediction\": \"010\",\n  \"memo\": \"Master 01 | confidence 17%\"\n}",
+      "passed": true,
+      "source": "verification"
+    },
+    {
+      "id": "verification-2",
+      "name": "Regression — STEP2/3 (00)",
+      "field": "all",
+      "expected": "{\"step2\":\"01234\",\"step3\":\"56789\"}",
+      "actual": "{\n  \"step2\": \"01234\",\n  \"step3\": \"56789\",\n  \"statistics\": \"자릿수: 10 | Low: 50% | High: 50% | 최빈값: 0\",\n  \"prediction\": \"010\",\n  \"memo\": \"Master 00 | confidence 17%\"\n}",
+      "passed": true,
+      "source": "verification"
+    },
+    {
+      "id": "verification-3",
+      "name": "Regression — Statistics (05)",
+      "field": "all",
+      "expected": "{\"statistics\":\"자릿수: 10 | Low: 50% | High: 50% | 최빈값: 0\"}",
+      "actual": "{\n  \"step2\": \"01234\",\n  \"step3\": \"56789\",\n  \"statistics\": \"자릿수: 10 | Low: 50% | High: 50% | 최빈값: 0\",\n  \"prediction\": \"010\",\n  \"memo\": \"Master 05 | confidence 17%\"\n}",
+      "passed": true,
+      "source": "verification"
+    },
+    {
+      "id": "verification-4",
+      "name": "Regression — formatted input (04)",
+      "field": "all",
+      "expected": "{\"step2\":\"141223\",\"step3\":\"5657\"}",
+      "actual": "{\n  \"step2\": \"141223\",\n  \"step3\": \"5657\",\n  \"statistics\": \"자릿수: 10 | Low: 60% | High: 40% | 최빈값: 1\",\n  \"prediction\": \"011\",\n  \"memo\": \"Master 04 | confidence 9%\"\n}",
+      "passed": true,
+      "source": "verification"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+name: Bug Report
+description: Report a defect or unexpected behavior
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        See [STATUS.md](../docs/STATUS.md) for known limitations before filing duplicates.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Master
+        - Code
+        - Analysis
+        - CodeValue
+        - Statistics
+        - Research
+        - Reverse Engineering
+        - Settings / Admin
+        - Electron / IPC
+        - Build / CI
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Open Analysis\n2. Load Master 01\n3. Click Analyze"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      placeholder: "1.0.0 or git commit"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Settings → Log path, or attach screenshot
+    validations:
+      required: false

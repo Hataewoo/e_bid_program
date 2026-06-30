@@ -1,0 +1,86 @@
+name: Test Case (Legacy Verification)
+description: Register or fix a legacy verification test case
+title: "[TestCase]: "
+labels:
+  - P1-legacy-verify
+  - testcase
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Follow [TEST-CATALOG.md](../docs/TEST-CATALOG.md) ID format: `TC-{CAT}-{NNN}`
+
+  - type: input
+    id: testcase_id
+    attributes:
+      label: Test Case ID
+      placeholder: TC-STEP2-010
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - CAT-STEP2
+        - CAT-STEP3
+        - CAT-STAT
+        - CAT-PRED
+        - CAT-CV
+        - CAT-PAT
+        - CAT-EDGE
+        - CAT-BATCH
+    validations:
+      required: true
+
+  - type: dropdown
+    id: source
+    attributes:
+      label: Source
+      options:
+        - SRC-LEGACY
+        - SRC-EXPERIMENT
+        - SRC-MANUAL
+        - SRC-BUILTIN
+    validations:
+      required: true
+
+  - type: textarea
+    id: input_json
+    attributes:
+      label: Input (JSON)
+      description: masterNo, masterValue
+      render: json
+      placeholder: |
+        {"masterNo":"01","masterValue":"0123456789"}
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_json
+    attributes:
+      label: Expected output (JSON)
+      description: Subset match supported (step2, step3, statistics, prediction)
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Legacy evidence
+      description: Screenshot path, Experiment ID, or observation notes
+    validations:
+      required: true
+
+  - type: dropdown
+    id: current_status
+    attributes:
+      label: Current engine result
+      options:
+        - PASS
+        - FAIL
+        - DRAFT (not yet run)
+    validations:
+      required: true

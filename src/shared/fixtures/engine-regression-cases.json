@@ -1,0 +1,52 @@
+[
+  {
+    "name": "STEP2/3 — digits 0-9",
+    "input": { "masterNo": "00", "masterValue": "0123456789" },
+    "expected": { "step2": "01234", "step3": "56789" }
+  },
+  {
+    "name": "STEP2/3 — low only",
+    "input": { "masterNo": "01", "masterValue": "01234" },
+    "expected": { "step2": "01234", "step3": "" }
+  },
+  {
+    "name": "STEP2/3 — high only",
+    "input": { "masterNo": "02", "masterValue": "56789" },
+    "expected": { "step2": "", "step3": "56789" }
+  },
+  {
+    "name": "STEP2/3 — mixed sequence",
+    "input": { "masterNo": "03", "masterValue": "00112233445566778899" },
+    "expected": { "step2": "0011223344", "step3": "5566778899" }
+  },
+  {
+    "name": "STEP2/3 — formatted input",
+    "input": { "masterNo": "04", "masterValue": "14,15 65\n2273" },
+    "expected": { "step2": "141223", "step3": "5657" }
+  },
+  {
+    "name": "Statistics — digit count",
+    "input": { "masterNo": "05", "masterValue": "0123456789" },
+    "expected": { "statistics": "자릿수: 10 | Low: 50% | High: 50% | 최빈값: 0" }
+  },
+  {
+    "name": "Statistics — all low",
+    "input": { "masterNo": "06", "masterValue": "0000" },
+    "expected": { "statistics": "자릿수: 4 | Low: 100% | High: 0% | 최빈값: 0" }
+  },
+  {
+    "name": "Low pattern — threeOrMore",
+    "input": { "masterNo": "07", "masterValue": "00055" },
+    "expected": { "step2": "000", "step3": "55" }
+  },
+  {
+    "name": "Single digit low",
+    "input": { "masterNo": "08", "masterValue": "3" },
+    "expected": { "step2": "3", "step3": "" }
+  },
+  {
+    "name": "Long mixed run",
+    "input": { "masterNo": "09", "masterValue": "012345678901234567890" },
+    "expected": { "step2": "01234012340", "step3": "5678956789" }
+  }
+]

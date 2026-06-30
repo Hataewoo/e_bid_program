@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Regression — STEP2/3 (00)",
+    "inputData": "{\"masterNo\":\"00\",\"masterValue\":\"0123456789\"}",
+    "expectedResult": "{\"step2\":\"01234\",\"step3\":\"56789\"}"
+  },
+  {
+    "name": "Regression — Statistics (05)",
+    "inputData": "{\"masterNo\":\"05\",\"masterValue\":\"0123456789\"}",
+    "expectedResult": "{\"statistics\":\"자릿수: 10 | Low: 50% | High: 50% | 최빈값: 0\"}"
+  },
+  {
+    "name": "Regression — formatted input (04)",
+    "inputData": "{\"masterNo\":\"04\",\"masterValue\":\"14,15 65\\n2273\"}",
+    "expectedResult": "{\"step2\":\"141223\",\"step3\":\"5657\"}"
+  }
+]

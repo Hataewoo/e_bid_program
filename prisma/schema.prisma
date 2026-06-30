@@ -1,0 +1,156 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// MASTER — 페이지 마스터 (00~99 슬롯)
+/// Domain mapping: masterValue ↔ UI "value" (대량 숫자 시퀀스)
+model Master {
+  id          Int      @id @default(autoincrement())
+  masterNo    String   @unique /// '00' ~ '99'
+  masterValue String   @default("") /// domain: value
+  memo        String?  /// 비고
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// CODE — 코드등록
+/// Domain mapping: code ↔ UI "codeName"
+model Code {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique /// domain: codeName (e.g. '01', '20')
+  type        String   /// 저점 / 고점 구분
+  description String   @default("") /// 설명
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// CodeValue — 향후 통계 연산 결과 저장용 (Phase 3+)
+model CodeValue {
+  id          Int      @id @default(autoincrement())
+  code        String
+  value       String
+  description String?
+  memo        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AnalysisHistory {
+  id         Int      @id @default(autoincrement())
+  title      String
+  bidNumber  String?
+  status     String   @default("pending")
+  result     String?
+  analyzedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Statistics {
+  id         Int      @id @default(autoincrement())
+  category   String
+  label      String
+  value      Float
+  unit       String?
+  period     String?
+  recordedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Experiment {
+  id            Int                 @id @default(autoincrement())
+  name          String
+  date          DateTime            @default(now())
+  version       String              @default("1.0.0")
+  description   String              @default("")
+  status        String              @default("Draft")
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  inputs        ExperimentInput[]
+  outputs       ExperimentOutput[]
+  comparisons   Comparison[]
+  screenshots   Screenshot[]
+  verifications Verification[]
+  hypotheses    Hypothesis[]
+}
+
+model ExperimentInput {
+  id           Int        @id @default(autoincrement())
+  experimentId Int
+  fieldKey     String
+  fieldValue   String     @default("")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+}
+
+model ExperimentOutput {
+  id           Int        @id @default(autoincrement())
+  experimentId Int
+  source       String
+  fieldKey     String
+  fieldValue   String     @default("")
+  memo         String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+}
+
+model Hypothesis {
+  id            Int             @id @default(autoincrement())
+  experimentId  Int?
+  sourceField   String?
+  title         String
+  description   String
+  confidence    Int             @default(0)
+  verified      Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  experiment    Experiment?     @relation(fields: [experimentId], references: [id], onDelete: SetNull)
+  verifications Verification[]
+}
+
+model Verification {
+  id             Int         @id @default(autoincrement())
+  experimentId   Int?
+  hypothesisId   Int?
+  name           String
+  inputData      String      @default("{}")
+  expectedResult String
+  actualResult   String?
+  passed         Boolean?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  experiment     Experiment? @relation(fields: [experimentId], references: [id], onDelete: SetNull)
+  hypothesis     Hypothesis? @relation(fields: [hypothesisId], references: [id], onDelete: SetNull)
+}
+
+model Comparison {
+  id           Int        @id @default(autoincrement())
+  experimentId Int
+  fieldKey     String
+  legacyValue  String
+  oursValue    String
+  diffType     String?
+  diffDetail   String?
+  isMatch      Boolean
+  createdAt    DateTime   @default(now())
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+}
+
+model Screenshot {
+  id           Int        @id @default(autoincrement())
+  experimentId Int
+  filename     String
+  filePath     String
+  caption      String?
+  createdAt    DateTime   @default(now())
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+}

@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-test-regression:
+    name: Lint · unit · integration · regression gate
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: IPC integration tests (SQLite)
+        run: npm run test:integration
+
+      - name: Regression gate
+        run: npm run regression:gate
+
+  build-e2e:
+    name: Build · E2E smoke
+    runs-on: windows-latest
+    needs: lint-test-regression
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: E2E smoke (Playwright + Electron)
+        run: npm run test:e2e:ci
+        env:
+          CI: true
+
+  coverage:
+    name: Coverage threshold (optional)
+    runs-on: windows-latest
+    needs: lint-test-regression
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Coverage report + thresholds
+        run: npm run test:coverage

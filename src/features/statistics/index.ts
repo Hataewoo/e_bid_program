@@ -1,0 +1,1 @@
+export { StatisticsFeature } from './StatisticsFeature';

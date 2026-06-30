@@ -1,0 +1,1 @@
+export { ResearchFeature } from './ResearchFeature';

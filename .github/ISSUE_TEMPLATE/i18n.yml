@@ -1,0 +1,58 @@
+name: i18n
+description: Missing or incorrect translation
+title: "[i18n]: "
+labels:
+  - P4-i18n
+body:
+  - type: dropdown
+    id: feature
+    attributes:
+      label: Feature / screen
+      options:
+        - Master
+        - Code
+        - Analysis
+        - CodeValue
+        - Statistics
+        - Research
+        - Reverse Engineering
+        - Settings
+        - Shared (layout, toolbar)
+        - messages.ts key only
+    validations:
+      required: true
+
+  - type: input
+    id: file_path
+    attributes:
+      label: File path (if known)
+      placeholder: src/features/master/MasterManagement.tsx
+    validations:
+      required: false
+
+  - type: textarea
+    id: current_text
+    attributes:
+      label: Current hardcoded text
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_keys
+    attributes:
+      label: Proposed message keys (ko / en)
+      description: e.g. master.toolbar.new = 신규 / New
+    validations:
+      required: false
+
+  - type: dropdown
+    id: language
+    attributes:
+      label: Affected language
+      options:
+        - Korean missing
+        - English missing
+        - Both
+        - Wrong translation
+    validations:
+      required: true

@@ -1,0 +1,14 @@
+[
+  {
+    "catalogId": "TC-STEP2-010",
+    "name": "TC-STEP2-010 Legacy Master 01 digits 0-9",
+    "version": "2026-06-30",
+    "source": "SRC-LEGACY",
+    "category": "CAT-STEP2",
+    "masterNo": "01",
+    "masterValue": "0123456789",
+    "expectedResult": "{\"step2\":\"01234\",\"step3\":\"56789\"}",
+    "legacyEvidence": "OBS-20260630-01",
+    "observationId": "OBS-20260630-01"
+  }
+]
