@@ -9,9 +9,8 @@
     "skipLibCheck": true,
     "outDir": "dist-electron",
     "rootDir": "electron",
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["electron/**/*", "vite.config.ts"]

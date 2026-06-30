@@ -230,6 +230,45 @@
   .win-dialog-window {
     @apply border border-[#0054e3] bg-[#ece9d8];
     border-radius: 0;
+    color: #000000;
+  }
+
+  /* Classic dialog uses fixed light surfaces — override theme text colors in dark mode */
+  .win-dialog-window .win-label {
+    color: #000000;
+  }
+
+  .win-dialog-window .win-input,
+  .win-dialog-window .win-combobox {
+    color: #000000;
+    background: #ffffff;
+    border-color: #404040;
+  }
+
+  .win-dialog-window .win-button {
+    color: #000000;
+    background: linear-gradient(to bottom, #ffffff, #ece9d8);
+    border-color: #404040;
+  }
+
+  .win-dialog-window .win-button:hover:not(:disabled) {
+    background: linear-gradient(to bottom, #ffffff, #f6f4ec);
+  }
+
+  .win-dialog-window .win-titlebar {
+    color: #ffffff;
+    background: linear-gradient(to bottom, #0997ff, #0053ee 8%, #0050ee 40%, #06f 88%, #06f);
+    border-bottom-color: #003399;
+  }
+
+  .win-dialog-window .win-titlebar .win-button {
+    color: #ffffff;
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.45);
+  }
+
+  .win-dialog-window .win-titlebar .win-button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.15);
   }
 
   .win-dialog-panel {

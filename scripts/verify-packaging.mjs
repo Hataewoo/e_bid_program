@@ -40,6 +40,14 @@ if (fs.existsSync(releasePrismaClient)) {
       ok: fs.existsSync(path.join(releasePrismaClient, 'index.js')),
     },
     {
+      name: 'release/resources/prisma-client/default.js',
+      ok: fs.existsSync(path.join(releasePrismaClient, 'default.js')),
+    },
+    {
+      name: 'release/resources/prisma-client/package.json',
+      ok: fs.existsSync(path.join(releasePrismaClient, 'package.json')),
+    },
+    {
       name: 'release/resources/prisma-client/query_engine-windows.dll.node',
       ok: fs
         .readdirSync(releasePrismaClient)
