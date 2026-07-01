@@ -10,7 +10,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Cm, Pt
 from docx.oxml.ns import qn
 
-OUT = Path(__file__).resolve().parents[1] / "docs" / "CS-E-Bid-Analyzer-사용법-v1.0.0.docx"
+OUT = Path(__file__).resolve().parents[1] / "docs" / "CS-E-Bid-Analyzer-사용법.docx"
 
 
 def set_doc_defaults(doc: Document) -> None:
