@@ -14,7 +14,17 @@ let cachedCtor: PrismaClientCtor | null = null;
 let packagedResolverInstalled = false;
 
 function getDevRequireRoot(): string {
-  return path.join(fileURLToPath(new URL('../../package.json', import.meta.url)));
+  // Vite dev 번들은 `new URL('../../package.json', import.meta.url)`를 data: URL로 인라인해
+  // fileURLToPath가 실패하므로, main.js 기준 디렉터리에서 프로젝트 루트를 계산한다.
+  const mainDir = path.dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    path.join(mainDir, '..', 'package.json'),
+    path.join(process.cwd(), 'package.json'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return candidates[0];
 }
 
 function getPackagedBundledClientDir(): string {
