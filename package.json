@@ -130,7 +130,7 @@
           ]
         }
       ],
-      "artifactName": "${productName}-Setup-${version}-${arch}.${ext}"
+      "artifactName": "CS-E-Bid-Analyzer-Setup-${version}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
