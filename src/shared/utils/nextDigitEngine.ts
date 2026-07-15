@@ -155,17 +155,17 @@ export function computeNextDigitProbabilities(
   const source = resolveSource(totalMatches, prefix.length);
 
   if (prefix.length === 0 || totalMatches === 0) {
-    return { probabilities: globalProbs, counts, totalMatches, source: 'global' };
+    return { probabilities: globalProbs, counts, totalMatches, source };
   }
 
   const prefixProbs = countsToProbabilities(counts, totalMatches);
   if (totalMatches >= MIN_MATCHES_FOR_FULL_PREFIX) {
-    return { probabilities: prefixProbs, counts, totalMatches, source: 'prefix' };
+    return { probabilities: prefixProbs, counts, totalMatches, source };
   }
 
   const prefixWeight = totalMatches / MIN_MATCHES_FOR_FULL_PREFIX;
   const blended = blendProbabilities(prefixProbs, globalProbs, prefixWeight);
-  return { probabilities: blended, counts, totalMatches, source: 'blended' };
+  return { probabilities: blended, counts, totalMatches, source };
 }
 
 export function pickTopCandidates(
