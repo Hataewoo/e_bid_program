@@ -23,9 +23,10 @@ export interface DataValidationResult {
 
 export const MASTER_NO_MIN = 0;
 export const MASTER_NO_MAX = 99;
-export const MASTER_VALUE_MAX_LENGTH = 1000;
-/** 일괄 가져오기 전용 상한 (대량 숫자 시퀀스) */
-export const MASTER_VALUE_BULK_MAX_LENGTH = 10_000_000;
+/** 레거시 이명전기 마스터값은 수만~수십만 자리 숫자 시퀀스 */
+export const MASTER_VALUE_MAX_LENGTH = 10_000_000;
+/** @deprecated use MASTER_VALUE_MAX_LENGTH — kept for bulk import call sites */
+export const MASTER_VALUE_BULK_MAX_LENGTH = MASTER_VALUE_MAX_LENGTH;
 
 export function formatMasterNo(value: number | string): string {
   const num = typeof value === 'string' ? parseInt(value, 10) : value;

@@ -1,6 +1,9 @@
 import { UnverifiedAlgorithmBanner } from '@/components/ui/UnverifiedAlgorithmBanner';
 import { useI18n } from '@/i18n/use-i18n';
-import { getAlgorithmVerificationStatus } from '@/shared/utils/algorithmVerificationStatus';
+import {
+  getAlgorithmVerificationStatus,
+  shouldShowLegacyUnverifiedUi,
+} from '@/shared/utils/algorithmVerificationStatus';
 
 interface PredictionUnverifiedBannerProps {
   className?: string;
@@ -10,7 +13,7 @@ export function PredictionUnverifiedBanner({ className = '' }: PredictionUnverif
   const { t } = useI18n();
   const status = getAlgorithmVerificationStatus();
 
-  if (status.prediction === 'verified') {
+  if (!shouldShowLegacyUnverifiedUi() || status.prediction === 'verified') {
     return null;
   }
 

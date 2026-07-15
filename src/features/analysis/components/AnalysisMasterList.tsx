@@ -50,11 +50,11 @@ export function AnalysisMasterList() {
   }, [selectedMasterNo, masterSlotRows]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#ece9d8]">
+    <div className="flex h-full min-h-full flex-col bg-[#ece9d8]">
       <div className="win-panel-header shrink-0">{t('analysis.masterList.title')}</div>
       <div className="relative min-h-0 flex-1 overflow-hidden">
         {analyzing && (
-          <div className="absolute z-10 bg-black/5 px-1 text-[10px] text-content-muted">
+          <div className="absolute z-10 bg-black/5 px-2 text-sm text-content-muted">
             {t('analysis.masterList.analyzing')}
           </div>
         )}
@@ -68,8 +68,8 @@ export function AnalysisMasterList() {
             getRowId={masterNoRowId}
             rowSelection={{ mode: 'singleRow', enableClickSelection: true }}
             suppressCellFocus={true}
-            headerHeight={24}
-            rowHeight={22}
+            headerHeight={32}
+            rowHeight={30}
             {...AG_GRID_PERF_DEFAULTS}
           />
         </div>

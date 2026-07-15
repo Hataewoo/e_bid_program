@@ -24,6 +24,10 @@ import { AppErrorCode } from '@/shared/errors/app-error-codes';
 import type { MasterInput } from './database/validation/validation-service';
 import type { CodeInput } from './database/code/code-validation-service';
 import type { CodeValueInput } from './database/codeValue/code-value-validation-service';
+import {
+  mapExperimentDetailRow,
+  mapExperimentRow,
+} from './analysis/research-ipc-mappers';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -189,15 +193,20 @@ function registerIpcHandlers() {
 
   const research = () => databaseService?.getResearchService();
 
-  ipcMain.handle('research:experiments:getAll', async () => research()?.experiments.getAll() ?? []);
-  ipcMain.handle(
-    'research:experiments:getById',
-    async (_e, id: number) => research()?.experiments.getById(id) ?? null,
-  );
+  ipcMain.handle('research:experiments:getAll', async () => {
+    const rows = await research()?.experiments.getAll();
+    return rows?.map(mapExperimentRow) ?? [];
+  });
+  ipcMain.handle('research:experiments:getById', async (_e, id: number) => {
+    const row = await research()?.experiments.getById(id);
+    return row ? mapExperimentDetailRow(row) : null;
+  });
   ipcMain.handle('research:experiments:save', async (_e, input) => {
     const svc = research();
     if (!svc) return { success: false, errors: [AppErrorCode.DB_NOT_INIT] };
-    return svc.experiments.save(input);
+    const result = await svc.experiments.save(input);
+    if (!result.success || !result.data) return result;
+    return { success: true, data: mapExperimentRow(result.data) };
   });
   ipcMain.handle('research:experiments:delete', async (_e, id: number) => {
     const svc = research();

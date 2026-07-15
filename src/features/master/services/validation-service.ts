@@ -1,7 +1,8 @@
 import { AppErrorCode } from '@/shared/errors/app-error-codes';
 import type { MasterInput, DataValidationResult } from '@/types/electron';
 
-export const MASTER_VALUE_MAX_LENGTH = 1000;
+/** 레거시 이명전기 마스터값은 수만~수십만 자리 숫자 시퀀스 */
+export const MASTER_VALUE_MAX_LENGTH = 10_000_000;
 
 export interface ValidationResult {
   valid: boolean;

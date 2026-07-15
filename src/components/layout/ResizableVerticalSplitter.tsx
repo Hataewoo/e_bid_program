@@ -10,27 +10,40 @@ interface ResizableVerticalSplitterProps {
   storageKey?: string;
 }
 
-function readStoredPercent(key: string | undefined, fallback: number): number {
-  if (!key) return fallback;
+function clampPercent(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(value, max));
+}
+
+function readStoredPercent(
+  key: string | undefined,
+  fallback: number,
+  minTop: number,
+  minBottom: number,
+): number {
+  const maxTop = 100 - minBottom;
+  if (!key) return clampPercent(fallback, minTop, maxTop);
   const raw = localStorage.getItem(key);
   const value = raw ? Number(raw) : fallback;
-  return Number.isFinite(value) ? value : fallback;
+  if (!Number.isFinite(value)) return clampPercent(fallback, minTop, maxTop);
+  return clampPercent(value, minTop, maxTop);
 }
 
 export function ResizableVerticalSplitter({
   top,
   bottom,
   defaultTopPercent = 72,
-  minTopPercent = 40,
-  minBottomPercent = 18,
+  minTopPercent = 25,
+  minBottomPercent = 15,
   storageKey,
 }: ResizableVerticalSplitterProps) {
   const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const [topPercent, setTopPercent] = useState(() =>
-    readStoredPercent(storageKey, defaultTopPercent),
+    readStoredPercent(storageKey, defaultTopPercent, minTopPercent, minBottomPercent),
   );
   const isDragging = useRef(false);
+
+  const bottomPercent = 100 - topPercent;
 
   const handleMouseDown = useCallback(() => {
     isDragging.current = true;
@@ -42,9 +55,10 @@ export function ResizableVerticalSplitter({
     (e: MouseEvent) => {
       if (!isDragging.current || !containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
+      if (rect.height <= 0) return;
       const percent = ((e.clientY - rect.top) / rect.height) * 100;
       const maxTop = 100 - minBottomPercent;
-      const next = Math.max(minTopPercent, Math.min(percent, maxTop));
+      const next = clampPercent(percent, minTopPercent, maxTop);
       setTopPercent(next);
       if (storageKey) localStorage.setItem(storageKey, String(next));
     },
@@ -69,18 +83,27 @@ export function ResizableVerticalSplitter({
   }, [handleMouseDown, handleMouseMove, handleMouseUp]);
 
   return (
-    <div ref={containerRef} className="flex min-h-0 flex-1 flex-col">
-      <div className="flex min-h-0 flex-col overflow-hidden" style={{ height: `${topPercent}%` }}>
+    <div ref={containerRef} className="flex h-full min-h-0 w-full flex-1 flex-col">
+      <div
+        className="flex min-h-0 flex-col overflow-hidden"
+        style={{ flex: `${topPercent} 1 0%` }}
+      >
         {top}
       </div>
       <div
-        className="win-splitter-horizontal shrink-0"
+        className="win-splitter-horizontal z-10 shrink-0"
         onMouseDown={handleMouseDownWithListeners}
         role="separator"
         aria-orientation="horizontal"
+        aria-valuenow={topPercent}
         title={t('layout.resize')}
       />
-      <div className="min-h-0 flex-1 overflow-hidden">{bottom}</div>
+      <div
+        className="flex min-h-0 flex-col overflow-hidden"
+        style={{ flex: `${bottomPercent} 1 0%` }}
+      >
+        {bottom}
+      </div>
     </div>
   );
 }

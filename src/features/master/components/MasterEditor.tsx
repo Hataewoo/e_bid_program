@@ -1,5 +1,6 @@
 import { useForm, Controller } from 'react-hook-form';
 import { useEffect } from 'react';
+import { MasterValueTextarea } from '@/components/ui/MasterValueTextarea';
 import { useMasterStore } from '../stores/master-store';
 import { formatAppErrors } from '@/i18n/format-app-errors';
 import { useI18n } from '@/i18n/use-i18n';
@@ -65,25 +66,21 @@ export function MasterEditor() {
           name="masterValue"
           control={control}
           render={({ field }) => (
-            <textarea
-              {...field}
+            <MasterValueTextarea
               id="masterValue"
-              className="win-textarea-master flex-1"
-              wrap="off"
-              spellCheck={false}
-              maxLength={MASTER_VALUE_MAX_LENGTH + 100}
-              onChange={(e) => {
-                field.onChange(e);
-                setFormValues({ masterValue: e.target.value });
+              value={field.value ?? ''}
+              onChange={(normalized) => {
+                field.onChange(normalized);
+                setFormValues({ masterValue: normalized });
               }}
             />
           )}
         />
-        <div className="mt-1 flex justify-between text-xs text-content-muted">
+        <div className="mt-1 flex justify-between text-sm text-content-muted">
           <span>
             {t('master.digitCount', { current: valueLength, max: MASTER_VALUE_MAX_LENGTH })}
           </span>
-          <span>{t('master.wrapOff')}</span>
+          <span>{t('master.displayLayout')}</span>
         </div>
       </div>
 

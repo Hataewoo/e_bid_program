@@ -8,11 +8,13 @@ import {
   useFeatureGridAutoRefresh,
   useKeyboardShortcuts,
 } from '@/hooks';
+import { useFontScale } from '@/shared/hooks/useFontScale';
 import { useSettingsStore } from '@/stores/settings-store';
 
 export function MainLayout() {
   useAppInit();
   useKeyboardShortcuts();
+  useFontScale();
 
   const autoRefresh = useSettingsStore((s) => s.autoRefresh);
   const refreshInterval = useSettingsStore((s) => s.refreshInterval);

@@ -16,6 +16,14 @@ import {
   type CodeValueStatRow,
 } from '@/shared/utils/analysisEngine';
 import { buildPrediction, type PredictionResult } from '@/shared/utils/predictionEngine';
+import {
+  buildProbabilityProfile,
+  type ProbabilityProfile,
+} from '@/shared/utils/probabilityEngine';
+import {
+  buildRateRecommendations,
+  type RateRecommendResult,
+} from '@/shared/utils/rateRecommendEngine';
 import { getCachedAnalysis, rememberAnalysisResult } from '@/shared/utils/analysisCache';
 import { persistAnalysisRun, notifyPersistenceFailure } from '@/shared/utils/persistAnalysisToDb';
 import type { LogEntry, LogLevel } from '../types/analysis.types';
@@ -62,6 +70,36 @@ function toCodeMatchInputs(codes: Code[]): CodeMatchInput[] {
   }));
 }
 
+function applyAnalysisDerived(
+  result: AnalysisResult,
+  codes: Code[],
+): {
+  codeValueStats: CodeValueStatRow[];
+  prediction: PredictionResult;
+  probabilityProfile: ProbabilityProfile;
+  rateRecommendations: RateRecommendResult;
+} {
+  const codeValueStats = buildCodeValueStats(result, toCodeMatchInputs(codes));
+  const prediction = buildPrediction(result, codeValueStats);
+  const probabilityProfile = buildProbabilityProfile(result, codeValueStats);
+  const rateRecommendations = buildRateRecommendations(probabilityProfile);
+  return { codeValueStats, prediction, probabilityProfile, rateRecommendations };
+}
+
+function applyPipelineDerived(data: {
+  codeValueStats: CodeValueStatRow[];
+  prediction: PredictionResult;
+  probabilityProfile: ProbabilityProfile;
+  rateRecommendations: RateRecommendResult;
+}) {
+  return {
+    codeValueStats: data.codeValueStats,
+    prediction: data.prediction,
+    probabilityProfile: data.probabilityProfile,
+    rateRecommendations: data.rateRecommendations,
+  };
+}
+
 interface AnalysisState {
   masters: Master[];
   filteredMasters: Master[];
@@ -69,6 +107,8 @@ interface AnalysisState {
   codes: Code[];
   codeValueStats: CodeValueStatRow[];
   prediction: PredictionResult | null;
+  probabilityProfile: ProbabilityProfile | null;
+  rateRecommendations: RateRecommendResult | null;
   codesLoading: boolean;
   searchQuery: string;
   selectedMaster: Master | null;
@@ -115,6 +155,8 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
   codes: [],
   codeValueStats: [],
   prediction: null,
+  probabilityProfile: null,
+  rateRecommendations: null,
   codesLoading: false,
   searchQuery: '',
   selectedMaster: null,
@@ -153,12 +195,14 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
     const analysis = result ?? get().currentAnalysisResult;
     const { codes } = get();
     if (!analysis) {
-      set({ codeValueStats: [], prediction: null });
+      set({ codeValueStats: [], prediction: null, probabilityProfile: null, rateRecommendations: null });
       return;
     }
     const stats = buildCodeValueStats(analysis, toCodeMatchInputs(codes));
     const prediction = buildPrediction(analysis, stats);
-    set({ codeValueStats: stats, prediction });
+    const probabilityProfile = buildProbabilityProfile(analysis, stats);
+    const rateRecommendations = buildRateRecommendations(probabilityProfile);
+    set({ codeValueStats: stats, prediction, probabilityProfile, rateRecommendations });
   },
 
   syncAfterCodeRegistryChange: async () => {
@@ -219,17 +263,15 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
 
       const localCached = getCachedAnalysis(padded, rawValue);
       let result: AnalysisResult;
-      let codeValueStats: CodeValueStatRow[];
-      let prediction: PredictionResult | null;
+      let derived: ReturnType<typeof applyAnalysisDerived> | ReturnType<typeof applyPipelineDerived>;
       let fromCache = false;
       let usedWorker = false;
 
       if (localCached) {
         result = localCached;
         fromCache = true;
-        codeValueStats = buildCodeValueStats(result, toCodeMatchInputs(get().codes));
-        prediction = buildPrediction(result, codeValueStats);
-        set({ codeValueStats, prediction });
+        derived = applyAnalysisDerived(result, get().codes);
+        set(derived);
       } else if (preferWorker) {
         const local = await electronService.runAnalysisLocalAsync(
           { masterNo: padded },
@@ -238,25 +280,23 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
           { workerEnabled },
         );
         result = local.result;
-        codeValueStats = local.codeValueStats;
-        prediction = local.prediction;
+        derived = applyPipelineDerived(local);
         fromCache = local.fromCache;
         usedWorker = local.usedWorker ?? true;
         master = local.master ?? master;
         rememberAnalysisResult(padded, rawValue, result);
-        set({ codeValueStats, prediction });
+        set(derived);
       } else if (electronService.isAvailable()) {
         const op = await electronService.runAnalysis({ masterNo: padded });
         if (!op.success || !op.data) {
           throw new Error(formatAppErrors(op.errors, 'IPC_ANALYSIS_FAILED'));
         }
         result = op.data.result;
-        codeValueStats = op.data.codeValueStats;
-        prediction = op.data.prediction;
+        derived = applyPipelineDerived(op.data);
         fromCache = op.data.fromCache;
         master = op.data.master ?? master;
         rememberAnalysisResult(padded, rawValue, result);
-        set({ codeValueStats, prediction });
+        set(derived);
       } else {
         const local = await electronService.runAnalysisLocalAsync(
           { masterNo: padded },
@@ -265,13 +305,14 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
           { workerEnabled },
         );
         result = local.result;
-        codeValueStats = local.codeValueStats;
-        prediction = local.prediction;
+        derived = applyPipelineDerived(local);
         fromCache = local.fromCache;
         usedWorker = local.usedWorker ?? false;
         rememberAnalysisResult(padded, rawValue, result);
-        set({ codeValueStats, prediction });
+        set(derived);
       }
+
+      const { codeValueStats, prediction } = derived;
 
       if (get().debugLoggingEnabled) {
         if (!fromCache) {
@@ -378,6 +419,8 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
       currentAnalysisResult: null,
       codeValueStats: [],
       prediction: null,
+      probabilityProfile: null,
+      rateRecommendations: null,
       showRawData: false,
       showHistory: false,
       statusMessage: translate('analysis.status.reset'),

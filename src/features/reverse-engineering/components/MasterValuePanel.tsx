@@ -1,4 +1,5 @@
 import { useI18n } from '@/i18n/use-i18n';
+import { MasterValueTextarea } from '@/components/ui/MasterValueTextarea';
 import { useReverseEngineeringStore } from '../stores/re-store';
 
 export function MasterValuePanel() {
@@ -10,15 +11,8 @@ export function MasterValuePanel() {
     <div className="flex h-full flex-col">
       <div className="win-panel-header">{t('re.masterValue.title', { no: selectedMasterNo })}</div>
       <div className="flex min-h-0 flex-1 flex-col p-2">
-        <textarea
-          readOnly
-          value={masterValue}
-          className="win-textarea-master h-full w-full flex-1"
-          wrap="off"
-          spellCheck={false}
-          placeholder={t('re.masterValue.placeholder')}
-        />
-        <div className="mt-1 text-xs text-content-muted">
+        <MasterValueTextarea readOnly value={masterValue} placeholder={t('re.masterValue.placeholder')} />
+        <div className="mt-1 text-sm text-content-muted">
           {t('re.masterValue.footer', {
             length: masterValue.replace(/\s/g, '').length,
           })}

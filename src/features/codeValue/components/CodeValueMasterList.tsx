@@ -52,7 +52,7 @@ export function CodeValueMasterList() {
       <div className="win-panel-header shrink-0">{t('codeValue.grid.master')}</div>
       <div className="relative min-h-0 flex-1 overflow-hidden">
         {loading ? (
-          <div className="absolute z-10 bg-black/5 px-1 text-[10px] text-content-muted">
+          <div className="absolute z-10 bg-black/5 px-2 text-sm text-content-muted">
             {t('codeValue.grid.analyzing')}
           </div>
         ) : null}

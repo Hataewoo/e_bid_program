@@ -100,8 +100,8 @@ export function AnalysisGrid() {
               onGridReady={onGridReady}
               rowSelection={{ mode: 'singleRow', enableClickSelection: true }}
               suppressCellFocus={true}
-              headerHeight={28}
-              rowHeight={26}
+              headerHeight={32}
+              rowHeight={30}
               {...AG_GRID_PERF_DEFAULTS}
             />
           </div>

@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+  --font-scale: 1;
   --color-surface: #f8fafc;
   --color-surface-elevated: #ffffff;
   --color-surface-muted: #f1f5f9;
@@ -44,6 +45,10 @@
       system-ui,
       -apple-system,
       sans-serif;
+  }
+
+  html {
+    font-size: calc(16px * var(--font-scale));
   }
 
   #root {
@@ -99,7 +104,7 @@
   }
 
   .win-panel-header {
-    @apply border-b border-border px-3 py-1 text-xs font-semibold text-content;
+    @apply border-b border-border px-3 py-1.5 text-sm font-semibold text-content;
     background: var(--color-surface-muted);
   }
 
@@ -109,13 +114,13 @@
   }
 
   .win-statusbar {
-    @apply h-7 shrink-0 border-t border-[#404040] text-xs leading-7;
+    @apply h-8 shrink-0 border-t border-[#404040] text-sm leading-8;
     color: #000000;
     background: #ece9d8;
   }
 
   .win-button {
-    @apply border border-border px-3 py-0.5 text-xs text-content;
+    @apply border border-border px-3 py-1 text-sm text-content;
     background: linear-gradient(
       to bottom,
       var(--color-surface-elevated),
@@ -166,7 +171,7 @@
   }
 
   .win-splitter-horizontal {
-    @apply h-1.5 w-full cursor-row-resize;
+    @apply h-2 w-full shrink-0 cursor-row-resize;
     background: #808080;
     flex-shrink: 0;
   }
@@ -176,7 +181,7 @@
   }
 
   .win-label {
-    @apply text-xs font-medium text-content;
+    @apply text-sm font-medium text-content;
   }
 
   .win-combobox {
@@ -186,8 +191,13 @@
   }
 
   .win-input {
-    @apply border border-border px-2 py-1 text-sm text-content;
+    @apply border border-border px-2 py-1.5 text-base text-content;
     background: var(--color-surface-elevated);
+  }
+
+  .win-input-code {
+    @apply font-mono text-base;
+    letter-spacing: 0.03em;
   }
 
   .win-textarea-master {
@@ -198,6 +208,17 @@
     white-space: pre;
     overflow: auto;
     line-height: 1.4;
+  }
+
+  .win-textarea-master-readable {
+    font-size: calc(20px * var(--font-scale));
+    line-height: 1.4;
+    letter-spacing: 0;
+    padding: 8px 10px;
+  }
+
+  .win-textarea-master-readable::placeholder {
+    font-size: calc(16px * var(--font-scale));
   }
 
   .win-textarea-master::selection {
@@ -214,9 +235,9 @@
     --ag-border-color: var(--color-border);
     --ag-foreground-color: var(--color-content);
     --ag-header-foreground-color: var(--color-content);
-    --ag-font-size: 12px;
-    --ag-row-height: 26px;
-    --ag-header-height: 28px;
+    --ag-font-size: calc(14px * var(--font-scale));
+    --ag-row-height: 30px;
+    --ag-header-height: 32px;
   }
 
   .master-grid-row-selected {
@@ -277,7 +298,7 @@
   }
 
   .win-step-tab {
-    @apply border-r border-[#404040] px-2 py-1 text-[11px];
+    @apply border-r border-[#404040] px-3 py-1.5 text-sm;
     color: #000000;
     background: linear-gradient(to bottom, #f6f4ec, #ece9d8);
     min-width: 0;
@@ -349,6 +370,9 @@
     --ag-background-color: #ffffff;
     --ag-odd-row-background-color: #ffffff;
     --ag-border-color: #404040;
+    --ag-font-size: calc(14px * var(--font-scale));
+    --ag-row-height: 30px;
+    --ag-header-height: 32px;
   }
 
   .ag-theme-quartz.win-ag-grid-classic .ag-cell {
@@ -383,16 +407,16 @@
   .win-pattern-values-table {
     @apply w-full border-collapse;
     font-family: 'MS Sans Serif', 'Segoe UI', Tahoma, sans-serif;
-    font-size: 11px;
-    letter-spacing: -0.02em;
-    line-height: 1.15;
+    font-size: calc(14px * var(--font-scale));
+    letter-spacing: 0;
+    line-height: 1.35;
   }
 
   .win-pattern-values-table th,
   .win-pattern-values-table td {
     border: 1px solid #404040;
-    padding: 0 2px;
-    height: 16px;
+    padding: 2px 6px;
+    height: 24px;
     vertical-align: middle;
   }
 
@@ -413,12 +437,12 @@
   }
 
   .win-pattern-stats-line {
-    @apply shrink-0 px-1 font-mono;
+    @apply shrink-0 px-2 font-mono;
     border-top: 1px solid #404040;
     background: #fffff0;
-    font-size: 11px;
-    line-height: 16px;
-    letter-spacing: -0.02em;
+    font-size: calc(14px * var(--font-scale));
+    line-height: 24px;
+    letter-spacing: 0;
   }
 
   .win-point-values-shell {
@@ -429,18 +453,18 @@
   .win-point-values-header {
     border-bottom: 1px solid #404040;
     background: #ece9d8;
-    padding: 0 4px;
-    min-height: 18px;
-    font-size: 11px;
-    letter-spacing: -0.02em;
+    padding: 2px 8px;
+    min-height: 28px;
+    font-size: calc(14px * var(--font-scale));
+    letter-spacing: 0;
   }
 
   .win-link-value {
     @apply cursor-pointer border-0 bg-transparent p-0 text-[#0000ff] underline;
     font-family: 'Courier New', Consolas, monospace;
-    font-size: 11px;
+    font-size: calc(14px * var(--font-scale));
     letter-spacing: 0;
-    line-height: 1.15;
+    line-height: 1.35;
   }
 
   .win-link-value:hover {
@@ -448,7 +472,7 @@
   }
 
   .win-link-popup {
-    @apply cursor-pointer border-0 bg-transparent p-0 text-[#ff0000] underline;
+    @apply cursor-pointer border-0 bg-transparent p-0 text-sm text-[#ff0000] underline;
   }
 
   .win-link-popup:hover {
@@ -463,14 +487,14 @@
   .win-analysis-status-db {
     @apply truncate;
     max-width: 42vw;
-    font-size: 11px;
-    letter-spacing: -0.02em;
+    font-size: calc(13px * var(--font-scale));
+    letter-spacing: 0;
   }
 
   .win-code-value-panel .ag-theme-quartz {
-    --ag-font-size: 11px;
-    --ag-row-height: 16px;
-    --ag-header-height: 18px;
+    --ag-font-size: calc(14px * var(--font-scale));
+    --ag-row-height: 26px;
+    --ag-header-height: 30px;
     --ag-border-color: #404040;
     --ag-header-background-color: #ece9d8;
     --ag-background-color: #ffffff;

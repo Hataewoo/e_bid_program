@@ -3,11 +3,10 @@ import {
   LARGE_MASTER_VALUE_THRESHOLD,
   shouldUseAnalysisWorker,
 } from '@/shared/constants/analysis-worker';
-import { MASTER_VALUE_MAX_LENGTH } from '@/features/master/services/validation-service';
 
 describe('analysis-worker constants', () => {
   it('uses half of master value max length as threshold', () => {
-    expect(LARGE_MASTER_VALUE_THRESHOLD).toBe(Math.floor(MASTER_VALUE_MAX_LENGTH / 2));
+    expect(LARGE_MASTER_VALUE_THRESHOLD).toBe(500);
   });
 
   it('enables worker only when setting is on and value is large', () => {

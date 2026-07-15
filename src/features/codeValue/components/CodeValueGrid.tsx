@@ -102,8 +102,8 @@ export function CodeValueGrid() {
               onGridReady={onGridReady}
               rowSelection={{ mode: 'singleRow', enableClickSelection: true }}
               suppressCellFocus={true}
-              headerHeight={28}
-              rowHeight={26}
+              headerHeight={32}
+              rowHeight={30}
               getRowId={numericIdRowId}
               defaultColDef={{ resizable: true }}
               {...AG_GRID_PERF_DEFAULTS}

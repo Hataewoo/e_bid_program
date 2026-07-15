@@ -1,8 +1,12 @@
 import { memo, useMemo, useState } from 'react';
 import { useI18n } from '@/i18n/use-i18n';
+import { MasterValueTextarea } from '@/components/ui/MasterValueTextarea';
+import { useObservedWidth } from '@/shared/hooks/useObservedWidth';
+import {
+  buildDigitDisplayLines,
+  DIGIT_DISPLAY_FONT_PX,
+} from '@/shared/utils/digitDisplayLayout';
 import { MASTER_VALUE_DISPLAY_CAP } from '../utils/analysis-display';
-
-const CHUNK_SIZE = 80;
 
 interface HighlightedMasterValueProps {
   digits: string;
@@ -15,6 +19,7 @@ export const HighlightedMasterValue = memo(function HighlightedMasterValue({
 }: HighlightedMasterValueProps) {
   const { t } = useI18n();
   const [showFull, setShowFull] = useState(false);
+  const { ref: containerRef, width } = useObservedWidth<HTMLDivElement>();
 
   const displayDigits = useMemo(() => {
     if (showFull || digits.length <= MASTER_VALUE_DISPLAY_CAP) return digits;
@@ -23,20 +28,14 @@ export const HighlightedMasterValue = memo(function HighlightedMasterValue({
 
   const truncated = !showFull && digits.length > MASTER_VALUE_DISPLAY_CAP;
 
-  const lines = useMemo(() => {
-    const rows: { offset: number; chars: string[] }[] = [];
-    for (let i = 0; i < displayDigits.length; i += CHUNK_SIZE) {
-      rows.push({
-        offset: i,
-        chars: displayDigits.slice(i, i + CHUNK_SIZE).split(''),
-      });
-    }
-    return rows;
-  }, [displayDigits]);
+  const lines = useMemo(
+    () => buildDigitDisplayLines(displayDigits, width, DIGIT_DISPLAY_FONT_PX),
+    [displayDigits, width],
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 justify-between border-b border-border bg-[#fffff0] px-2 py-0.5 text-[10px]">
+      <div className="flex shrink-0 justify-between border-b border-border bg-[#fffff0] px-2 py-0.5 text-xs">
         <span className="text-[#000080]">
           {t('analysis.highlight.title', { count: highlightIndices.size })}
         </span>
@@ -46,11 +45,14 @@ export const HighlightedMasterValue = memo(function HighlightedMasterValue({
           </button>
         ) : null}
       </div>
-      <div className="win-textarea-master min-h-0 flex-1 overflow-auto bg-white p-1 font-mono text-[11px] leading-relaxed text-black">
+      <div
+        ref={containerRef}
+        className="win-textarea-master win-textarea-master-readable min-h-0 flex-1 overflow-auto bg-white text-black"
+      >
         {lines.map((line) => (
-          <div key={line.offset} className="whitespace-pre">
-            {line.chars.map((ch, i) => {
-              const idx = line.offset + i;
+          <div key={line.startIndex} className="whitespace-pre">
+            {line.text.split('').map((ch, i) => {
+              const idx = line.startIndex + i;
               return (
                 <span
                   key={idx}
@@ -67,7 +69,7 @@ export const HighlightedMasterValue = memo(function HighlightedMasterValue({
           </div>
         ))}
         {truncated ? (
-          <div className="mt-1 text-[10px] text-content-muted">
+          <div className="mt-1 text-sm text-content-muted">
             {t('analysis.highlight.totalChars', { count: digits.length.toLocaleString() })}
           </div>
         ) : null}
@@ -89,23 +91,13 @@ export const MasterValuePanel = memo(function MasterValuePanel({
   const [showFull, setShowFull] = useState(false);
   const hasHighlight = highlightIndices.size > 0;
 
-  const plainText = useMemo(() => {
-    const source =
-      showFull || digits.length <= MASTER_VALUE_DISPLAY_CAP
-        ? digits
-        : digits.slice(0, MASTER_VALUE_DISPLAY_CAP);
-    const lines: string[] = [];
-    for (let i = 0; i < source.length; i += CHUNK_SIZE) {
-      lines.push(source.slice(i, i + CHUNK_SIZE));
-    }
-    const truncated = !showFull && digits.length > MASTER_VALUE_DISPLAY_CAP;
-    const text = lines.join('\n');
-    return truncated
-      ? `${text}\n${t('analysis.highlight.totalCharsHint', { count: digits.length.toLocaleString() })}`
-      : text;
-  }, [digits, showFull, t]);
+  const displayDigits = useMemo(() => {
+    if (showFull || digits.length <= MASTER_VALUE_DISPLAY_CAP) return digits;
+    return digits.slice(0, MASTER_VALUE_DISPLAY_CAP);
+  }, [digits, showFull]);
 
   const showExpand = digits.length > MASTER_VALUE_DISPLAY_CAP;
+  const truncated = !showFull && digits.length > MASTER_VALUE_DISPLAY_CAP;
 
   if (hasHighlight) {
     return <HighlightedMasterValue digits={digits} highlightIndices={highlightIndices} />;
@@ -115,21 +107,17 @@ export const MasterValuePanel = memo(function MasterValuePanel({
     <div className="flex min-h-0 flex-1 flex-col">
       {showExpand ? (
         <div className="flex shrink-0 justify-end border-b border-border bg-[#fffff0] px-2 py-0.5">
-          <button
-            type="button"
-            className="win-link-popup text-[10px]"
-            onClick={() => setShowFull((v) => !v)}
-          >
+          <button type="button" className="win-link-popup text-xs" onClick={() => setShowFull((v) => !v)}>
             {showFull ? t('analysis.highlight.showTruncated') : t('analysis.highlight.showFull')}
           </button>
         </div>
       ) : null}
-      <textarea
-        readOnly
-        className="win-textarea-master min-h-0 flex-1 resize-none border-0 text-[11px]"
-        value={plainText}
-        spellCheck={false}
-      />
+      <MasterValueTextarea readOnly value={displayDigits} />
+      {truncated ? (
+        <div className="shrink-0 px-2 py-0.5 text-sm text-content-muted">
+          {t('analysis.highlight.totalCharsHint', { count: digits.length.toLocaleString() })}
+        </div>
+      ) : null}
     </div>
   );
 });

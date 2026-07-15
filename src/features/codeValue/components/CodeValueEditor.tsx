@@ -1,4 +1,5 @@
 import { Controller } from 'react-hook-form';
+import { MasterValueTextarea } from '@/components/ui/MasterValueTextarea';
 import { useI18n } from '@/i18n/use-i18n';
 import type { CodeValueController } from '../hooks/use-code-value-controller';
 
@@ -45,13 +46,14 @@ export function CodeValueEditor({ controller }: CodeValueEditorProps) {
             name="value"
             control={form.control}
             render={({ field }) => (
-              <textarea
-                {...field}
+              <MasterValueTextarea
                 id="cv-value"
-                className="win-textarea-master min-h-[100px] w-full font-mono"
-                onChange={(e) => {
-                  field.onChange(e);
-                  updateForm({ value: e.target.value });
+                className="min-h-[100px]"
+                value={field.value ?? ''}
+                normalizeValue={(raw) => raw.replace(/\s/g, '')}
+                onChange={(normalized) => {
+                  field.onChange(normalized);
+                  updateForm({ value: normalized });
                 }}
               />
             )}

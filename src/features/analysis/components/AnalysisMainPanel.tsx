@@ -8,7 +8,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { AnalysisResult } from '@/shared/utils/analysisEngine';
 import { resolvePatternHighlightIndices } from '@/shared/utils/analysisEngine';
 import {
@@ -37,7 +37,7 @@ const IbInformationBox = memo(function IbInformationBox({ result }: { result: An
   const { t } = useI18n();
 
   return (
-    <div className="flex gap-2 border border-[#404040] bg-[#ffffe0] p-2 text-xs text-black">
+    <div className="flex gap-2 border border-[#404040] bg-[#ffffe0] p-2 text-sm text-black">
       <div className="flex-1 space-y-0.5">
         <div>
           <span className="font-semibold">{t('analysis.ib.masterNo')} </span>
@@ -62,6 +62,13 @@ const IbInformationBox = memo(function IbInformationBox({ result }: { result: An
     </div>
   );
 });
+
+const PANEL_HEIGHT: Record<AnalysisPanelId, string> = {
+  masterValue: 'h-[480px]',
+  lowPoint: 'h-[560px]',
+  ibInfo: 'h-[160px]',
+  highPoint: 'h-[560px]',
+};
 
 const PANEL_TITLE_KEYS: Record<AnalysisPanelId, MessageKey> = {
   masterValue: 'analysis.panel.masterValue',
@@ -168,17 +175,19 @@ export const AnalysisMainPanel = memo(function AnalysisMainPanel({
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex w-full flex-col">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={panelOrder} strategy={rectSortingStrategy}>
-          <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-2 gap-px bg-[#404040] p-px">
+        <SortableContext items={panelOrder} strategy={verticalListSortingStrategy}>
+          <div className="flex w-full flex-col gap-px bg-[#404040] p-px">
             {panelOrder.map((panelId) => (
               <SortableDockPanel
                 key={panelId}
                 id={panelId}
                 title={renderPanelTitle(panelId)}
                 isFocused={focusedPanelId === panelId}
-                className={panelId === 'lowPoint' || panelId === 'highPoint' ? 'p-0' : ''}
+                className={`shrink-0 ${PANEL_HEIGHT[panelId]} ${
+                  panelId === 'lowPoint' || panelId === 'highPoint' ? 'p-0' : ''
+                }`}
               >
                 {renderPanelContent(panelId)}
               </SortableDockPanel>

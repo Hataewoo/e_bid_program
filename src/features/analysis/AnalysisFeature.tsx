@@ -22,7 +22,9 @@ export function AnalysisFeature() {
     <div className="win-window relative flex h-full flex-col">
       <div className="win-titlebar">{t('analysis.title')}</div>
       <AnalysisToolbar onOpenBatch={() => setBatchOpen(true)} />
-      <AnalysisMain />
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <AnalysisMain />
+      </div>
       <AnalysisHistoryPanel visible={showHistory} onClose={toggleHistory} />
       <AnalysisStatusBar />
       <RawDataPanel result={currentAnalysisResult} visible={showRawData} onClose={toggleRawData} />

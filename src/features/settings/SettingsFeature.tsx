@@ -8,8 +8,9 @@ import { useI18n } from '@/i18n/use-i18n';
 import { useWorkspaceLayoutStore } from '@/stores/workspace-layout-store';
 import { useDatabaseBackupRestore } from './hooks/use-database-backup-restore';
 import { useAppUpdate } from './hooks/use-app-update';
+import { FontScaleSettings } from './components/FontScaleSettings';
 import { electronService } from '@/services';
-import { getAlgorithmVerificationStatus } from '@/shared/utils/algorithmVerificationStatus';
+import { getAlgorithmVerificationStatus, shouldShowLegacyUnverifiedUi } from '@/shared/utils/algorithmVerificationStatus';
 import { LARGE_MASTER_VALUE_THRESHOLD } from '@/shared/constants/analysis-worker';
 import { formatAppErrors } from '@/i18n/format-app-errors';
 
@@ -219,10 +220,15 @@ export function SettingsFeature() {
                 <span className="text-sm text-status-success">{savedMessage}</span>
               ) : null}
             </div>
-            <p className="text-xs text-content-muted">{t('settings.prediction.disclaimer')}</p>
+            {shouldShowLegacyUnverifiedUi() ? (
+              <p className="text-xs text-content-muted">{t('settings.prediction.disclaimer')}</p>
+            ) : null}
           </form>
         </div>
 
+        <FontScaleSettings />
+
+        {shouldShowLegacyUnverifiedUi() ? (
         <div className="card">
           <h3 className="mb-4 text-sm font-semibold text-content">
             {t('settings.algorithm.title')}
@@ -248,6 +254,7 @@ export function SettingsFeature() {
             </div>
           </dl>
         </div>
+        ) : null}
 
         <div className="card">
           <h3 className="mb-4 text-sm font-semibold text-content">{t('settings.db.title')}</h3>

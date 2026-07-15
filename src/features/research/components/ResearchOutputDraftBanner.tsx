@@ -1,5 +1,6 @@
 import { UnverifiedAlgorithmBanner } from '@/components/ui/UnverifiedAlgorithmBanner';
 import { useI18n } from '@/i18n/use-i18n';
+import { shouldShowLegacyUnverifiedUi } from '@/shared/utils/algorithmVerificationStatus';
 import { RESEARCH_OUTPUT_FILL_POLICY } from '../constants/outputFillPolicy';
 
 interface ResearchOutputDraftBannerProps {
@@ -18,7 +19,7 @@ export function ResearchOutputDraftBanner({ className = '' }: ResearchOutputDraf
       className={className}
       title={t('research.outputPolicy.bannerTitle')}
       message={t('research.outputPolicy.bannerMessage')}
-      detail={t('research.outputPolicy.bannerDetail')}
+      detail={shouldShowLegacyUnverifiedUi() ? t('research.outputPolicy.bannerDetail') : undefined}
       variant="info"
     />
   );

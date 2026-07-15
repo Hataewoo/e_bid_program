@@ -67,8 +67,8 @@ export function ResizableSplitter({
   }, [handleMouseDown, handleMouseMove, handleMouseUp]);
 
   return (
-    <div ref={containerRef} className="win-split-container flex min-h-0 flex-1">
-      <div className="win-panel shrink-0 overflow-hidden" style={{ width: leftWidth }}>
+    <div ref={containerRef} className="win-split-container flex w-full min-h-0 flex-1 self-stretch">
+      <div className="win-panel flex min-h-0 shrink-0 flex-col overflow-hidden" style={{ width: leftWidth }}>
         {left}
       </div>
       <div
@@ -78,7 +78,7 @@ export function ResizableSplitter({
         aria-orientation="vertical"
         title={t('layout.resize')}
       />
-      <div className="win-panel min-w-0 flex-1 overflow-hidden">{right}</div>
+      <div className="win-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{right}</div>
     </div>
   );
 }

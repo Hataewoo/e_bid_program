@@ -11,8 +11,8 @@ interface InfoCardProps {
 function InfoCard({ label, value }: InfoCardProps) {
   return (
     <div className="rounded border border-border bg-surface-elevated p-3">
-      <div className="text-xs text-content-muted">{label}</div>
-      <div className="mt-1 text-sm font-semibold">{value}</div>
+      <div className="text-sm text-content-muted">{label}</div>
+      <div className="mt-1 text-base font-semibold">{value}</div>
     </div>
   );
 }

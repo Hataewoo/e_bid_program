@@ -1,3 +1,4 @@
+import { MasterValueTextarea } from '@/components/ui/MasterValueTextarea';
 import { useMasterStore } from '../stores/master-store';
 import { formatAppErrors } from '@/i18n/format-app-errors';
 import { useI18n } from '@/i18n/use-i18n';
@@ -27,15 +28,12 @@ export function MasterInputPanel() {
         <label htmlFor="masterValue" className="win-label mb-1">
           {t('master.label.valueDot')}
         </label>
-        <textarea
+        <MasterValueTextarea
           id="masterValue"
-          className="win-textarea-master min-h-0 flex-1"
-          wrap="off"
-          spellCheck={false}
           value={formValues.masterValue}
-          onChange={(e) => setFormValues({ masterValue: e.target.value })}
+          onChange={(normalized) => setFormValues({ masterValue: normalized })}
         />
-        <div className="mt-0.5 text-right text-[11px] text-content-muted">
+        <div className="mt-0.5 text-right text-sm text-content-muted">
           {t('master.digitCount', { current: valueLength, max: MASTER_VALUE_MAX_LENGTH })}
         </div>
       </div>

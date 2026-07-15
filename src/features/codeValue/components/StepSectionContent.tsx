@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
+import { ResizableVerticalSplitter } from '@/components/layout/ResizableVerticalSplitter';
+import { MasterValueTextarea } from '@/components/ui/MasterValueTextarea';
 import { CodeValueStatsGrid } from '@/features/analysis/components/CodeValueStatsGrid';
 import { PatternValuesTable } from '@/features/analysis/components/PatternValuesTable';
 import { HIGH_PATTERN_ROWS, LOW_PATTERN_ROWS } from '@/features/analysis/types/pattern-rows';
-import { chunkDigits, filterDigitsByClass } from '@/features/analysis/utils/analysis-display';
+import { filterDigitsByClass } from '@/features/analysis/utils/analysis-display';
 import { useI18n } from '@/i18n/use-i18n';
 import type { MessageKey } from '@/i18n/messages';
 import { type CodeValueStepId, useWorkspaceLayoutStore } from '@/stores/workspace-layout-store';
@@ -25,19 +27,19 @@ export function StepSectionContent() {
   const displayResult = result ?? null;
 
   const lowText = useMemo(
-    () => (displayResult ? chunkDigits(filterDigitsByClass(displayResult.digits, 'low'), 60) : ''),
+    () => (displayResult ? filterDigitsByClass(displayResult.digits, 'low') : ''),
     [displayResult],
   );
 
   const highText = useMemo(
-    () => (displayResult ? chunkDigits(filterDigitsByClass(displayResult.digits, 'high'), 60) : ''),
+    () => (displayResult ? filterDigitsByClass(displayResult.digits, 'high') : ''),
     [displayResult],
   );
 
   const renderStepBody = (step: CodeValueStepId) => {
     if (!displayResult || displayResult.totalCount === 0) {
       return (
-        <div className="flex flex-1 items-center justify-center p-6 text-sm text-content-muted">
+        <div className="flex h-full flex-1 items-center justify-center p-6 text-sm text-content-muted">
           {t('codeValue.analysis.noData', { no: selectedMasterNo })}
         </div>
       );
@@ -46,8 +48,8 @@ export function StepSectionContent() {
     switch (step) {
       case '1':
         return (
-          <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
-            <div className="win-panel shrink-0 border border-[#404040] bg-[#ffffe0] p-2 text-xs text-black">
+          <div className="flex h-full min-h-0 flex-1 flex-col gap-2 p-2">
+            <div className="win-panel shrink-0 border border-[#404040] bg-[#ffffe0] p-2 text-sm text-black">
               <div>
                 <span className="font-semibold">{t('codeValue.analysis.masterNo')} </span>
                 {displayResult.masterNo}
@@ -57,26 +59,30 @@ export function StepSectionContent() {
                 {t('codeValue.analysis.unitCount', { count: displayResult.totalCount })}
               </div>
             </div>
-            <textarea
-              readOnly
-              className="win-textarea-master min-h-[80px] shrink-0 resize-none border border-[#404040] text-[11px]"
-              value={displayResult.digits}
-              spellCheck={false}
+            <ResizableVerticalSplitter
+              storageKey="codevalue-step1-vertical"
+              defaultTopPercent={72}
+              minTopPercent={20}
+              minBottomPercent={12}
+              top={
+                <MasterValueTextarea
+                  readOnly
+                  value={displayResult.digits}
+                  className="h-full min-h-0"
+                />
+              }
+              bottom={
+                <div className="flex h-full min-h-0 flex-col">
+                  <CodeValueStatsGrid rows={codeValueStats} loading={loading} />
+                </div>
+              }
             />
-            <div className="min-h-0 flex-1">
-              <CodeValueStatsGrid rows={codeValueStats} loading={loading} />
-            </div>
           </div>
         );
       case '2':
         return (
-          <div className="flex min-h-0 flex-1 flex-col">
-            <textarea
-              readOnly
-              className="win-textarea-master min-h-[100px] shrink-0 resize-none border-0 text-[11px]"
-              value={lowText}
-              spellCheck={false}
-            />
+          <div className="flex h-full min-h-0 flex-1 flex-col">
+            <MasterValueTextarea readOnly value={lowText} className="min-h-0 flex-1" />
             <div className="win-pattern-stats-line shrink-0">
               {t('analysis.pattern.statsLine', {
                 side: 'Low',
@@ -99,13 +105,8 @@ export function StepSectionContent() {
         );
       case '3':
         return (
-          <div className="flex min-h-0 flex-1 flex-col">
-            <textarea
-              readOnly
-              className="win-textarea-master min-h-[100px] shrink-0 resize-none border-0 text-[11px]"
-              value={highText}
-              spellCheck={false}
-            />
+          <div className="flex h-full min-h-0 flex-1 flex-col">
+            <MasterValueTextarea readOnly value={highText} className="min-h-0 flex-1" />
             <div className="win-pattern-stats-line shrink-0">
               {t('analysis.pattern.statsLine', {
                 side: 'High',
@@ -132,10 +133,10 @@ export function StepSectionContent() {
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-[#f0f0f0] p-3">
-      <div className="win-panel flex min-h-0 flex-1 flex-col border border-border">
-        <div className="win-panel-header">{t(CODE_VALUE_STEP_LABEL_KEYS[activeStep])}</div>
-        {renderStepBody(activeStep)}
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f0f0f0] p-2">
+      <div className="win-panel flex h-full min-h-0 flex-1 flex-col overflow-hidden border border-border">
+        <div className="win-panel-header shrink-0">{t(CODE_VALUE_STEP_LABEL_KEYS[activeStep])}</div>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{renderStepBody(activeStep)}</div>
       </div>
     </div>
   );

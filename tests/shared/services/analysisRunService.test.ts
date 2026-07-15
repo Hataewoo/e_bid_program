@@ -20,5 +20,8 @@ describe('analysisRunService', () => {
     expect(output.researchFields.step3).toBe('56789');
     expect(output.codeValueStats.length).toBeGreaterThan(0);
     expect(output.prediction.value).toBeTruthy();
+    expect(output.probabilityProfile.totalDigits).toBe(10);
+    expect(output.rateRecommendations.recommendations.length).toBeGreaterThan(0);
+    expect(output.rateRecommendations.recommendations[0]?.rate).toMatch(/^\d{2,3}\.\d{4}$/);
   });
 });

@@ -7,6 +7,8 @@ import {
 } from '@/shared/utils/analysisCache';
 import { buildCodeValueStats, type CodeMatchInput } from '@/shared/utils/analysisEngine';
 import { buildPrediction } from '@/shared/utils/predictionEngine';
+import { buildProbabilityProfile } from '@/shared/utils/probabilityEngine';
+import { buildRateRecommendations } from '@/shared/utils/rateRecommendEngine';
 import { buildResearchOutputFields } from '@/shared/utils/batchAnalysis';
 import { shouldUseAnalysisWorker } from '@/shared/constants/analysis-worker';
 
@@ -44,12 +46,16 @@ export function runAnalysisPipeline(context: RunAnalysisContext): AnalysisRunOut
 
   const codeValueStats = buildCodeValueStats(result, toCodeMatchInputs(codes));
   const prediction = buildPrediction(result, codeValueStats);
+  const probabilityProfile = buildProbabilityProfile(result, codeValueStats);
+  const rateRecommendations = buildRateRecommendations(probabilityProfile);
   const researchFields = buildResearchOutputFields(result, codes);
 
   return {
     result,
     codeValueStats,
     prediction,
+    probabilityProfile,
+    rateRecommendations,
     researchFields: {
       step2: researchFields.step2,
       step3: researchFields.step3,
@@ -82,12 +88,16 @@ export async function runAnalysisPipelineAsync(
 
   const codeValueStats = buildCodeValueStats(result, toCodeMatchInputs(codes));
   const prediction = buildPrediction(result, codeValueStats);
+  const probabilityProfile = buildProbabilityProfile(result, codeValueStats);
+  const rateRecommendations = buildRateRecommendations(probabilityProfile);
   const researchFields = buildResearchOutputFields(result, codes);
 
   return {
     result,
     codeValueStats,
     prediction,
+    probabilityProfile,
+    rateRecommendations,
     researchFields: {
       step2: researchFields.step2,
       step3: researchFields.step3,

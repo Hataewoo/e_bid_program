@@ -1,5 +1,6 @@
 import { memo, useMemo } from 'react';
 import type { AnalysisResult } from '@/shared/utils/analysisEngine';
+import { MasterValueTextarea } from '@/components/ui/MasterValueTextarea';
 import { useI18n } from '@/i18n/use-i18n';
 import {
   HIGH_PATTERN_ROWS,
@@ -7,7 +8,7 @@ import {
   type PatternHighlightState,
   type PatternModalState,
 } from '../types/pattern-rows';
-import { chunkDigits, filterDigitsByClass } from '../utils/analysis-display';
+import { filterDigitsByClass } from '../utils/analysis-display';
 import { PatternValuesTable } from './PatternValuesTable';
 
 interface PointValuesPanelProps {
@@ -34,7 +35,7 @@ export const PointValuesPanel = memo(function PointValuesPanel({
   const title = isLow ? t('analysis.panel.lowPoint') : t('analysis.panel.highPoint');
 
   const rawText = useMemo(
-    () => chunkDigits(filterDigitsByClass(result.digits, side), 60),
+    () => filterDigitsByClass(result.digits, side),
     [result.digits, side],
   );
 
@@ -60,16 +61,11 @@ export const PointValuesPanel = memo(function PointValuesPanel({
         </button>
       </div>
 
-      <textarea
-        readOnly
-        className="win-textarea-master min-h-0 flex-1 resize-none border-0 text-[11px]"
-        value={rawText}
-        spellCheck={false}
-      />
+      <MasterValueTextarea readOnly value={rawText} />
 
       <div className="win-pattern-stats-line">{statsLine}</div>
 
-      <div className="win-pattern-values-panel max-h-[132px] shrink-0 overflow-auto p-0">
+      <div className="win-pattern-values-panel min-h-[200px] flex-1 overflow-auto p-0">
         <PatternValuesTable
           side={side}
           rows={rows}

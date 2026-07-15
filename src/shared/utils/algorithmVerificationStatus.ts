@@ -8,6 +8,13 @@ import {
 
 export type AlgorithmVerificationState = 'verified' | 'unverified' | 'partial';
 
+/** When false, hide legacy-unverified banners, inline labels, and settings status. */
+export const SHOW_LEGACY_UNVERIFIED_UI = false;
+
+export function shouldShowLegacyUnverifiedUi(): boolean {
+  return SHOW_LEGACY_UNVERIFIED_UI;
+}
+
 export interface AlgorithmVerificationStatus {
   codeValue: AlgorithmVerificationState;
   prediction: AlgorithmVerificationState;

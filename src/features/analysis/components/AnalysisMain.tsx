@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createEmptyAnalysisResult } from '@/shared/utils/analysisEngine';
 import { ResizableSplitter } from '@/components/layout/ResizableSplitter';
-import { ResizableVerticalSplitter } from '@/components/layout/ResizableVerticalSplitter';
 import { SortableTabBar } from '@/components/layout/SortableTabBar';
 import { WorkspaceLayoutToolbar } from '@/components/layout/WorkspaceLayoutToolbar';
 import {
@@ -14,6 +13,7 @@ import type { PatternHighlightState, PatternModalState } from '../types/pattern-
 import { useI18n } from '@/i18n/use-i18n';
 import type { MessageKey } from '@/i18n/messages';
 import { AnalysisPredictionPanel } from './AnalysisPredictionPanel';
+import { AnalysisRateRecommendPanel } from './AnalysisRateRecommendPanel';
 import { AnalysisDebugConsole } from './AnalysisDebugConsole';
 import { AnalysisMasterList } from './AnalysisMasterList';
 import { AnalysisMainPanel } from './AnalysisMainPanel';
@@ -31,7 +31,8 @@ export function AnalysisMain() {
   const selectedMasterNo = useAnalysisStore((s) => s.selectedMasterNo);
   const analyzing = useAnalysisStore((s) => s.analyzing);
   const codeValueStats = useAnalysisStore((s) => s.codeValueStats);
-  const prediction = useAnalysisStore((s) => s.prediction);
+  const probabilityProfile = useAnalysisStore((s) => s.probabilityProfile);
+  const rateRecommendations = useAnalysisStore((s) => s.rateRecommendations);
   const codesLoading = useAnalysisStore((s) => s.codesLoading);
 
   const stepOrder = useWorkspaceLayoutStore((s) => s.analysisStepOrder);
@@ -134,7 +135,7 @@ export function AnalysisMain() {
   );
 
   const workspacePanel = (
-    <div className="relative h-full min-h-0 min-w-0">
+    <div className="relative flex w-full min-w-0 flex-col">
       <AnalysisLoadingOverlay visible={analyzing} />
       <AnalysisMainPanel
         result={displayResult}
@@ -167,21 +168,25 @@ export function AnalysisMain() {
     </div>
   );
 
-  const mainContent = showMasterList ? (
-    <ResizableSplitter
-      storageKey="analysis-layout-master-width"
-      defaultLeftWidth={96}
-      minLeftWidth={72}
-      minRightWidth={320}
-      left={<AnalysisMasterList />}
-      right={workspacePanel}
-    />
-  ) : (
-    workspacePanel
+  const workspaceSection = (
+    <section className="w-full shrink-0 bg-[#808080]">
+      {showMasterList ? (
+        <ResizableSplitter
+          storageKey="analysis-layout-master-width"
+          defaultLeftWidth={96}
+          minLeftWidth={72}
+          minRightWidth={320}
+          left={<AnalysisMasterList />}
+          right={workspacePanel}
+        />
+      ) : (
+        workspacePanel
+      )}
+    </section>
   );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-[#808080]">
+    <div className="flex h-full min-h-0 w-full flex-col bg-[#808080]">
       <WorkspaceLayoutToolbar
         onReset={resetAnalysisLayout}
         toggles={[
@@ -209,25 +214,27 @@ export function AnalysisMain() {
         onSelect={handleTabSelect}
       />
 
-      <AnalysisPredictionPanel prediction={prediction} />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <AnalysisPredictionPanel result={displayResult} codeValueStats={codeValueStats} />
 
-      {showCodeValue ? (
-        <ResizableVerticalSplitter
-          storageKey="analysis-layout-vertical"
-          defaultTopPercent={72}
-          minTopPercent={40}
-          minBottomPercent={12}
-          top={mainContent}
-          bottom={
-            <div className="flex h-full min-h-0 flex-col gap-1 p-1">
-              <CodeValueUnverifiedBanner />
-              <CodeValueStatsGrid rows={codeValueStats} loading={codesLoading || analyzing} />
-            </div>
-          }
+        <AnalysisRateRecommendPanel
+          probabilityProfile={probabilityProfile}
+          rateRecommendations={rateRecommendations}
         />
-      ) : (
-        <div className="flex min-h-0 flex-1 flex-col">{mainContent}</div>
-      )}
+
+        {workspaceSection}
+
+        {showCodeValue ? (
+          <section className="w-full shrink-0 bg-[#f0f0f0] p-2">
+            <CodeValueUnverifiedBanner />
+            <CodeValueStatsGrid
+              rows={codeValueStats}
+              loading={codesLoading || analyzing}
+              layout="page"
+            />
+          </section>
+        ) : null}
+      </div>
 
       <PatternDetailModal
         modal={patternModal}

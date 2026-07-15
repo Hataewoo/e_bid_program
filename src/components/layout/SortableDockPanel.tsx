@@ -36,7 +36,7 @@ export function SortableDockPanel({
         isFocused ? 'win-dock-panel-focused' : ''
       } ${isDragging ? 'win-dock-panel-dragging' : ''} ${className}`}
     >
-      <div className="win-dock-panel-header flex shrink-0 items-center gap-1 border-b border-[#404040] bg-[#ece9d8] px-1 py-px text-[11px] font-semibold text-[#0000ff]">
+      <div className="win-dock-panel-header flex shrink-0 items-center gap-1 border-b border-[#404040] bg-[#ece9d8] px-2 py-1 text-sm font-semibold text-[#0000ff]">
         <button
           type="button"
           className="win-drag-handle shrink-0"

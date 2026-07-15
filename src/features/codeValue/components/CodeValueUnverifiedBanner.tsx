@@ -1,6 +1,9 @@
 import { UnverifiedAlgorithmBanner } from '@/components/ui/UnverifiedAlgorithmBanner';
 import { useI18n } from '@/i18n/use-i18n';
-import { getAlgorithmVerificationStatus } from '@/shared/utils/algorithmVerificationStatus';
+import {
+  getAlgorithmVerificationStatus,
+  shouldShowLegacyUnverifiedUi,
+} from '@/shared/utils/algorithmVerificationStatus';
 
 interface CodeValueUnverifiedBannerProps {
   className?: string;
@@ -10,7 +13,7 @@ export function CodeValueUnverifiedBanner({ className = '' }: CodeValueUnverifie
   const { t } = useI18n();
   const status = getAlgorithmVerificationStatus();
 
-  if (status.codeValue === 'verified') {
+  if (!shouldShowLegacyUnverifiedUi() || status.codeValue === 'verified') {
     return null;
   }
 

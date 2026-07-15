@@ -1,6 +1,6 @@
 {
   "name": "cs-e-bid-program",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "type": "module",
   "description": "Windows 전자입찰 분석 프로그램",
   "homepage": "https://github.com/Hataewoo/e_bid_program",
@@ -38,12 +38,12 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\" \"tests/**/*.{ts,tsx}\" \"electron/**/*.ts\"",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:prepare-dev": "prisma db push",
+    "db:prepare-dev": "prisma db push --skip-generate",
     "db:studio": "prisma studio",
     "catalog:import": "vite-node --config scripts/vite-node.config.ts scripts/import-legacy-catalog.ts",
     "catalog:diagnose": "vite-node --config scripts/vite-node.config.ts scripts/run-suite-diagnosis.ts",
     "regression:gate": "vite-node --config scripts/vite-node.config.ts scripts/run-regression-gate.ts",
-    "postinstall": "prisma generate && node scripts/install-electron.mjs",
+    "postinstall": "prisma generate && npm run db:prepare-dev && node scripts/install-electron.mjs",
     "electron:install": "node scripts/install-electron.mjs"
   },
   "dependencies": {

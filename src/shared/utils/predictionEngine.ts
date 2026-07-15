@@ -1,4 +1,5 @@
 import type { AnalysisResult, CodeValueStatRow } from './analysisEngine';
+import { predictDigitChain } from './nextDigitEngine';
 
 export type PredictionDominantSide = 'low' | 'high' | 'balanced';
 
@@ -16,41 +17,10 @@ export interface PredictionResult {
   step3Count: number;
 }
 
-function modeDigitFromDigits(digits: string): number | null {
-  const counts = new Map<number, number>();
-  for (const ch of digits) {
-    const digit = Number(ch);
-    if (!Number.isInteger(digit) || digit < 0 || digit > 9) continue;
-    counts.set(digit, (counts.get(digit) ?? 0) + 1);
-  }
-
-  let bestDigit: number | null = null;
-  let bestCount = -1;
-  for (const [digit, count] of counts) {
-    if (count > bestCount) {
-      bestDigit = digit;
-      bestCount = count;
-    }
-  }
-  return bestDigit;
-}
-
 function resolveDominantSide(result: AnalysisResult): PredictionDominantSide {
   const gap = Math.abs(result.lowRate - result.highRate);
   if (gap < 5) return 'balanced';
   return result.lowRate > result.highRate ? 'low' : 'high';
-}
-
-function filterDigitsForSide(digits: string, side: PredictionDominantSide): string {
-  if (side === 'balanced') return digits;
-  return digits
-    .split('')
-    .filter((ch) => {
-      const digit = Number(ch);
-      if (!Number.isInteger(digit)) return false;
-      return side === 'low' ? digit <= 4 : digit >= 5;
-    })
-    .join('');
 }
 
 export function createEmptyPrediction(masterNo: string): PredictionResult {
@@ -70,9 +40,8 @@ export function createEmptyPrediction(masterNo: string): PredictionResult {
 }
 
 /**
- * 분석 결과 + CodeValue 통계 기반 예측값 생성.
- * 레거시 SRC-LEGACY 검증 전까지 규칙 기반 휴리스틱 — UI/STATUS에 미검증 표시.
- * 검증: `predictionVerification.ts` · `npm run catalog:diagnose`
+ * 분석 결과 + CodeValue 통계 기반 다음 자리 예측 요약.
+ * 상세 입력·연쇄 추천은 Analysis 화면의 nextDigitEngine UI에서 처리.
  */
 export function buildPrediction(
   result: AnalysisResult,
@@ -85,18 +54,17 @@ export function buildPrediction(
   const sortedCodes = [...codeStats].sort((a, b) => b.count - a.count);
   const topCode = sortedCodes[0] ?? null;
   const dominantSide = resolveDominantSide(result);
-  const sideDigits = filterDigitsForSide(result.digits, dominantSide);
-  const modeDigit = modeDigitFromDigits(sideDigits) ?? modeDigitFromDigits(result.digits);
+  const chain = predictDigitChain(result, codeStats, '');
 
-  const codePart = topCode?.code?.trim() || '00';
-  const value = modeDigit !== null ? `${codePart}${modeDigit}` : codePart;
+  const topCandidate = chain.nextStep?.candidates[0] ?? null;
+  const modeDigit = topCandidate?.digit ?? null;
+  const value = chain.suggestedDisplay || (modeDigit !== null ? `xx.${modeDigit}` : '');
 
-  const confidence =
-    topCode && topCode.count > 0
+  const confidence = topCandidate
+    ? Math.min(100, Math.round(topCandidate.probability))
+    : topCode && topCode.count > 0
       ? Math.min(100, Math.round(topCode.percent))
-      : modeDigit !== null
-        ? 25
-        : 0;
+      : 0;
 
   const dominantLabel =
     dominantSide === 'low'
@@ -110,8 +78,15 @@ export function buildPrediction(
       ? `최다 매칭 코드: ${topCode.code} (${topCode.count}건, ${topCode.percent.toFixed(1)}%)`
       : '등록된 코드 매칭 없음',
     `구간 판단: ${dominantLabel}`,
-    modeDigit !== null ? `핵심 숫자: ${modeDigit}` : '핵심 숫자 추출 불가',
-    `예측 조합: 코드(${codePart}) + 숫자(${modeDigit ?? '-'})`,
+    chain.nextStep
+      ? `다음 자리 추천: ${chain.nextStep.candidates
+          .slice(0, 4)
+          .map((c) => `${c.digit}(${c.probability.toFixed(1)}%)`)
+          .join(', ')}`
+      : '다음 자리 추천 불가',
+    chain.suggestedDisplay
+      ? `연쇄 예측(4자리): ${chain.suggestedDisplay}`
+      : '연쇄 예측 없음',
   ];
 
   return {

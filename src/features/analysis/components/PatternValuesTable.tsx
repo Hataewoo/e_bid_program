@@ -75,7 +75,7 @@ export const PatternValuesTable = memo(function PatternValuesTable({
     <table className="win-pattern-values-table">
       <thead>
         <tr>
-          <th className="w-[72px] text-left">Code</th>
+          <th className="w-[88px] text-left">Code</th>
           <th className="text-left">Values</th>
         </tr>
       </thead>
