@@ -58,7 +58,7 @@ if (!fs.existsSync(devDbPath)) {
     console.log('[packaging] copied seed-template.db -> dev.db');
   } else {
     console.log('[packaging] creating empty prisma/dev.db ...');
-    execSync('npx prisma db push --skip-generate', {
+    execSync('npx prisma db push --skip-generate --accept-data-loss', {
       cwd: root,
       stdio: 'inherit',
       env: {
@@ -72,7 +72,7 @@ if (!fs.existsSync(devDbPath)) {
 }
 
 try {
-  execSync('npx prisma db push --skip-generate', {
+  execSync('npx prisma db push --skip-generate --accept-data-loss', {
     cwd: root,
     stdio: 'inherit',
     env: {
