@@ -1,6 +1,6 @@
 {
   "name": "cs-e-bid-program",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "type": "module",
   "description": "Windows 전자입찰 분석 프로그램",
   "homepage": "https://github.com/Hataewoo/e_bid_program",
@@ -130,7 +130,7 @@
           ]
         }
       ],
-      "artifactName": "${productName}-Setup-${version}-${arch}.${ext}"
+      "artifactName": "CS-E-Bid-Analyzer-Setup-${version}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -150,7 +150,7 @@
       }
     ],
     "portable": {
-      "artifactName": "${productName}-Portable-${version}-${arch}.${ext}"
+      "artifactName": "CS-E-Bid-Analyzer-Portable-${version}-${arch}.${ext}"
     }
   }
 }
