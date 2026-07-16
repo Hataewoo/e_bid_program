@@ -5,6 +5,7 @@ release/
 coverage/
 *.db
 *.db-journal
+!prisma/seed-template.db
 .env
 .DS_Store
 Thumbs.db
