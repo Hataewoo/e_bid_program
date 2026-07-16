@@ -127,13 +127,6 @@ function blendProbabilities(
   return out;
 }
 
-function resolveSource(totalMatches: number, prefixLength: number): NextDigitSource {
-  if (prefixLength === 0) return 'global';
-  if (totalMatches >= MIN_MATCHES_FOR_FULL_PREFIX) return 'prefix';
-  if (totalMatches > 0) return 'blended';
-  return 'global';
-}
-
 export function computeNextDigitProbabilities(
   result: AnalysisResult,
   codeStats: CodeValueStatRow[],
@@ -152,20 +145,19 @@ export function computeNextDigitProbabilities(
   }
 
   const { counts, totalMatches } = countNextDigitsAfterPrefix(result.digits, prefix);
-  const source = resolveSource(totalMatches, prefix.length);
 
   if (prefix.length === 0 || totalMatches === 0) {
-    return { probabilities: globalProbs, counts, totalMatches, source };
+    return { probabilities: globalProbs, counts, totalMatches, source: 'global' };
   }
 
   const prefixProbs = countsToProbabilities(counts, totalMatches);
   if (totalMatches >= MIN_MATCHES_FOR_FULL_PREFIX) {
-    return { probabilities: prefixProbs, counts, totalMatches, source };
+    return { probabilities: prefixProbs, counts, totalMatches, source: 'prefix' };
   }
 
   const prefixWeight = totalMatches / MIN_MATCHES_FOR_FULL_PREFIX;
   const blended = blendProbabilities(prefixProbs, globalProbs, prefixWeight);
-  return { probabilities: blended, counts, totalMatches, source };
+  return { probabilities: blended, counts, totalMatches, source: 'blended' };
 }
 
 export function pickTopCandidates(

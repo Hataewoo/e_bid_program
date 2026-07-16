@@ -16,14 +16,14 @@ export function MasterManagement() {
   const isSaving = useMasterStore((s) => s.isSaving);
   const formValues = useMasterStore((s) => s.formValues);
   const handleNew = useMasterStore((s) => s.handleNew);
-  const handleSave = useMasterStore((s) => s.handleSave);
+  const handleSave = useMasterStore((s) => s.trySave);
   const handleDelete = useMasterStore((s) => s.handleDelete);
 
   useCrudKeyboardShortcuts({
     onNew: handleNew,
     onSave: handleSave,
     onDelete: handleDelete,
-    canSave: isDirty && !isSaving,
+    canSave: !isSaving,
     canDelete: Boolean(formValues.id) && !isSaving,
     canNew: !isSaving,
   });

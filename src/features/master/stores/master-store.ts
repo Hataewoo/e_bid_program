@@ -29,6 +29,8 @@ interface MasterState {
   resetForm: () => void;
   handleNew: () => void;
   handleSave: () => Promise<boolean>;
+  trySave: () => Promise<boolean>;
+  saveCurrent: (patch: Partial<MasterFormValues>) => Promise<boolean>;
   handleConfirm: () => Promise<boolean>;
   handleClose: () => Promise<void>;
   handleDelete: () => Promise<boolean>;
@@ -148,8 +150,22 @@ export const useMasterStore = create<MasterState>((set, get) => ({
     return true;
   },
 
-  handleConfirm: async () => {
+  trySave: async () => {
+    const { isSaving, isDirty } = get();
+    if (isSaving || !isDirty) return false;
     return get().handleSave();
+  },
+
+  saveCurrent: async (patch) => {
+    if (get().isSaving) return false;
+    set((state) => ({
+      formValues: { ...state.formValues, ...patch },
+    }));
+    return get().handleSave();
+  },
+
+  handleConfirm: async () => {
+    return get().trySave();
   },
 
   handleClose: async () => {

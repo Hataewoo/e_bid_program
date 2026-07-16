@@ -69,7 +69,8 @@ export class DatabaseService {
 
     console.info(
       `[DB] ${this.pathInfo.mode} — database: ${this.dbPath}` +
-        (this.pathInfo.templateCopied ? ' (template copied)' : ''),
+        (this.pathInfo.templateCopied ? ' (template copied)' : '') +
+        (this.pathInfo.templateSynced ? ' (template synced on update)' : ''),
     );
 
     await this.connectAtPath(this.dbPath, { seed: true });
@@ -82,6 +83,7 @@ export class DatabaseService {
       mode: 'development',
       userDataPath: path.dirname(dbPath),
       templateCopied: false,
+      templateSynced: false,
     };
     this.dbPath = dbPath;
     await this.connectAtPath(dbPath, { seed: options?.seed ?? false });
@@ -279,6 +281,7 @@ export class DatabaseService {
     isPackaged: boolean;
     mode: 'development' | 'production';
     templateCopied: boolean;
+    templateSynced: boolean;
   } {
     return {
       dbPath: this.dbPath,
@@ -286,6 +289,7 @@ export class DatabaseService {
       isPackaged: app.isPackaged,
       mode: this.pathInfo?.mode ?? (app.isPackaged ? 'production' : 'development'),
       templateCopied: this.pathInfo?.templateCopied ?? false,
+      templateSynced: this.pathInfo?.templateSynced ?? false,
     };
   }
 

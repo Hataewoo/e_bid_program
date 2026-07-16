@@ -1,20 +1,55 @@
+import { useEffect } from 'react';
 import { MasterValueTextarea } from '@/components/ui/MasterValueTextarea';
 import { useMasterStore } from '../stores/master-store';
 import { formatAppErrors } from '@/i18n/format-app-errors';
 import { useI18n } from '@/i18n/use-i18n';
 import { masterValidationTag } from '../utils/format-master-validation';
-import { MASTER_VALUE_MAX_LENGTH } from '../services/validation-service';
-import { normalizeMasterValue } from '../services/validation-service';
+import { MASTER_VALUE_MAX_LENGTH, normalizeMasterValue } from '../services/validation-service';
+
+function isEnterKey(event: KeyboardEvent): boolean {
+  return event.key === 'Enter' || event.code === 'Enter' || event.code === 'NumpadEnter';
+}
 
 export function MasterInputPanel() {
   const { t } = useI18n();
   const formValues = useMasterStore((s) => s.formValues);
   const setFormValues = useMasterStore((s) => s.setFormValues);
   const validationResult = useMasterStore((s) => s.validationResult);
+  const isDirty = useMasterStore((s) => s.isDirty);
   const isSaving = useMasterStore((s) => s.isSaving);
   const handleValidate = useMasterStore((s) => s.handleValidate);
-  const handleConfirm = useMasterStore((s) => s.handleConfirm);
+  const trySave = useMasterStore((s) => s.trySave);
   const handleClose = useMasterStore((s) => s.handleClose);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isEnterKey(event)) return;
+      if (event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.isComposing) return;
+
+      const target = event.target;
+      if (!(target instanceof HTMLTextAreaElement) && !(target instanceof HTMLInputElement)) {
+        return;
+      }
+
+      if (target.id === 'masterValue' && target instanceof HTMLTextAreaElement) {
+        event.preventDefault();
+        event.stopPropagation();
+        const normalized = normalizeMasterValue(target.value);
+        void useMasterStore.getState().saveCurrent({ masterValue: normalized });
+        return;
+      }
+
+      if (target.id === 'memo' && target instanceof HTMLInputElement) {
+        event.preventDefault();
+        event.stopPropagation();
+        void useMasterStore.getState().saveCurrent({ memo: target.value });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, []);
 
   const valueLength = normalizeMasterValue(formValues.masterValue).length;
 
@@ -82,10 +117,10 @@ export function MasterInputPanel() {
           <button
             type="button"
             className="win-button win-button-primary"
-            onClick={handleConfirm}
-            disabled={isSaving}
+            onClick={() => void trySave()}
+            disabled={isSaving || !isDirty}
           >
-            {t('common.confirm')}
+            {t('master.save')}
           </button>
           <button type="button" className="win-button" onClick={handleClose} disabled={isSaving}>
             {t('common.close')}

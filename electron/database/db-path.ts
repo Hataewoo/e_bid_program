@@ -1,6 +1,10 @@
 import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
+import {
+  ensureProductionDatabaseFromTemplate,
+  type TemplateDbSyncResult,
+} from './template-db-sync';
 
 /** 배포 환경 userData 내 SQLite 파일명 */
 export const PROD_DB_FILENAME = 'database.db';
@@ -16,6 +20,7 @@ export interface DatabasePathInfo {
   mode: 'development' | 'production';
   userDataPath: string;
   templateCopied: boolean;
+  templateSynced: boolean;
 }
 
 export function resolveProjectRoot(): string {
@@ -51,38 +56,38 @@ function findPackagedTemplateDb(): string | null {
 }
 
 /**
- * 배포 최초 실행 시 extraResources 템플릿 DB를 userData로 복사.
- * 이미 DB가 있으면 사용자 데이터를 덮어쓰지 않음.
+ * 배포 DB 준비 — 최초 설치 복사 + 앱 버전 변경 시 템플릿 덮어쓰기.
  */
-export function bootstrapProductionDatabase(targetPath: string): boolean {
-  if (fs.existsSync(targetPath)) {
-    return false;
-  }
-
+export function bootstrapProductionDatabase(
+  targetPath: string,
+  appVersion: string,
+): TemplateDbSyncResult {
   const templatePath = findPackagedTemplateDb();
-  const targetDir = path.dirname(targetPath);
+  const result = ensureProductionDatabaseFromTemplate({
+    targetPath,
+    templatePath,
+    userDataPath: app.getPath('userData'),
+    appVersion,
+  });
 
-  if (!fs.existsSync(targetDir)) {
-    fs.mkdirSync(targetDir, { recursive: true });
+  if (result.copied) {
+    console.info('[DB] Template copied (first install):', templatePath, '->', targetPath);
+  } else if (result.synced) {
+    console.info('[DB] Template synced on app update ->', appVersion);
+  } else if (!templatePath) {
+    console.warn(
+      '[DB] Packaged template DB not found in resourcesPath.\n' +
+        `  resourcesPath: ${process.resourcesPath}\n` +
+        '  Prisma will create a new SQLite file on first connect.',
+    );
   }
 
-  if (templatePath) {
-    fs.copyFileSync(templatePath, targetPath);
-    console.info('[DB] Template copied:', templatePath, '->', targetPath);
-    return true;
-  }
-
-  console.warn(
-    '[DB] Packaged template DB not found in resourcesPath.\n' +
-      `  resourcesPath: ${process.resourcesPath}\n` +
-      '  Prisma will create a new SQLite file on first connect.',
-  );
-  return false;
+  return result;
 }
 
 /**
  * 개발: <projectRoot>/prisma/dev.db
- * 배포: <userData>/database.db (+ 최초 실행 시 템플릿 복사)
+ * 배포: <userData>/database.db (+ 최초/업데이트 시 템플릿 반영)
  */
 export function resolveDatabasePath(): DatabasePathInfo {
   const userDataPath = app.getPath('userData');
@@ -101,6 +106,7 @@ export function resolveDatabasePath(): DatabasePathInfo {
       mode: 'development',
       userDataPath,
       templateCopied: false,
+      templateSynced: false,
     };
   }
 
@@ -118,17 +124,19 @@ export function resolveDatabasePath(): DatabasePathInfo {
       mode: 'development',
       userDataPath,
       templateCopied: false,
+      templateSynced: false,
     };
   }
 
   const dbPath = path.join(userDataPath, PROD_DB_FILENAME);
-  const templateCopied = bootstrapProductionDatabase(dbPath);
+  const templateResult = bootstrapProductionDatabase(dbPath, app.getVersion());
 
   return {
     dbPath,
     mode: 'production',
     userDataPath,
-    templateCopied,
+    templateCopied: templateResult.copied,
+    templateSynced: templateResult.synced,
   };
 }
 

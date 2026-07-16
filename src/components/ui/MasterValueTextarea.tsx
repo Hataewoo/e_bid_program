@@ -10,6 +10,7 @@ interface MasterValueTextareaProps {
   id?: string;
   value: string;
   onChange?: (normalized: string) => void;
+  onEnterPress?: () => void;
   normalizeValue?: (raw: string) => string;
   readOnly?: boolean;
   className?: string;
@@ -21,6 +22,7 @@ export function MasterValueTextarea({
   id,
   value,
   onChange,
+  onEnterPress,
   readOnly = false,
   className = '',
   placeholder,
@@ -48,6 +50,20 @@ export function MasterValueTextarea({
     setDisplayText(formatDigitsForDisplay(normalized, width, DIGIT_DISPLAY_FONT_PX));
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (readOnly || !onEnterPress) return;
+    if (e.key !== 'Enter' && e.code !== 'Enter') return;
+    if (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.nativeEvent.isComposing) return;
+    e.preventDefault();
+
+    const normalized = normalizeValue(e.currentTarget.value);
+    if (normalized !== value) {
+      onChange?.(normalized);
+    }
+    onEnterPress();
+  };
+
   return (
     <div className={`flex min-h-0 flex-1 flex-col ${className}`}>
       <textarea
@@ -59,6 +75,7 @@ export function MasterValueTextarea({
         className="win-textarea-master win-textarea-master-readable min-h-0 w-full flex-1"
         value={displayText}
         onChange={readOnly ? undefined : handleChange}
+        onKeyDown={readOnly ? undefined : handleKeyDown}
       />
     </div>
   );

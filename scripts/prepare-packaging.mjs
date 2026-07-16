@@ -1,7 +1,9 @@
 /**
  * 프로덕션 패키징 전:
  * 1) Prisma Client / Query Engine 생성
- * 2) prisma/dev.db 템플릿 DB 생성 (extraResources -> database.db)
+ * 2) prisma/dev.db 템플릿 DB 준비 (extraResources -> database.db)
+ *    - 기존 dev.db(마스터 19 포함)를 유지하고 스키마만 맞춤
+ *    - seed-template.db 백업 동기화
  */
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -12,6 +14,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const prismaClientDir = path.join(root, 'node_modules', '.prisma', 'client');
 const devDbPath = path.join(root, 'prisma', 'dev.db');
+const seedTemplatePath = path.join(root, 'prisma', 'seed-template.db');
 
 console.log('[packaging] prisma generate...');
 try {
@@ -47,19 +50,14 @@ if (!fs.existsSync(schemaPath)) {
   process.exit(1);
 }
 
-console.log('[packaging] creating template database prisma/dev.db ...');
-let skipDbPush = false;
-if (fs.existsSync(devDbPath)) {
-  try {
-    fs.unlinkSync(devDbPath);
-  } catch {
-    console.warn('[packaging] dev.db in use — reusing existing prisma/dev.db as template');
-    skipDbPush = true;
-  }
-}
+console.log('[packaging] preparing template database prisma/dev.db ...');
 
-if (!skipDbPush) {
-  try {
+if (!fs.existsSync(devDbPath)) {
+  if (fs.existsSync(seedTemplatePath)) {
+    fs.copyFileSync(seedTemplatePath, devDbPath);
+    console.log('[packaging] copied seed-template.db -> dev.db');
+  } else {
+    console.log('[packaging] creating empty prisma/dev.db ...');
     execSync('npx prisma db push --skip-generate', {
       cwd: root,
       stdio: 'inherit',
@@ -68,10 +66,23 @@ if (!skipDbPush) {
         DATABASE_URL: `file:${devDbPath}`,
       },
     });
-  } catch {
-    console.error('[packaging] ERROR: failed to create prisma/dev.db template');
-    process.exit(1);
   }
+} else {
+  console.log('[packaging] reusing existing prisma/dev.db as installer template');
+}
+
+try {
+  execSync('npx prisma db push --skip-generate', {
+    cwd: root,
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      DATABASE_URL: `file:${devDbPath}`,
+    },
+  });
+} catch {
+  console.error('[packaging] ERROR: failed to align prisma/dev.db schema');
+  process.exit(1);
 }
 
 if (!fs.existsSync(devDbPath)) {
@@ -79,5 +90,13 @@ if (!fs.existsSync(devDbPath)) {
   process.exit(1);
 }
 
-console.log('[packaging] template DB ready:', devDbPath);
+try {
+  fs.copyFileSync(devDbPath, seedTemplatePath);
+  console.log('[packaging] backup synced: dev.db -> seed-template.db');
+} catch (error) {
+  console.warn('[packaging] seed-template.db backup skipped:', error);
+}
+
+const stat = fs.statSync(devDbPath);
+console.log('[packaging] template DB ready:', devDbPath, `(${stat.size} bytes)`);
 console.log('[packaging] Ready for electron-builder (win x64)');
