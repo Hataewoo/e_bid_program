@@ -399,7 +399,6 @@ function registerIpcHandlers() {
       dbPath: dbInfo?.dbPath ?? '',
       dbMode: dbInfo?.mode ?? (app.isPackaged ? 'production' : 'development'),
       templateCopied: dbInfo?.templateCopied ?? false,
-      templateSynced: dbInfo?.templateSynced ?? false,
       logPath: fileLogger.getPath(),
     };
   });

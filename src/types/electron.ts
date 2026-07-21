@@ -26,7 +26,6 @@ export interface AppRuntimeInfo {
   dbPath: string;
   dbMode: 'development' | 'production';
   templateCopied: boolean;
-  templateSynced: boolean;
   logPath?: string;
 }
 
