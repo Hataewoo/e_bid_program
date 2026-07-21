@@ -1,6 +1,6 @@
 {
   "name": "cs-e-bid-program",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "type": "module",
   "description": "Windows 전자입찰 분석 프로그램",
   "homepage": "https://github.com/Hataewoo/e_bid_program",
