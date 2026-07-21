@@ -24,8 +24,7 @@ export function MasterListPanel() {
 
   const columnDefs = useMemo<ColDef<MasterGridRow>[]>(
     () => [
-      { field: 'index', headerName: t('master.grid.index'), width: 56, sortable: false },
-      { field: 'masterNo', headerName: t('master.grid.masterNo'), width: 88, sortable: false },
+      { field: 'masterNo', headerName: t('master.grid.masterNo'), width: 100, sortable: false },
       { field: 'memo', headerName: t('master.grid.memo'), flex: 1, sortable: false },
     ],
     [t],

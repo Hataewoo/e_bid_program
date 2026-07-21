@@ -13,6 +13,7 @@ function isEnterKey(event: KeyboardEvent): boolean {
 export function MasterInputPanel() {
   const { t } = useI18n();
   const formValues = useMasterStore((s) => s.formValues);
+  const selectedMasterNo = useMasterStore((s) => s.selectedMasterNo);
   const setFormValues = useMasterStore((s) => s.setFormValues);
   const validationResult = useMasterStore((s) => s.validationResult);
   const isDirty = useMasterStore((s) => s.isDirty);
@@ -66,6 +67,7 @@ export function MasterInputPanel() {
         <MasterValueTextarea
           id="masterValue"
           value={formValues.masterValue}
+          focusKey={selectedMasterNo}
           onChange={(normalized) => setFormValues({ masterValue: normalized })}
         />
         <div className="mt-0.5 text-right text-sm text-content-muted">

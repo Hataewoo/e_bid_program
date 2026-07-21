@@ -11,6 +11,8 @@ interface MasterValueTextareaProps {
   value: string;
   onChange?: (normalized: string) => void;
   onEnterPress?: () => void;
+  /** 변경 시 textarea에 포커스 (마스터 번호 선택 등) */
+  focusKey?: string;
   normalizeValue?: (raw: string) => string;
   readOnly?: boolean;
   className?: string;
@@ -23,6 +25,7 @@ export function MasterValueTextarea({
   value,
   onChange,
   onEnterPress,
+  focusKey,
   readOnly = false,
   className = '',
   placeholder,
@@ -43,6 +46,15 @@ export function MasterValueTextarea({
   useEffect(() => {
     applyFormat(value, width);
   }, [value, width, applyFormat]);
+
+  useEffect(() => {
+    if (readOnly || focusKey === undefined) return;
+    const el = textareaRef.current;
+    if (!el) return;
+    el.focus();
+    const end = el.value.length;
+    el.setSelectionRange(end, end);
+  }, [focusKey, readOnly]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const normalized = normalizeValue(e.target.value);

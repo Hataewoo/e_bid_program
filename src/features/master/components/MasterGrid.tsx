@@ -16,7 +16,6 @@ export function MasterGrid() {
 
   const columnDefs = useMemo<ColDef<MasterGridRow>[]>(
     () => [
-      { field: 'index', headerName: 'No', width: 60, sortable: false },
       { field: 'masterNo', headerName: t('master.grid.masterNo'), width: 100, sortable: false },
       { field: 'memo', headerName: t('master.grid.memo'), flex: 1, sortable: false },
     ],
