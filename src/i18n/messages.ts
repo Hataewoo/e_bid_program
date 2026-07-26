@@ -41,7 +41,8 @@ export const messages = {
     'nav.settings': 'Settings',
     'analysis.prediction.title': '다음 자리 예측',
     'analysis.prediction.subtitle':
-      '소수 입력 시 Master 기록에서 같은 패턴 뒤 숫자를 비교해 3~4개 추천',
+      '소수 입력 시 Master 기록에서 같은 패턴 뒤 숫자를 비교해 추천',
+    'analysis.prediction.countLabel': '추천 개수',
     'analysis.prediction.confidence': '신뢰도',
     'analysis.prediction.empty': 'Master Value 입력 후 [분석]을 실행하세요.',
     'analysis.prediction.inputLabel': '입력',
@@ -870,7 +871,8 @@ export const messages = {
     'nav.settings': 'Settings',
     'analysis.prediction.title': 'Next Digit Prediction',
     'analysis.prediction.subtitle':
-      'Type decimal digits — compare matching patterns in Master and suggest top 3–4',
+      'Type decimal digits — compare matching patterns in Master records',
+    'analysis.prediction.countLabel': 'Candidates',
     'analysis.prediction.confidence': 'Confidence',
     'analysis.prediction.empty': 'Enter Master Value and run analysis.',
     'analysis.prediction.inputLabel': 'Input',

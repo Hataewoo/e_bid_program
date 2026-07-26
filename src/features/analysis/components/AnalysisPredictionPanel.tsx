@@ -2,6 +2,8 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import type { AnalysisResult, CodeValueStatRow } from '@/shared/utils/analysisEngine';
 import {
   appendDigitToInput,
+  clampNextDigitTopN,
+  NEXT_DIGIT_TOP_N,
   predictDigitChain,
   type NextDigitCandidate,
   type NextDigitStepResult,
@@ -77,6 +79,7 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
   const { t } = useI18n();
   const [input, setInput] = useState('');
   const [extraChainSteps, setExtraChainSteps] = useState(0);
+  const [topN, setTopN] = useState(NEXT_DIGIT_TOP_N);
 
   const hasData = result.totalCount > 0;
 
@@ -84,8 +87,9 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
     () =>
       predictDigitChain(result, codeValueStats, input, {
         extraSteps: extraChainSteps,
+        topN,
       }),
-    [result, codeValueStats, input, extraChainSteps],
+    [result, codeValueStats, input, extraChainSteps, topN],
   );
 
   const handleInputChange = useCallback((value: string) => {
@@ -121,9 +125,22 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
           <div className="mt-0.5 text-xs text-content-muted">{t('analysis.prediction.subtitle')}</div>
         </div>
         {hasData ? (
-          <button type="button" className="win-button text-xs" onClick={handleClear}>
-            {t('analysis.prediction.clear')}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-2 text-xs text-black">
+              <span>{t('analysis.prediction.countLabel')}</span>
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={topN}
+                onChange={(e) => setTopN(clampNextDigitTopN(Number(e.target.value)))}
+                className="win-input w-14 px-1 py-0.5 text-center font-mono text-sm"
+              />
+            </label>
+            <button type="button" className="win-button text-xs" onClick={handleClear}>
+              {t('analysis.prediction.clear')}
+            </button>
+          </div>
         ) : null}
       </div>
 

@@ -1,10 +1,19 @@
 import type { AnalysisResult, CodeValueStatRow } from './analysisEngine';
-import { calcRate } from './analysisEngine';
-import { buildProbabilityProfile } from './probabilityEngine';
+import { buildProbabilityProfile, type ProbabilityDominantSide } from './probabilityEngine';
 
 export const NEXT_DIGIT_TOP_N = 4;
+export const NEXT_DIGIT_TOP_N_MIN = 1;
+export const NEXT_DIGIT_TOP_N_MAX = 10;
 export const NEXT_DIGIT_DEFAULT_CHAIN_DEPTH = 4;
 const MIN_MATCHES_FOR_FULL_PREFIX = 3;
+/** Sparse prefix — Laplace smoothing strength */
+const LAPLACE_ALPHA = 0.35;
+/** >1 spreads probability gaps (top candidates stand out more) */
+const DISTRIBUTION_SHARPNESS = 1.45;
+/** Extra weight when a digit leads prefix-match counts */
+const LEAD_FREQUENCY_BONUS = 0.2;
+/** Code stat digit boost cap (mirrors probabilityEngine) */
+const CODE_DIGIT_BOOST_MAX = 0.12;
 
 export interface ParsedBidInput {
   integerPart: string | null;
@@ -41,6 +50,11 @@ export interface NextDigitChainResult {
 const EMPTY_PROBS: Record<number, number> = Object.fromEntries(
   Array.from({ length: 10 }, (_, d) => [d, 10]),
 ) as Record<number, number>;
+
+export function clampNextDigitTopN(value: number): number {
+  const n = Number.isFinite(value) ? Math.trunc(value) : NEXT_DIGIT_TOP_N;
+  return Math.min(NEXT_DIGIT_TOP_N_MAX, Math.max(NEXT_DIGIT_TOP_N_MIN, n));
+}
 
 export function parseBidRateInput(raw: string): ParsedBidInput {
   const trimmed = raw.trim();
@@ -100,31 +114,129 @@ export function countNextDigitsAfterPrefix(
   return { counts, totalMatches };
 }
 
-function countsToProbabilities(counts: Map<number, number>, total: number): Record<number, number> {
-  if (total <= 0) return { ...EMPTY_PROBS };
+function buildCodeDigitBoost(codeStats: CodeValueStatRow[]): Record<number, number> {
+  const boost: Record<number, number> = Object.fromEntries(
+    Array.from({ length: 10 }, (_, d) => [d, 0]),
+  ) as Record<number, number>;
+  const top = [...codeStats].sort((a, b) => b.count - a.count).slice(0, 3);
+  for (const row of top) {
+    if (!row.code?.trim() || row.count <= 0) continue;
+    const weight = Math.min(CODE_DIGIT_BOOST_MAX, row.percent / 250);
+    for (const ch of row.code.replace(/\D/g, '')) {
+      const d = Number(ch);
+      if (!Number.isInteger(d) || d < 0 || d > 9) continue;
+      boost[d] = (boost[d] ?? 0) + weight;
+    }
+  }
+  return boost;
+}
+
+function prefixMatchWeight(totalMatches: number): number {
+  if (totalMatches <= 0) return 0;
+  return Math.min(0.85, totalMatches / (totalMatches + 1.5));
+}
+
+function resolveNextDigitSource(prefixWeight: number, totalMatches: number): NextDigitSource {
+  if (totalMatches <= 0) return 'global';
+  if (totalMatches >= MIN_MATCHES_FOR_FULL_PREFIX && prefixWeight >= 0.7) return 'prefix';
+  return 'blended';
+}
+
+function aggregatePrefixSignals(
+  masterDigits: string,
+  prefix: string,
+): { counts: Map<number, number>; totalMatches: number } {
+  if (!prefix) {
+    return { counts: new Map(), totalMatches: 0 };
+  }
+
+  const combined = new Map<number, number>();
+  let totalMatches = 0;
+
+  for (let len = prefix.length; len >= 1; len -= 1) {
+    const subPrefix = prefix.slice(prefix.length - len);
+    const { counts, totalMatches: subTotal } = countNextDigitsAfterPrefix(masterDigits, subPrefix);
+    if (subTotal <= 0) continue;
+
+    const weight = (len / prefix.length) ** 2;
+    totalMatches += subTotal;
+
+    for (let d = 0; d <= 9; d += 1) {
+      const c = counts.get(d) ?? 0;
+      if (c <= 0) continue;
+      combined.set(d, (combined.get(d) ?? 0) + c * weight);
+    }
+
+    if (len === prefix.length && subTotal >= MIN_MATCHES_FOR_FULL_PREFIX) break;
+  }
+
+  const rounded = new Map<number, number>();
+  for (const [digit, score] of combined) {
+    rounded.set(digit, Math.round(score * 100) / 100);
+  }
+
+  return { counts: rounded, totalMatches };
+}
+
+function applySideMultiplier(score: number, digit: number, side: ProbabilityDominantSide): number {
+  if (side === 'balanced') return score;
+  const isLow = digit <= 4;
+  const match = side === 'low' ? isLow : !isLow;
+  return match ? score * 1.08 : score;
+}
+
+function sharpenScores(scores: Record<number, number>): Record<number, number> {
   const out: Record<number, number> = {};
   for (let d = 0; d <= 9; d += 1) {
-    out[d] = calcRate(counts.get(d) ?? 0, total);
+    out[d] = (Math.max(scores[d] ?? 0, 1e-6)) ** DISTRIBUTION_SHARPNESS;
   }
   return out;
 }
 
-function blendProbabilities(
-  prefixProbs: Record<number, number>,
-  globalProbs: Record<number, number>,
-  prefixWeight: number,
-): Record<number, number> {
-  const w = Math.max(0, Math.min(1, prefixWeight));
+function scoresToProbabilities(scores: Record<number, number>): Record<number, number> {
+  const sum = Object.values(scores).reduce((a, b) => a + b, 0);
+  if (sum <= 0) return { ...EMPTY_PROBS };
   const out: Record<number, number> = {};
   for (let d = 0; d <= 9; d += 1) {
-    out[d] = (prefixProbs[d] ?? 0) * w + (globalProbs[d] ?? 0) * (1 - w);
-  }
-  const sum = Object.values(out).reduce((a, b) => a + b, 0);
-  if (sum <= 0) return { ...globalProbs };
-  for (let d = 0; d <= 9; d += 1) {
-    out[d] = Math.round(((out[d] ?? 0) / sum) * 1000) / 10;
+    out[d] = Math.round(((scores[d] ?? 0) / sum) * 1000) / 10;
   }
   return out;
+}
+
+function scoreNextDigitCandidates(
+  counts: Map<number, number>,
+  totalMatches: number,
+  globalProbs: Record<number, number>,
+  codeBoost: Record<number, number>,
+  dominantSide: ProbabilityDominantSide,
+): Record<number, number> {
+  const prefixW = prefixMatchWeight(totalMatches);
+  const globalW = 1 - prefixW;
+  const prefixDenom = totalMatches + 10 * LAPLACE_ALPHA;
+  const maxCount = totalMatches > 0 ? Math.max(...Array.from(counts.values()), 0) : 0;
+
+  const raw: Record<number, number> = {};
+  for (let d = 0; d <= 9; d += 1) {
+    const matchCount = counts.get(d) ?? 0;
+
+    const prefixScore =
+      totalMatches > 0 ? (matchCount + LAPLACE_ALPHA) / prefixDenom : 0;
+    const globalScore = (globalProbs[d] ?? 10) / 100;
+
+    let score = prefixScore * prefixW + globalScore * globalW;
+
+    if (matchCount > 0 && totalMatches > 0 && maxCount > 0) {
+      const share = matchCount / totalMatches;
+      const relativeLead = matchCount / maxCount;
+      score += LEAD_FREQUENCY_BONUS * share * relativeLead;
+    }
+
+    score += codeBoost[d] ?? 0;
+    score = applySideMultiplier(score, d, dominantSide);
+    raw[d] = Math.max(score, 1e-4);
+  }
+
+  return scoresToProbabilities(sharpenScores(raw));
 }
 
 export function computeNextDigitProbabilities(
@@ -134,6 +246,7 @@ export function computeNextDigitProbabilities(
 ): { probabilities: Record<number, number>; counts: Map<number, number>; totalMatches: number; source: NextDigitSource } {
   const profile = buildProbabilityProfile(result, codeStats);
   const globalProbs = profile.digitProbability;
+  const codeBoost = buildCodeDigitBoost(codeStats);
 
   if (result.totalCount === 0) {
     return {
@@ -145,19 +258,21 @@ export function computeNextDigitProbabilities(
   }
 
   const { counts, totalMatches } = countNextDigitsAfterPrefix(result.digits, prefix);
+  const aggregated =
+    prefix.length > 0 ? aggregatePrefixSignals(result.digits, prefix) : { counts, totalMatches };
 
-  if (prefix.length === 0 || totalMatches === 0) {
-    return { probabilities: globalProbs, counts, totalMatches, source: 'global' };
-  }
+  const prefixW = prefixMatchWeight(aggregated.totalMatches);
+  const source = resolveNextDigitSource(prefixW, aggregated.totalMatches);
 
-  const prefixProbs = countsToProbabilities(counts, totalMatches);
-  if (totalMatches >= MIN_MATCHES_FOR_FULL_PREFIX) {
-    return { probabilities: prefixProbs, counts, totalMatches, source: 'prefix' };
-  }
+  const probabilities = scoreNextDigitCandidates(
+    aggregated.counts,
+    aggregated.totalMatches,
+    globalProbs,
+    codeBoost,
+    profile.dominantSide,
+  );
 
-  const prefixWeight = totalMatches / MIN_MATCHES_FOR_FULL_PREFIX;
-  const blended = blendProbabilities(prefixProbs, globalProbs, prefixWeight);
-  return { probabilities: blended, counts, totalMatches, source: 'blended' };
+  return { probabilities, counts, totalMatches, source };
 }
 
 export function pickTopCandidates(
@@ -222,7 +337,7 @@ export function predictDigitChain(
   } = {},
 ): NextDigitChainResult {
   const chainDepth = options.chainDepth ?? NEXT_DIGIT_DEFAULT_CHAIN_DEPTH;
-  const topN = options.topN ?? NEXT_DIGIT_TOP_N;
+  const topN = clampNextDigitTopN(options.topN ?? NEXT_DIGIT_TOP_N);
   const extraSteps = options.extraSteps ?? 0;
   const parsed = parseBidRateInput(input);
 
