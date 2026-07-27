@@ -53,7 +53,16 @@ describe('nextDigitEngine', () => {
 
   it('breaks ties among equal prefix matches with side and code boosts', () => {
     const result = analyzeMasterValue('00', '1213141516');
-    const step = predictNextDigitStep(result, [{ code: '01', type: '저점', description: '', count: 5, percent: 50 }], '1');
+    const step = predictNextDigitStep(result, [{
+      seq: 1,
+      code: '01',
+      type: '저점',
+      description: '',
+      count: 5,
+      percent: 50,
+      matchKind: 'pattern',
+      isTop: true,
+    }], '1');
 
     expect(step).not.toBeNull();
     const probs = step!.candidates.map((c) => c.probability);
