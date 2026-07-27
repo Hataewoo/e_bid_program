@@ -2,8 +2,8 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import {
-  ensureProductionDatabaseFromTemplate,
-  type TemplateDbSyncResult,
+  copyProductionDatabaseFromTemplate,
+  type TemplateDbCopyResult,
 } from './template-db-sync';
 
 /** 배포 환경 userData 내 SQLite 파일명 */
@@ -20,7 +20,6 @@ export interface DatabasePathInfo {
   mode: 'development' | 'production';
   userDataPath: string;
   templateCopied: boolean;
-  templateSynced: boolean;
 }
 
 export function resolveProjectRoot(): string {
@@ -56,25 +55,18 @@ function findPackagedTemplateDb(): string | null {
 }
 
 /**
- * 배포 DB 준비 — 최초 설치 복사 + 앱 버전 변경 시 템플릿 덮어쓰기.
+ * 배포 DB 준비 — 최초 설치 시에만 템플릿 복사.
  */
-export function bootstrapProductionDatabase(
-  targetPath: string,
-  appVersion: string,
-): TemplateDbSyncResult {
+export function bootstrapProductionDatabase(targetPath: string): TemplateDbCopyResult {
   const templatePath = findPackagedTemplateDb();
-  const result = ensureProductionDatabaseFromTemplate({
+  const result = copyProductionDatabaseFromTemplate({
     targetPath,
     templatePath,
-    userDataPath: app.getPath('userData'),
-    appVersion,
   });
 
   if (result.copied) {
     console.info('[DB] Template copied (first install):', templatePath, '->', targetPath);
-  } else if (result.synced) {
-    console.info('[DB] Template synced on app update ->', appVersion);
-  } else if (!templatePath) {
+  } else if (!templatePath && !fs.existsSync(targetPath)) {
     console.warn(
       '[DB] Packaged template DB not found in resourcesPath.\n' +
         `  resourcesPath: ${process.resourcesPath}\n` +
@@ -87,7 +79,7 @@ export function bootstrapProductionDatabase(
 
 /**
  * 개발: <projectRoot>/prisma/dev.db
- * 배포: <userData>/database.db (+ 최초/업데이트 시 템플릿 반영)
+ * 배포: <userData>/database.db (+ 최초 실행 시 템플릿 복사)
  */
 export function resolveDatabasePath(): DatabasePathInfo {
   const userDataPath = app.getPath('userData');
@@ -106,7 +98,6 @@ export function resolveDatabasePath(): DatabasePathInfo {
       mode: 'development',
       userDataPath,
       templateCopied: false,
-      templateSynced: false,
     };
   }
 
@@ -124,19 +115,17 @@ export function resolveDatabasePath(): DatabasePathInfo {
       mode: 'development',
       userDataPath,
       templateCopied: false,
-      templateSynced: false,
     };
   }
 
   const dbPath = path.join(userDataPath, PROD_DB_FILENAME);
-  const templateResult = bootstrapProductionDatabase(dbPath, app.getVersion());
+  const templateResult = bootstrapProductionDatabase(dbPath);
 
   return {
     dbPath,
     mode: 'production',
     userDataPath,
     templateCopied: templateResult.copied,
-    templateSynced: templateResult.synced,
   };
 }
 
