@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.2] — 2026-07-27
+
+다음 자리 예측 확률 산출 개선 및 추천 개수 사용자 설정.
+
+### Added
+
+- **다음 자리 예측 — 추천 개수** — Analysis 패널에서 1~10개까지 표시 개수 조절.
+- **다음 자리 예측 — 가산점 확률** — 접두사 매칭 빈도, 전체 분포, Code 통계, 저점/고점, 접두사 backoff를 종합해 확률 차등화.
+
+### Changed
+
+- 동일 확률(예: 10.0%)이 많이 나오던 경우, 상위 후보와의 확률 차이가 더 뚜렷하게 표시됨.
+
+---
+
 ## [1.0.1] — 2026-07-01
 
 Patch release for packaged Windows installs: auto-update, Prisma DB bootstrap, and Settings UX.
