@@ -4,6 +4,8 @@ import {
   appendDigitToInput,
   clampNextDigitTopN,
   countNextDigitsAfterPrefix,
+  getDigitBand,
+  getOppositeBand,
   parseBidRateInput,
   predictDigitChain,
   predictNextDigitStep,
@@ -22,52 +24,54 @@ describe('nextDigitEngine', () => {
     expect(parsed.decimalPrefix).toBe('1');
   });
 
+  it('classifies digit bands with 5 as pivot', () => {
+    expect(getDigitBand(4)).toBe('low');
+    expect(getDigitBand(5)).toBeNull();
+    expect(getDigitBand(6)).toBe('high');
+    expect(getOppositeBand('low')).toBe('high');
+    expect(getOppositeBand('high')).toBe('low');
+  });
+
   it('counts next digits after prefix in master', () => {
     const { counts, totalMatches } = countNextDigitsAfterPrefix('121212', '1');
     expect(totalMatches).toBe(3);
     expect(counts.get(2)).toBe(3);
   });
 
-  it('recommends top candidates after typing 1', () => {
+  it('after low digit recommends high band only', () => {
     const result = analyzeMasterValue('00', '1213141516');
     const step = predictNextDigitStep(result, [], '1');
 
     expect(step).not.toBeNull();
-    expect(step!.prefix).toBe('1');
-    expect(step!.candidates.length).toBe(4);
-    expect(step!.candidates[0]!.digit).toBe(2);
-    expect(step!.candidates[0]!.matchCount).toBeGreaterThan(0);
+    expect(step!.source).toBe('pattern');
+    expect(step!.candidates.every((c) => c.digit > 5)).toBe(true);
+    expect(step!.candidates[0]!.digit).toBe(6);
   });
 
-  it('differentiates probabilities using frequency and global signals', () => {
+  it('after high digit recommends low band only', () => {
+    const result = analyzeMasterValue('00', '6768676867');
+    const step = predictNextDigitStep(result, [], '6');
+
+    expect(step).not.toBeNull();
+    expect(step!.source).toBe('pattern');
+    expect(step!.candidates.every((c) => c.digit < 5)).toBe(true);
+  });
+
+  it('uses global high band when prefix has no opposite matches', () => {
     const result = analyzeMasterValue('00', '1212121212');
     const step = predictNextDigitStep(result, [], '1');
 
     expect(step).not.toBeNull();
-    const top = step!.candidates[0]!;
-    const second = step!.candidates[1]!;
-    expect(top.digit).toBe(2);
-    expect(top.probability).toBeGreaterThan(50);
-    expect(top.probability).toBeGreaterThan(second.probability);
+    expect(step!.candidates.every((c) => c.digit > 5)).toBe(true);
+    expect(step!.candidates[0]!.probability).toBeGreaterThan(0);
   });
 
-  it('breaks ties among equal prefix matches with side and code boosts', () => {
-    const result = analyzeMasterValue('00', '1213141516');
-    const step = predictNextDigitStep(result, [{ code: '01', type: '저점', description: '', count: 5, percent: 50 }], '1');
-
-    expect(step).not.toBeNull();
-    const probs = step!.candidates.map((c) => c.probability);
-    const unique = new Set(probs);
-    expect(unique.size).toBeGreaterThan(1);
-  });
-
-  it('chains 4 digits by re-comparing prefix each step', () => {
-    const result = analyzeMasterValue('00', '123412341234');
+  it('chains digits alternating bands each step', () => {
+    const result = analyzeMasterValue('00', '1616161616');
     const chain = predictDigitChain(result, [], '1');
 
-    expect(chain.nextStep?.candidates[0]?.digit).toBe(2);
-    expect(chain.chainSteps.length).toBe(4);
-    expect(chain.suggestedChain.length).toBe(5);
+    expect(chain.nextStep?.candidates.every((c) => c.digit > 5)).toBe(true);
+    expect(chain.chainSteps.length).toBeGreaterThan(0);
     expect(chain.suggestedChain.startsWith('1')).toBe(true);
   });
 

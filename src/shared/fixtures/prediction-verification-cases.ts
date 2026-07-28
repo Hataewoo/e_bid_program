@@ -22,9 +22,9 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '0123456789',
     codes: [{ code: '02', type: '저점', description: '저점,고점' }],
     expected: {
-      value: 'xx.0123',
+      value: 'xx.0606',
       topCode: '02',
-      confidence: 22,
+      confidence: 16,
       dominantSide: 'balanced',
       modeDigit: 0,
       step2Count: 5,
@@ -39,7 +39,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '0011223344',
     codes: [{ code: '01', type: '저점', description: '저점,저점' }],
     expected: {
-      value: 'xx.0011',
+      value: 'xx.0606',
       topCode: '01',
       dominantSide: 'low',
       modeDigit: 0,
@@ -55,11 +55,11 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '5566778899',
     codes: [{ code: '23', type: '고점', description: '고점,고점' }],
     expected: {
-      value: 'xx.5566',
+      value: 'xx.5262',
       topCode: '23',
       dominantSide: 'high',
       modeDigit: 5,
-      confidence: 17,
+      confidence: 21,
       step2Count: 0,
       step3Count: 10,
     },
@@ -72,11 +72,11 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '01234',
     codes: [],
     expected: {
-      value: 'xx.0123',
+      value: 'xx.1606',
       topCode: null,
-      confidence: 20,
+      confidence: 45,
       dominantSide: 'low',
-      modeDigit: 0,
+      modeDigit: 1,
     },
   },
   {
@@ -103,7 +103,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '3',
     codes: [{ code: '99', type: '저점', description: '1 중복' }],
     expected: {
-      value: 'xx.3333',
+      value: 'xx.3939',
       topCode: '99',
       dominantSide: 'low',
       modeDigit: 3,
@@ -121,9 +121,9 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     codes: [{ code: 'XX', type: '저점', description: 'unknown rule' }],
     expected: {
       topCode: 'XX',
-      confidence: 25,
+      confidence: 48,
       dominantSide: 'low',
-      modeDigit: 1,
+      modeDigit: 2,
     },
   },
   {
@@ -147,9 +147,9 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '56789',
     codes: [{ code: '20', type: '고점', description: '저점,고점' }],
     expected: {
-      value: 'xx.5678',
+      value: 'xx.6060',
       dominantSide: 'high',
-      modeDigit: 5,
+      modeDigit: 6,
       step2Count: 0,
       step3Count: 5,
     },
@@ -163,7 +163,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     codes: [{ code: '05', type: '저점', description: '저점,저점,저점' }],
     expected: {
       dominantSide: 'low',
-      modeDigit: 0,
+      modeDigit: 1,
       step2Count: 5,
       step3Count: 0,
     },

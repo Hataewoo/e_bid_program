@@ -56,11 +56,15 @@ function StepBlock({
         </span>
         <span>
           매칭 {step.totalMatches}건 ·{' '}
-          {step.source === 'prefix'
-            ? '기록 직접'
-            : step.source === 'blended'
-              ? '기록+전체 혼합'
-              : '전체 분포'}
+          {step.source === 'pattern'
+            ? '패턴 그래프'
+            : step.source === 'prefix'
+              ? '기록 직접'
+              : step.source === 'alternate'
+                ? '저·고점 교차'
+                : step.source === 'blended'
+                  ? '기록+전체 혼합'
+                  : '전체 분포'}
         </span>
       </div>
       <div className="flex flex-wrap gap-2">

@@ -1,4 +1,8 @@
 import type { AnalysisResult, CodeValueStatRow } from './analysisEngine';
+import {
+  aggregatePatternTransitions,
+  hasPatternGraphSignal,
+} from './digitPatternGraph';
 import { buildProbabilityProfile, type ProbabilityDominantSide } from './probabilityEngine';
 
 export const NEXT_DIGIT_TOP_N = 4;
@@ -27,7 +31,72 @@ export interface NextDigitCandidate {
   matchCount: number;
 }
 
-export type NextDigitSource = 'prefix' | 'blended' | 'global';
+export type NextDigitSource = 'prefix' | 'blended' | 'global' | 'alternate' | 'pattern';
+
+/** 5 기준: 0~4 저점, 6~9 고점 (5는 경계) */
+export type DigitBand = 'low' | 'high';
+
+export function getDigitBand(digit: number): DigitBand | null {
+  if (!Number.isInteger(digit) || digit < 0 || digit > 9) return null;
+  if (digit < 5) return 'low';
+  if (digit > 5) return 'high';
+  return null;
+}
+
+export function getOppositeBand(band: DigitBand): DigitBand {
+  return band === 'low' ? 'high' : 'low';
+}
+
+export function isDigitInBand(digit: number, band: DigitBand): boolean {
+  return band === 'low' ? digit < 5 : digit > 5;
+}
+
+function resolveTargetBandFromPrefix(prefix: string): DigitBand | null {
+  if (!prefix) return null;
+  const last = Number(prefix[prefix.length - 1]);
+  if (!Number.isInteger(last) || last < 0 || last > 9) return null;
+  const lastBand = getDigitBand(last);
+  if (lastBand === null) return 'low';
+  return getOppositeBand(lastBand);
+}
+
+function filterCountsToBand(
+  counts: Map<number, number>,
+  band: DigitBand,
+): { counts: Map<number, number>; totalMatches: number } {
+  const filtered = new Map<number, number>();
+  let totalMatches = 0;
+  for (let d = 0; d <= 9; d += 1) {
+    if (!isDigitInBand(d, band)) continue;
+    const c = counts.get(d) ?? 0;
+    if (c <= 0) continue;
+    filtered.set(d, c);
+    totalMatches += c;
+  }
+  return { counts: filtered, totalMatches };
+}
+
+function filterGlobalProbsToBand(
+  probs: Record<number, number>,
+  band: DigitBand,
+): Record<number, number> {
+  const bandDigits = band === 'low' ? [0, 1, 2, 3, 4] : [6, 7, 8, 9];
+  let sum = 0;
+  const raw: Record<number, number> = {};
+  for (const d of bandDigits) {
+    raw[d] = probs[d] ?? 0;
+    sum += raw[d];
+  }
+  if (sum <= 0) {
+    const equal = 100 / bandDigits.length;
+    return Object.fromEntries(bandDigits.map((d) => [d, equal])) as Record<number, number>;
+  }
+  const out: Record<number, number> = {};
+  for (const d of bandDigits) {
+    out[d] = Math.round(((raw[d] ?? 0) / sum) * 1000) / 10;
+  }
+  return out;
+}
 
 export interface NextDigitStepResult {
   position: number;
@@ -136,7 +205,15 @@ function prefixMatchWeight(totalMatches: number): number {
   return Math.min(0.85, totalMatches / (totalMatches + 1.5));
 }
 
-function resolveNextDigitSource(prefixWeight: number, totalMatches: number): NextDigitSource {
+function resolveNextDigitSource(
+  prefixWeight: number,
+  totalMatches: number,
+  alternate: boolean,
+  patternActive: boolean,
+): NextDigitSource {
+  if (alternate && patternActive) return 'pattern';
+  if (alternate) return 'alternate';
+  if (patternActive && totalMatches >= MIN_MATCHES_FOR_FULL_PREFIX) return 'pattern';
   if (totalMatches <= 0) return 'global';
   if (totalMatches >= MIN_MATCHES_FOR_FULL_PREFIX && prefixWeight >= 0.7) return 'prefix';
   return 'blended';
@@ -188,7 +265,8 @@ function applySideMultiplier(score: number, digit: number, side: ProbabilityDomi
 function sharpenScores(scores: Record<number, number>): Record<number, number> {
   const out: Record<number, number> = {};
   for (let d = 0; d <= 9; d += 1) {
-    out[d] = (Math.max(scores[d] ?? 0, 1e-6)) ** DISTRIBUTION_SHARPNESS;
+    const value = scores[d] ?? 0;
+    out[d] = value <= 0 ? 0 : value ** DISTRIBUTION_SHARPNESS;
   }
   return out;
 }
@@ -209,19 +287,25 @@ function scoreNextDigitCandidates(
   globalProbs: Record<number, number>,
   codeBoost: Record<number, number>,
   dominantSide: ProbabilityDominantSide,
+  targetBand: DigitBand | null,
 ): Record<number, number> {
   const prefixW = prefixMatchWeight(totalMatches);
   const globalW = 1 - prefixW;
-  const prefixDenom = totalMatches + 10 * LAPLACE_ALPHA;
+  const prefixDenom = totalMatches + (targetBand ? 4 : 10) * LAPLACE_ALPHA;
   const maxCount = totalMatches > 0 ? Math.max(...Array.from(counts.values()), 0) : 0;
 
   const raw: Record<number, number> = {};
   for (let d = 0; d <= 9; d += 1) {
+    if (targetBand && !isDigitInBand(d, targetBand)) {
+      raw[d] = 0;
+      continue;
+    }
+
     const matchCount = counts.get(d) ?? 0;
 
     const prefixScore =
       totalMatches > 0 ? (matchCount + LAPLACE_ALPHA) / prefixDenom : 0;
-    const globalScore = (globalProbs[d] ?? 10) / 100;
+    const globalScore = (globalProbs[d] ?? 0) / 100;
 
     let score = prefixScore * prefixW + globalScore * globalW;
 
@@ -232,7 +316,9 @@ function scoreNextDigitCandidates(
     }
 
     score += codeBoost[d] ?? 0;
-    score = applySideMultiplier(score, d, dominantSide);
+    if (!targetBand) {
+      score = applySideMultiplier(score, d, dominantSide);
+    }
     raw[d] = Math.max(score, 1e-4);
   }
 
@@ -247,6 +333,8 @@ export function computeNextDigitProbabilities(
   const profile = buildProbabilityProfile(result, codeStats);
   const globalProbs = profile.digitProbability;
   const codeBoost = buildCodeDigitBoost(codeStats);
+  const targetBand = resolveTargetBandFromPrefix(prefix);
+  const bandGlobalProbs = targetBand ? filterGlobalProbsToBand(globalProbs, targetBand) : globalProbs;
 
   if (result.totalCount === 0) {
     return {
@@ -258,21 +346,52 @@ export function computeNextDigitProbabilities(
   }
 
   const { counts, totalMatches } = countNextDigitsAfterPrefix(result.digits, prefix);
-  const aggregated =
-    prefix.length > 0 ? aggregatePrefixSignals(result.digits, prefix) : { counts, totalMatches };
-
-  const prefixW = prefixMatchWeight(aggregated.totalMatches);
-  const source = resolveNextDigitSource(prefixW, aggregated.totalMatches);
-
-  const probabilities = scoreNextDigitCandidates(
-    aggregated.counts,
-    aggregated.totalMatches,
-    globalProbs,
-    codeBoost,
-    profile.dominantSide,
+  const decimalPosition = prefix.length + 1;
+  const pattern = aggregatePatternTransitions(
+    result.digits,
+    prefix,
+    decimalPosition,
+    targetBand,
   );
 
-  return { probabilities, counts, totalMatches, source };
+  let scoringCounts = pattern.counts;
+  let scoringMatches = pattern.totalMatches;
+
+  if (scoringMatches <= 0 && prefix.length > 0) {
+    const aggregated = aggregatePrefixSignals(result.digits, prefix);
+    scoringCounts = aggregated.counts;
+    scoringMatches = aggregated.totalMatches;
+  }
+
+  const bandAggregated = targetBand
+    ? filterCountsToBand(scoringCounts, targetBand)
+    : { counts: scoringCounts, totalMatches: scoringMatches };
+  const bandDisplay = targetBand ? filterCountsToBand(counts, targetBand) : { counts, totalMatches };
+
+  const prefixW = prefixMatchWeight(bandAggregated.totalMatches);
+  const patternActive = hasPatternGraphSignal(pattern);
+  const source = resolveNextDigitSource(
+    prefixW,
+    bandAggregated.totalMatches,
+    targetBand !== null,
+    patternActive,
+  );
+
+  const probabilities = scoreNextDigitCandidates(
+    bandAggregated.counts,
+    bandAggregated.totalMatches,
+    bandGlobalProbs,
+    codeBoost,
+    profile.dominantSide,
+    targetBand,
+  );
+
+  return {
+    probabilities,
+    counts: bandDisplay.counts,
+    totalMatches: bandDisplay.totalMatches,
+    source,
+  };
 }
 
 export function pickTopCandidates(
@@ -289,6 +408,7 @@ export function pickTopCandidates(
     });
   }
   return candidates
+    .filter((c) => c.probability > 0)
     .sort((a, b) => b.probability - a.probability || b.matchCount - a.matchCount || a.digit - b.digit)
     .slice(0, topN);
 }
