@@ -4,7 +4,7 @@ import { MasterValueTextarea } from '@/components/ui/MasterValueTextarea';
 import { CodeValueStatsGrid } from '@/features/analysis/components/CodeValueStatsGrid';
 import { PatternValuesTable } from '@/features/analysis/components/PatternValuesTable';
 import { HIGH_PATTERN_ROWS, LOW_PATTERN_ROWS } from '@/features/analysis/types/pattern-rows';
-import { filterDigitsByClass } from '@/features/analysis/utils/analysis-display';
+import { filterDigitsByClass, formatRunLengthSequence } from '@/features/analysis/utils/analysis-display';
 import { useI18n } from '@/i18n/use-i18n';
 import type { MessageKey } from '@/i18n/messages';
 import { type CodeValueStepId, useWorkspaceLayoutStore } from '@/stores/workspace-layout-store';
@@ -52,11 +52,19 @@ export function StepSectionContent() {
             <div className="win-panel shrink-0 border border-[#404040] bg-[#ffffe0] p-2 text-sm text-black">
               <div>
                 <span className="font-semibold">{t('codeValue.analysis.masterNo')} </span>
-                {displayResult.masterNo}
+                <span className="bg-[#ffff00] px-0.5">{displayResult.masterNo}</span>
               </div>
               <div>
                 <span className="font-semibold">{t('codeValue.analysis.totalDigits')} </span>
                 {t('codeValue.analysis.unitCount', { count: displayResult.totalCount })}
+              </div>
+              <div>
+                <span className="font-semibold">{t('analysis.ib.lowCount')} </span>
+                {t('analysis.ib.caseUnit', { count: displayResult.lowCount, rate: displayResult.lowRate })}
+              </div>
+              <div>
+                <span className="font-semibold">{t('analysis.ib.highCount')} </span>
+                {t('analysis.ib.caseUnit', { count: displayResult.highCount, rate: displayResult.highRate })}
               </div>
             </div>
             <ResizableVerticalSplitter
@@ -83,7 +91,10 @@ export function StepSectionContent() {
         return (
           <div className="flex h-full min-h-0 flex-1 flex-col">
             <MasterValueTextarea readOnly value={lowText} className="min-h-0 flex-1" />
-            <div className="win-pattern-stats-line shrink-0">
+            <div className="win-pattern-stats-sequence">
+              {formatRunLengthSequence(displayResult.lowRunLengths)}
+            </div>
+            <div className="win-pattern-stats-meta shrink-0">
               {t('analysis.pattern.statsLine', {
                 side: 'Low',
                 count: displayResult.lowCount,
@@ -107,7 +118,10 @@ export function StepSectionContent() {
         return (
           <div className="flex h-full min-h-0 flex-1 flex-col">
             <MasterValueTextarea readOnly value={highText} className="min-h-0 flex-1" />
-            <div className="win-pattern-stats-line shrink-0">
+            <div className="win-pattern-stats-sequence">
+              {formatRunLengthSequence(displayResult.highRunLengths)}
+            </div>
+            <div className="win-pattern-stats-meta shrink-0">
               {t('analysis.pattern.statsLine', {
                 side: 'High',
                 count: displayResult.highCount,

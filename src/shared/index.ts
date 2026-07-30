@@ -6,6 +6,19 @@ export {
   classifyDigit,
   createEmptyAnalysisResult,
   extractDigits,
+  extractCodeValuesFromBaseSequence,
+  extractCodeValuesFromClassRunLengths,
+  extractCodeValuesFromDuplicateCounts,
+  extractCodeValuesFromRunLengths,
+  buildSideBaseSequence,
+  collectValueRunLengths,
+  countBetweenMarkers,
+  countBetweenMarkerRule,
+  STEP2_CODE_VALUE_RULES,
+  STEP3_CODE_VALUE_RULES,
+  collectPrimaryRunLengths,
+  filterDigitsByClass,
+  ONE_DUPLICATE_LENGTH,
   extractSidePatterns,
   matchCompositeComma,
   matchCompositePlus,
@@ -20,3 +33,18 @@ export {
   type DigitClass,
   type SidePatterns,
 } from './utils/analysisEngine';
+export {
+  formatCodeValuePatternTargetLabel,
+  predictFromCodeValuePatterns,
+  scanPatternStructuralMatches,
+  type CodeValuePatternPrediction,
+} from './utils/codeValuePatternPredictor';
+export {
+  applySegmentBoostToDigitScores,
+  collectSegmentDigitTransitions,
+  formatRunSegmentSummary,
+  getLiveSegmentState,
+  mergeSegmentContextIntoDigitScores,
+  predictRunSegment,
+  type RunSegmentPrediction,
+} from './utils/runSegmentEngine';

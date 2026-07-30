@@ -122,7 +122,7 @@ export function AnalysisMain() {
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <AnalysisPredictionPanel result={displayResult} codeValueStats={codeValueStats} />
+        <AnalysisPredictionPanel result={displayResult} />
 
         {workspaceSection}
 

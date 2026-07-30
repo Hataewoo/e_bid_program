@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import type { SidePatterns } from '@/shared/utils/analysisEngine';
 import {
   getPatternValues,
@@ -28,6 +28,8 @@ export const PatternValuesTable = memo(function PatternValuesTable({
   onPatternHighlight,
   onPatternPin,
 }: PatternValuesTableProps) {
+  const [selectedCode, setSelectedCode] = useState<string | null>(null);
+
   const tableRows = useMemo(
     () =>
       rows.map((row) => ({
@@ -37,9 +39,11 @@ export const PatternValuesTable = memo(function PatternValuesTable({
     [rows, patterns],
   );
 
-  const handleClick = useCallback(
+  const handleRowClick = useCallback(
     (row: PatternRowDef, values: number[]) => {
+      setSelectedCode(row.code);
       if (values.length === 0) return;
+
       const highlight: PatternHighlightState = {
         side,
         field: row.field,
@@ -75,37 +79,33 @@ export const PatternValuesTable = memo(function PatternValuesTable({
     <table className="win-pattern-values-table">
       <thead>
         <tr>
-          <th className="w-[88px] text-left">Code</th>
-          <th className="text-left">Values</th>
+          <th className="win-pattern-code-col">Code</th>
+          <th className="win-pattern-values-col">Values</th>
         </tr>
       </thead>
       <tbody>
         {tableRows.map((row) => {
-          const isActive =
+          const isPinned =
             activeHighlight?.side === side &&
             activeHighlight.field === row.field &&
             activeHighlight.code === row.code;
+          const isSelected = selectedCode === row.code || isPinned;
           const hasValues = row.values.length > 0;
 
           return (
             <tr
               key={row.code}
-              className={`${isActive ? 'win-pattern-row-active' : ''} ${hasValues ? 'cursor-pointer' : ''}`}
+              className={`${isSelected ? 'win-pattern-row-selected' : ''} ${hasValues ? 'cursor-pointer' : ''}`}
+              onClick={() => handleRowClick(row, row.values)}
               onMouseEnter={() => handleMouseEnter(row, row.values)}
               onMouseLeave={handleMouseLeave}
             >
-              <td>{row.code}</td>
-              <td>
+              <td className="win-pattern-code-col">{row.code}</td>
+              <td className="win-pattern-values-col">
                 {!hasValues ? (
-                  <span className="text-content-muted">-</span>
+                  <span className="win-pattern-empty">-</span>
                 ) : (
-                  <button
-                    type="button"
-                    className="win-link-value text-left"
-                    onClick={() => handleClick(row, row.values)}
-                  >
-                    {formatPatternValues(row.values)}
-                  </button>
+                  <span className="win-link-value">{formatPatternValues(row.values)}</span>
                 )}
               </td>
             </tr>

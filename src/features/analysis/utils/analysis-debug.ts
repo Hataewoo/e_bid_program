@@ -33,6 +33,8 @@ const PATTERN_FIELDS: (keyof SidePatterns)[] = [
   'oneBetween',
   'oneDuplicate',
   'exactTwo',
+  'alphaPlus_3_2',
+  'alphaPlus_4_3',
   'plusAlpha_3_2',
   'plusAlpha_4_3',
   'plusAlpha_4_4',

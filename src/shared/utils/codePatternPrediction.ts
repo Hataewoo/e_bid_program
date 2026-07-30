@@ -251,7 +251,7 @@ function buildContextSnapshot(
   };
 }
 
-function contextSimilarity(
+function contextSimilarityStrict(
   live: PatternContextSnapshot,
   hist: PatternContextSnapshot,
   patterns: RegisteredPattern[],
@@ -285,6 +285,61 @@ function contextSimilarity(
   return matched / total;
 }
 
+function contextSimilarityGraded(
+  live: PatternContextSnapshot,
+  hist: PatternContextSnapshot,
+  patterns: RegisteredPattern[],
+): number {
+  if (live.classes.length === 0 || hist.classes.length === 0) return 0;
+
+  let total = 0;
+  let score = 0;
+
+  for (const pat of patterns) {
+    if (pat.kind === 'sequence') {
+      const livePhase = live.sequencePhases.get(pat.code);
+      const histPhase = hist.sequencePhases.get(pat.code);
+      if (!livePhase || !histPhase) continue;
+
+      total += 1;
+      let patScore = 0;
+      if (livePhase.nextClass === histPhase.nextClass) patScore += 0.45;
+      const maxLen = Math.max(livePhase.matchedLength, histPhase.matchedLength, 1);
+      patScore +=
+        (1 - Math.abs(livePhase.matchedLength - histPhase.matchedLength) / maxLen) * 0.35;
+      if (livePhase.phase === histPhase.phase) patScore += 0.2;
+      score += Math.min(1, patScore);
+      continue;
+    }
+
+    total += 1;
+    const liveActive = live.activeSidePatterns.has(pat.code);
+    const histActive = hist.activeSidePatterns.has(pat.code);
+    if (liveActive === histActive) score += 1;
+  }
+
+  if (total === 0) return 0;
+  return score / total;
+}
+
+function contextSimilarity(
+  live: PatternContextSnapshot,
+  hist: PatternContextSnapshot,
+  patterns: RegisteredPattern[],
+  useGraded: boolean,
+): number {
+  return useGraded
+    ? contextSimilarityGraded(live, hist, patterns)
+    : contextSimilarityStrict(live, hist, patterns);
+}
+
+function resolveTransitionMinSimilarity(prefix: string): number {
+  if (prefix.length === 0) return 0.85;
+  if (prefix.length < 3) return 0.58;
+  if (prefix.length < 8) return 0.48;
+  return 0.38;
+}
+
 interface TransitionSample {
   nextDigit: number;
   nextClass: DigitClass;
@@ -297,13 +352,14 @@ function collectPatternTransitionSamples(
   patterns: RegisteredPattern[],
   live: PatternContextSnapshot,
   minSimilarity = 0.85,
+  useGradedSimilarity = false,
 ): TransitionSample[] {
   const samples: TransitionSample[] = [];
   const master = analysis.digits;
 
   for (let i = 0; i < master.length - 1; i += 1) {
     const hist = buildContextSnapshot(analysis, i, patterns);
-    const sim = contextSimilarity(live, hist, patterns);
+    const sim = contextSimilarity(live, hist, patterns, useGradedSimilarity);
     if (sim < minSimilarity) continue;
 
     const nextDigit = Number(master[i + 1]);
@@ -600,7 +656,19 @@ export function predictFromCodePatternProfile(
     prefix.length > 0 ? prefix.length - 1 : Math.max(0, result.digits.length - 1);
   const live = buildContextSnapshot(result, liveIdx, patterns);
 
-  let samples = collectPatternTransitionSamples(result, patterns, live);
+  const useGraded = prefix.length > 0;
+  const minSim = resolveTransitionMinSimilarity(prefix);
+  let samples = collectPatternTransitionSamples(result, patterns, live, minSim, useGraded);
+  if (prefix.length > 0 && samples.length < 3) {
+    const loose = collectPatternTransitionSamples(
+      result,
+      patterns,
+      live,
+      Math.max(0.32, minSim - 0.2),
+      true,
+    );
+    samples = [...samples, ...loose];
+  }
   samples = [...samples, ...collectExactPrefixTransitions(result.digits, prefix)];
 
   const bandDecision = resolveTargetBandFromPattern(

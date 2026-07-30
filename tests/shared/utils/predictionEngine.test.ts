@@ -12,7 +12,7 @@ describe('predictionEngine', () => {
     expect(prediction.rationale[0]).toContain('데이터 없음');
   });
 
-  it('builds prediction from top code and next-digit chain', () => {
+  it('builds prediction from top code and S pattern summary', () => {
     const result = analyzeMasterValue('01', '0011223344');
     const stats = buildCodeValueStats(result, [
       { id: 1, code: '12', type: 'A', description: 'test' },
@@ -20,9 +20,9 @@ describe('predictionEngine', () => {
     const prediction = buildPrediction(result, stats);
 
     expect(prediction.topCode).toBe('12');
-    expect(prediction.value).toMatch(/^xx\./);
+    expect(prediction.modeDigit).toBeNull();
     expect(prediction.confidence).toBeGreaterThan(0);
-    expect(prediction.rationale.some((line) => line.includes('다음 자리 추천'))).toBe(true);
+    expect(prediction.rationale.some((line) => line.includes('S 패턴'))).toBe(true);
   });
 
   it('createEmptyPrediction uses master number', () => {

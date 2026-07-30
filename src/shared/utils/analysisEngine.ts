@@ -17,17 +17,23 @@ export interface SidePatterns {
   threeOrMore: number[];
   /** '5 이상' — 연속 길이 ≥ 5 인 primary run 길이 목록 */
   fiveOrMore: number[];
-  /** '1 사이' — primary 사이에 opposite 1개만 끼인 위치(인덱스) */
+  /** '1 사이' — S에서 1과 1 사이(≥2) 개수 */
   oneBetween: number[];
-  /** '1 중복' — primary 연속 길이 = 1 */
+  /** '1 중복' — S에서 value=1 연속 run 길이 */
   oneDuplicate: number[];
-  /** '2' — primary 연속 길이 = 2 */
+  /** '2' / '6' — 중복 횟수 = 2 (동일 숫자 3연속) */
   exactTwo: number[];
-  /** '3+α, 2' 등 — primary run 시작 인덱스 */
+  /** '3+α,2' / '5+α,2' — 2와 2 사이 3~9(또는 5~9) 개수 */
+  alphaPlus_3_2: number[];
+  /** '4+α,3' / '9+α,3' — 3과 3 사이 4~9(또는 9) 개수 */
+  alphaPlus_4_3: number[];
+  /** '3,4+α' — 노란 줄 S에서 마커≥4 사이 3 개수 */
   plusAlpha_3_2: number[];
+  /** '4,5+α' — 노란 줄 S에서 마커≥5 사이 4 개수 */
   plusAlpha_4_3: number[];
+  /** '5+α,4' — 중복 시퀀스에서 앞≥5·뒤≥4일 때 뒤 값 */
   plusAlpha_4_4: number[];
-  /** '2,3+α' 등 — primary run 시작 인덱스 */
+  /** '2,3+α' — 중복 시퀀스에서 뒤≥3일 때 앞 값 */
   commaAlpha_2_3: number[];
 }
 
@@ -40,6 +46,10 @@ export interface AnalysisResult {
   highRate: number;
   lowPatterns: SidePatterns;
   highPatterns: SidePatterns;
+  /** STEP2 — 저점 run 연속 횟수 시퀀스 (노란색 중간 줄, 교차 분석) */
+  lowRunLengths: number[];
+  /** STEP3 — 고점 run 연속 횟수 시퀀스 (노란색 중간 줄, 교차 분석) */
+  highRunLengths: number[];
   /** 내부 검증용 — L/H 클래스 run 시퀀스 */
   runs: ClassRun[];
   /** 정규화된 숫자 문자열 */
@@ -51,7 +61,7 @@ export interface CompositePlusRule {
   primaryMin: number;
   oppositeExact: number;
   /** SidePatterns 필드 키 */
-  field: keyof Pick<SidePatterns, 'plusAlpha_3_2' | 'plusAlpha_4_3' | 'plusAlpha_4_4'>;
+  field: keyof Pick<SidePatterns, 'alphaPlus_3_2' | 'alphaPlus_4_3' | 'plusAlpha_4_4'>;
 }
 
 export interface CompositeCommaRule {
@@ -69,39 +79,45 @@ export interface CompositeCommaRule {
  * |---------------|------------------|------------------------------|
  * | 3 이상        | threeOrMore      | THREE_OR_MORE_MIN            |
  * | 5 이상        | fiveOrMore       | FIVE_OR_MORE_MIN             |
- * | 1 중복        | oneDuplicate     | ONE_DUPLICATE_LENGTH         |
- * | 2             | exactTwo         | EXACT_TWO_LENGTH             |
- * | 1 사이        | oneBetween       | ONE_BETWEEN_OPPOSITE_LENGTH  |
- * | 3+α, 2 등     | plusAlpha_*      | COMPOSITE_PLUS_RULES         |
- * | 2,3+α         | commaAlpha_2_3   | COMPOSITE_COMMA_RULES        |
+ * Code Value — 노란색 중간 줄(저·고점 교차 run 길이)을 건드리지 않고,
+ * 그 시퀀스 S에서 각 Code 행 값을 파생한다.
+ *
+ * | UI (STEP2/3)  | field        | 의미                          |
+ * |---------------|--------------|-------------------------------|
+ * | (노란 줄)     | lowRunLengths | 저점 run 연속 횟수 (교차 전)  |
+ * | 1 중복        | oneDuplicate | S에서 value=1 연속 run 길이   |
+ * | 1 사이        | oneBetween       | 1 사이 ≥2 개수               |
+ * | 3+α,2 / 4+α,3 | alphaPlus_*      | 2/3 사이 α구간 개수          |
+ * | 2,3+α         | commaAlpha_2_3   | 3~9 사이 2 개수              |
  */
 export const MATCH_RULES = {
-  /** '3 이상' — primary 연속 길이 하한 (슬라이딩 run 스캔) */
+  /** '3 이상' — run 연속 길이 하한 */
   THREE_OR_MORE_MIN: 3,
-  /** '5 이상' / High '9 이상' — primary 연속 길이 하한 */
+  /** '5 이상' — run 연속 길이 하한 */
   FIVE_OR_MORE_MIN: 5,
-  /** '1 중복' / High '5 중복' — primary 연속 길이 정확히 일치 */
-  ONE_DUPLICATE_LENGTH: 1,
-  /** '2' / High '6' — primary 연속 길이 정확히 일치 */
+  /** '2' / '6' — run 연속 길이 = 2 */
   EXACT_TWO_LENGTH: 2,
   /** '1 사이' — primary 사이 opposite run 허용 길이 */
   ONE_BETWEEN_OPPOSITE_LENGTH: 1,
 } as const;
 
+/** @deprecated prediction/디버그 — run 길이 = 1 */
+export const ONE_DUPLICATE_LENGTH = 1;
+
 export const COMPOSITE_PLUS_RULES: readonly CompositePlusRule[] = [
   {
-    label: '3+α, 2',
+    label: '3+α,2',
     primaryMin: MATCH_RULES.THREE_OR_MORE_MIN,
     oppositeExact: MATCH_RULES.EXACT_TWO_LENGTH,
-    field: 'plusAlpha_3_2',
+    field: 'alphaPlus_3_2',
   },
   {
-    label: '4+α, 3',
+    label: '4+α,3',
     primaryMin: 4,
     oppositeExact: MATCH_RULES.THREE_OR_MORE_MIN,
-    field: 'plusAlpha_4_3',
+    field: 'alphaPlus_4_3',
   },
-  { label: '4+α, 4', primaryMin: 4, oppositeExact: 4, field: 'plusAlpha_4_4' },
+  { label: '4+α,4', primaryMin: 4, oppositeExact: 4, field: 'plusAlpha_4_4' },
 ] as const;
 
 export const COMPOSITE_COMMA_RULES: readonly CompositeCommaRule[] = [
@@ -119,6 +135,8 @@ const EMPTY_SIDE_PATTERNS: SidePatterns = {
   oneBetween: [],
   oneDuplicate: [],
   exactTwo: [],
+  alphaPlus_3_2: [],
+  alphaPlus_4_3: [],
   plusAlpha_3_2: [],
   plusAlpha_4_3: [],
   plusAlpha_4_4: [],
@@ -305,6 +323,8 @@ function createEmptySidePatterns(): SidePatterns {
     oneBetween: [],
     oneDuplicate: [],
     exactTwo: [],
+    alphaPlus_3_2: [],
+    alphaPlus_4_3: [],
     plusAlpha_3_2: [],
     plusAlpha_4_3: [],
     plusAlpha_4_4: [],
@@ -312,11 +332,299 @@ function createEmptySidePatterns(): SidePatterns {
   };
 }
 
-/** primary 관점 패턴 추출 */
+/** 이명전기 α 패턴 — 마커/카운트 상한 (3~9 등) */
+export const CODE_VALUE_ALPHA_MAX = 9;
+
+/** S 마커 사이 구간에서 조건에 맞는 값 개수 (0은 제외) */
+export interface BetweenMarkerRule {
+  markerExact?: number;
+  markerMin?: number;
+  markerMax?: number;
+  countExact?: number;
+  countMin?: number;
+  countMax?: number;
+  /** true — 마커 쌍 사이만 (1 사이, 3+α,2, 4+α,3, 5+α,4) */
+  pairsOnly?: boolean;
+}
+
+function valueInRuleRange(
+  value: number,
+  min: number | undefined,
+  max: number | undefined,
+  fallbackMax: number,
+): boolean {
+  if (min === undefined) return false;
+  const upper = max ?? fallbackMax;
+  return value >= min && value <= upper;
+}
+
+/** S — 이명전기 패턴: 마커(정확값 또는 구간) 사이 count(정확값 또는 구간) 개수 */
+export function countBetweenMarkerRule(
+  sequence: number[],
+  rule: BetweenMarkerRule,
+): number[] {
+  const isMarker = (value: number): boolean => {
+    if (rule.markerExact !== undefined) return value === rule.markerExact;
+    return valueInRuleRange(value, rule.markerMin, rule.markerMax, CODE_VALUE_ALPHA_MAX);
+  };
+
+  const countMatch = (value: number): boolean => {
+    if (rule.countExact !== undefined) return value === rule.countExact;
+    return valueInRuleRange(
+      value,
+      rule.countMin,
+      rule.countMax,
+      rule.countMax === undefined && rule.countMin !== undefined
+        ? Number.POSITIVE_INFINITY
+        : CODE_VALUE_ALPHA_MAX,
+    );
+  };
+
+  return countMatchingBetweenMarkers(
+    sequence,
+    collectMarkerIndices(sequence, isMarker),
+    countMatch,
+    rule.pairsOnly ?? false,
+  );
+}
+
+interface SideBetweenMarkerRules {
+  commaAlpha_2_3: BetweenMarkerRule;
+  plusAlpha_3_2: BetweenMarkerRule;
+  plusAlpha_4_3: BetweenMarkerRule;
+  plusAlpha_4_4: BetweenMarkerRule;
+  oneBetween: BetweenMarkerRule;
+  alphaPlus_3_2: BetweenMarkerRule;
+  alphaPlus_4_3: BetweenMarkerRule;
+}
+
+/** STEP2/STEP3 공통 — 이명전기 Code Values 10패턴 (S = 노란 줄 run 길이) */
+const LEGACY_BETWEEN_MARKER_RULES: SideBetweenMarkerRules = {
+  /** ② 2,3+α — 3~9 사이 숫자 2 */
+  commaAlpha_2_3: { countExact: 2, markerMin: 3, markerMax: CODE_VALUE_ALPHA_MAX },
+  /** ③ 3,4+α — 4~9 사이 숫자 3 */
+  plusAlpha_3_2: { countExact: 3, markerMin: 4, markerMax: CODE_VALUE_ALPHA_MAX },
+  /** ④ 4,5+α — 5~9 사이 숫자 4 */
+  plusAlpha_4_3: { countExact: 4, markerMin: 5, markerMax: CODE_VALUE_ALPHA_MAX },
+  /** ⑤ 5+α,4 — 4와 4 사이 5~9 */
+  plusAlpha_4_4: { countMin: 5, countMax: CODE_VALUE_ALPHA_MAX, markerExact: 4, pairsOnly: true },
+  /** ⑧ 1 사이 — 1 사이 ≥2 */
+  oneBetween: { countMin: 2, markerExact: 1, pairsOnly: true },
+  /** ⑨ 3+α,2 — 2 사이 3~9 */
+  alphaPlus_3_2: { countMin: 3, countMax: CODE_VALUE_ALPHA_MAX, markerExact: 2, pairsOnly: true },
+  /** ⑩ 4+α,3 — 3 사이 4~9 */
+  alphaPlus_4_3: { countMin: 4, countMax: CODE_VALUE_ALPHA_MAX, markerExact: 3, pairsOnly: true },
+};
+
+/** @deprecated LEGACY_CODE_VALUE_RULES 와 동일 */
+export const STEP2_CODE_VALUE_RULES = {
+  duplicateValue: 1,
+  threeOrMoreMin: 3,
+  fiveOrMoreMin: 5,
+  between: LEGACY_BETWEEN_MARKER_RULES,
+} as const;
+
+/** STEP3 — STEP2와 동일 규칙 (highRunLengths S에 적용) */
+export const STEP3_CODE_VALUE_RULES = STEP2_CODE_VALUE_RULES;
+
+const LEGACY_CODE_VALUE_RULES = STEP2_CODE_VALUE_RULES;
+
+/** STEP2/3 — 저점 또는 고점 필터 문자열만 추출 */
+export function filterDigitsByClass(digits: string, cls: DigitClass): string {
+  let out = '';
+  for (let i = 0; i < digits.length; i += 1) {
+    const ch = digits[i] ?? '';
+    if (classifyChar(ch) === cls) out += ch;
+  }
+  return out;
+}
+
+/** Master L/H run 중 primary(저 또는 고) 구간 길이 — prediction/디버그 */
+export function collectPrimaryRunLengths(runs: ClassRun[], primary: DigitClass): number[] {
+  return runs.filter((run) => run.cls === primary).map((run) => run.length);
+}
+
+/**
+ * 이명전기 STEP2/3 기본 시퀀스 S.
+ * 같은 digit run: 길이 1 → digit 값, 길이 ≥2 → run 길이.
+ */
+export function buildSideBaseSequence(sideDigits: string): number[] {
+  const sequence: number[] = [];
+  if (sideDigits.length === 0) return sequence;
+
+  let i = 0;
+  while (i < sideDigits.length) {
+    const ch = sideDigits[i]!;
+    let length = 1;
+    i += 1;
+    while (i < sideDigits.length && sideDigits[i] === ch) {
+      length += 1;
+      i += 1;
+    }
+    sequence.push(length === 1 ? Number(ch) : length);
+  }
+
+  return sequence;
+}
+
+/** S에서 value=1 연속 run 길이 (1 중복) */
+export function collectValueRunLengths(sequence: number[], value: number): number[] {
+  const lengths: number[] = [];
+  if (sequence.length === 0) return lengths;
+
+  let i = 0;
+  while (i < sequence.length) {
+    if (sequence[i] !== value) {
+      i += 1;
+      continue;
+    }
+    let length = 1;
+    i += 1;
+    while (i < sequence.length && sequence[i] === value) {
+      length += 1;
+      i += 1;
+    }
+    lengths.push(length);
+  }
+
+  return lengths;
+}
+
+function countMatchingBetweenMarkers(
+  sequence: number[],
+  markerIndices: number[],
+  countMatch: (value: number) => boolean,
+  pairsOnly = false,
+): number[] {
+  const results: number[] = [];
+  if (sequence.length === 0) return results;
+
+  const countInRange = (start: number, end: number): number => {
+    let count = 0;
+    for (let i = start; i < end; i += 1) {
+      if (countMatch(sequence[i]!)) count += 1;
+    }
+    return count;
+  };
+
+  if (markerIndices.length === 0) {
+    if (pairsOnly) return results;
+    const total = countInRange(0, sequence.length);
+    if (total > 0) results.push(total);
+    return results;
+  }
+
+  if (markerIndices.length === 1 && pairsOnly) return results;
+
+  if (!pairsOnly) {
+    const first = countInRange(0, markerIndices[0]!);
+    if (first > 0) results.push(first);
+  }
+
+  for (let m = 0; m < markerIndices.length - 1; m += 1) {
+    const between = countInRange(markerIndices[m]! + 1, markerIndices[m + 1]!);
+    if (between > 0) results.push(between);
+  }
+
+  if (!pairsOnly) {
+    const last = countInRange(markerIndices[markerIndices.length - 1]! + 1, sequence.length);
+    if (last > 0) results.push(last);
+  }
+
+  return results;
+}
+
+function collectMarkerIndices(sequence: number[], isMarker: (value: number) => boolean): number[] {
+  const indices: number[] = [];
+  for (let i = 0; i < sequence.length; i += 1) {
+    if (isMarker(sequence[i]!)) indices.push(i);
+  }
+  return indices;
+}
+
+/** @deprecated countBetweenMarkerRule 사용 */
+export function countBetweenMarkers(
+  sequence: number[],
+  countValue: number,
+  markerMin: number,
+  options: { countExact?: boolean; markerExact?: number; countMin?: number; markerMax?: number } = {},
+): number[] {
+  if (options.markerExact !== undefined) {
+    return countBetweenMarkerRule(sequence, {
+      markerExact: options.markerExact,
+      countExact: options.countMin === undefined ? countValue : undefined,
+      countMin: options.countMin,
+    });
+  }
+
+  return countBetweenMarkerRule(sequence, {
+    countExact: options.countMin === undefined ? countValue : undefined,
+    countMin: options.countMin,
+    markerMin,
+    markerMax: options.markerMax ?? CODE_VALUE_ALPHA_MAX,
+  });
+}
+
+interface SideCodeValueRules {
+  duplicateValue: number;
+  threeOrMoreMin: number;
+  fiveOrMoreMin: number;
+}
+
+const LOW_CODE_VALUE_RULES: SideCodeValueRules = LEGACY_CODE_VALUE_RULES;
+const HIGH_CODE_VALUE_RULES: SideCodeValueRules = LEGACY_CODE_VALUE_RULES;
+
+/**
+ * 이명전기 Code Values — 노란색 중간 줄 시퀀스 S에서 각 Code 행을 파생한다.
+ * (S 자체는 lowRunLengths / highRunLengths — 교차 run 길이, 변경하지 않음)
+ */
+export function extractCodeValuesFromBaseSequence(
+  baseSequence: number[],
+  side: DigitClass,
+): SidePatterns {
+  const result = createEmptySidePatterns();
+  if (baseSequence.length === 0) return result;
+
+  const rules = side === 'low' ? LOW_CODE_VALUE_RULES : HIGH_CODE_VALUE_RULES;
+
+  result.oneDuplicate = collectValueRunLengths(baseSequence, rules.duplicateValue);
+  result.threeOrMore = baseSequence.filter((value) => value >= rules.threeOrMoreMin);
+  result.fiveOrMore = baseSequence.filter((value) => value >= rules.fiveOrMoreMin);
+
+  const betweenRules = LEGACY_CODE_VALUE_RULES.between;
+
+  result.commaAlpha_2_3 = countBetweenMarkerRule(baseSequence, betweenRules.commaAlpha_2_3);
+  result.plusAlpha_3_2 = countBetweenMarkerRule(baseSequence, betweenRules.plusAlpha_3_2);
+  result.plusAlpha_4_3 = countBetweenMarkerRule(baseSequence, betweenRules.plusAlpha_4_3);
+  result.plusAlpha_4_4 = countBetweenMarkerRule(baseSequence, betweenRules.plusAlpha_4_4);
+  result.oneBetween = countBetweenMarkerRule(baseSequence, betweenRules.oneBetween);
+  result.alphaPlus_3_2 = countBetweenMarkerRule(baseSequence, betweenRules.alphaPlus_3_2);
+  result.alphaPlus_4_3 = countBetweenMarkerRule(baseSequence, betweenRules.alphaPlus_4_3);
+
+  return result;
+}
+
+/** @deprecated extractCodeValuesFromBaseSequence 사용 */
+export function extractCodeValuesFromClassRunLengths(runLengths: number[]): SidePatterns {
+  return extractCodeValuesFromBaseSequence(runLengths, 'low');
+}
+
+/** @deprecated extractCodeValuesFromClassRunLengths */
+export function extractCodeValuesFromDuplicateCounts(counts: number[]): SidePatterns {
+  return extractCodeValuesFromClassRunLengths(counts);
+}
+
+/** @deprecated extractCodeValuesFromClassRunLengths */
+export function extractCodeValuesFromRunLengths(lengths: number[]): SidePatterns {
+  return extractCodeValuesFromClassRunLengths(lengths);
+}
+
+/** @deprecated Master digit run 기준 — prediction/디버그용. UI Code Values는 extractCodeValuesFromRunLengths 사용 */
 export function extractSidePatterns(
   runs: ClassRun[],
   primary: DigitClass,
   digitLength: number,
+  digits: string,
 ): SidePatterns {
   const result = createEmptySidePatterns();
   const safeRuns = filterValidRuns(runs, digitLength);
@@ -325,7 +633,7 @@ export function extractSidePatterns(
     if (run.cls !== primary) continue;
     if (run.length >= MATCH_RULES.THREE_OR_MORE_MIN) result.threeOrMore.push(run.length);
     if (run.length >= MATCH_RULES.FIVE_OR_MORE_MIN) result.fiveOrMore.push(run.length);
-    if (run.length === MATCH_RULES.ONE_DUPLICATE_LENGTH) result.oneDuplicate.push(run.length);
+    if (run.length === ONE_DUPLICATE_LENGTH) result.oneDuplicate.push(run.length);
     if (run.length === MATCH_RULES.EXACT_TWO_LENGTH) result.exactTwo.push(run.length);
   }
 
@@ -356,15 +664,41 @@ export function extractSidePatterns(
 
 /** 교차 검증 디버그 — UI 라벨 (Low/High 각각) */
 export const PATTERN_FIELD_LABELS: Record<keyof SidePatterns, { low: string; high: string }> = {
-  oneDuplicate: { low: '1 중복', high: '5 중복' },
-  exactTwo: { low: '2', high: '6' },
-  commaAlpha_2_3: { low: '2,3+α', high: '6,7+α' },
-  threeOrMore: { low: '3 이상', high: '8 이상' },
-  fiveOrMore: { low: '5 이상', high: '9 이상' },
+  oneDuplicate: { low: '1 중복', high: '1 중복' },
+  exactTwo: { low: '2', high: '2' },
+  commaAlpha_2_3: { low: '2,3+α', high: '2,3+α' },
+  threeOrMore: { low: '3 이상', high: '3 이상' },
+  fiveOrMore: { low: '5 이상', high: '5 이상' },
   oneBetween: { low: '1 사이', high: '1 사이' },
-  plusAlpha_3_2: { low: '3+α, 2', high: '5+α, 2' },
-  plusAlpha_4_3: { low: '4+α, 3', high: '9+α, 3' },
-  plusAlpha_4_4: { low: '4+α, 4', high: '9+α, 4' },
+  alphaPlus_3_2: { low: '3+α,2', high: '3+α,2' },
+  alphaPlus_4_3: { low: '4+α,3', high: '4+α,3' },
+  plusAlpha_3_2: { low: '3,4+α', high: '3,4+α' },
+  plusAlpha_4_3: { low: '4,5+α', high: '4,5+α' },
+  plusAlpha_4_4: { low: '5+α,4', high: '5+α,4' },
+};
+
+/** DB/구버전 Code 설명 → 현재 패턴 필드 (별칭) */
+const PATTERN_LABEL_ALIASES: Record<string, { side: DigitClass; field: keyof SidePatterns }> = {
+  '1 중복': { side: 'low', field: 'oneDuplicate' },
+  /** 구 DB 코드 — STEP3도 1 중복 규칙 */
+  '5 중복': { side: 'high', field: 'oneDuplicate' },
+  '3+α,2': { side: 'low', field: 'alphaPlus_3_2' },
+  '3+α, 2': { side: 'low', field: 'alphaPlus_3_2' },
+  '4+α,3': { side: 'low', field: 'alphaPlus_4_3' },
+  '4+α, 3': { side: 'low', field: 'alphaPlus_4_3' },
+  '4+α, 4': { side: 'low', field: 'plusAlpha_4_4' },
+  /** 구 STEP3 라벨 — 동일 필드 */
+  '5+α,2': { side: 'high', field: 'alphaPlus_3_2' },
+  '5+α, 2': { side: 'high', field: 'alphaPlus_3_2' },
+  '9+α,3': { side: 'high', field: 'alphaPlus_4_3' },
+  '9+α, 3': { side: 'high', field: 'alphaPlus_4_3' },
+  '9+α, 4': { side: 'high', field: 'plusAlpha_4_4' },
+  '8 이상': { side: 'high', field: 'threeOrMore' },
+  '9 이상': { side: 'high', field: 'fiveOrMore' },
+  '6,7+α': { side: 'high', field: 'commaAlpha_2_3' },
+  '7,8+α': { side: 'high', field: 'plusAlpha_3_2' },
+  '8,9+α': { side: 'high', field: 'plusAlpha_4_3' },
+  '9+α,8': { side: 'high', field: 'plusAlpha_4_4' },
 };
 
 const PATTERN_DEBUG_FIELDS: (keyof SidePatterns)[] = [
@@ -374,6 +708,8 @@ const PATTERN_DEBUG_FIELDS: (keyof SidePatterns)[] = [
   'threeOrMore',
   'fiveOrMore',
   'oneBetween',
+  'alphaPlus_3_2',
+  'alphaPlus_4_3',
   'plusAlpha_3_2',
   'plusAlpha_4_3',
   'plusAlpha_4_4',
@@ -415,7 +751,7 @@ export function collectPatternMatchStartIndices(
     case 'oneDuplicate': {
       const indices: number[] = [];
       for (const run of runs) {
-        if (run.cls === primary && run.length === MATCH_RULES.ONE_DUPLICATE_LENGTH) {
+        if (run.cls === primary && run.length === ONE_DUPLICATE_LENGTH) {
           indices.push(run.startIndex);
         }
       }
@@ -431,6 +767,8 @@ export function collectPatternMatchStartIndices(
       return indices;
     }
     case 'oneBetween':
+    case 'alphaPlus_3_2':
+    case 'alphaPlus_4_3':
     case 'plusAlpha_3_2':
     case 'plusAlpha_4_3':
     case 'plusAlpha_4_4':
@@ -478,6 +816,8 @@ export function createEmptyAnalysisResult(masterNo: string): AnalysisResult {
     highRate: 0,
     lowPatterns: { ...EMPTY_SIDE_PATTERNS },
     highPatterns: { ...EMPTY_SIDE_PATTERNS },
+    lowRunLengths: [],
+    highRunLengths: [],
     runs: [],
     digits: '',
   };
@@ -503,6 +843,8 @@ export function analyzeMasterValue(masterNo: string, rawValue: string): Analysis
   const runs = filterValidRuns(buildRuns(classes), digits.length);
   const { lowCount, highCount } = splitLowHighCounts(digits);
   const totalCount = digits.length;
+  const lowRunLengths = collectPrimaryRunLengths(runs, 'low');
+  const highRunLengths = collectPrimaryRunLengths(runs, 'high');
 
   return {
     masterNo: safeMasterNo,
@@ -511,8 +853,10 @@ export function analyzeMasterValue(masterNo: string, rawValue: string): Analysis
     lowRate: calcRate(lowCount, totalCount),
     highCount,
     highRate: calcRate(highCount, totalCount),
-    lowPatterns: extractSidePatterns(runs, 'low', totalCount),
-    highPatterns: extractSidePatterns(runs, 'high', totalCount),
+    lowPatterns: extractCodeValuesFromBaseSequence(lowRunLengths, 'low'),
+    highPatterns: extractCodeValuesFromBaseSequence(highRunLengths, 'high'),
+    lowRunLengths,
+    highRunLengths,
     runs,
     digits,
   };
@@ -530,7 +874,7 @@ export function matchCompositePlus(
     label: 'custom',
     primaryMin,
     oppositeExact,
-    field: 'plusAlpha_3_2',
+    field: 'alphaPlus_3_2',
   };
   const indices: number[] = [];
 
@@ -578,7 +922,7 @@ export function resolvePatternHighlightIndices(
       break;
     case 'oneDuplicate':
       for (const run of runs) {
-        if (run.cls === primary && run.length === MATCH_RULES.ONE_DUPLICATE_LENGTH) {
+        if (run.cls === primary && run.length === ONE_DUPLICATE_LENGTH) {
           addIndexRange(indices, run.startIndex, run.endIndex);
         }
       }
@@ -598,8 +942,8 @@ export function resolvePatternHighlightIndices(
         if (left && right) addIndexRange(indices, left.startIndex, right.endIndex);
       }
       break;
-    case 'plusAlpha_3_2':
-    case 'plusAlpha_4_3':
+    case 'alphaPlus_3_2':
+    case 'alphaPlus_4_3':
     case 'plusAlpha_4_4': {
       const rule = COMPOSITE_PLUS_RULES.find((r) => r.field === field);
       if (rule) {
@@ -613,6 +957,9 @@ export function resolvePatternHighlightIndices(
       }
       break;
     }
+    case 'plusAlpha_3_2':
+    case 'plusAlpha_4_3':
+      break;
     case 'commaAlpha_2_3': {
       const rule = COMPOSITE_COMMA_RULES[0];
       for (let i = 0; i < runs.length; i += 1) {
@@ -696,6 +1043,9 @@ export function resolvePatternFieldFromDescription(
 ): { side: DigitClass; field: keyof SidePatterns } | null {
   const normalized = normalizePatternLabel(description);
   if (!normalized) return null;
+
+  const alias = PATTERN_LABEL_ALIASES[normalized];
+  if (alias) return alias;
 
   const preferredSide = resolveCodeTypeSide(codeType);
 

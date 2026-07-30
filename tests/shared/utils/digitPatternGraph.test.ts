@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { analyzeMasterValue, buildCodeValueStats } from '@/shared/utils/analysisEngine';
+import { analyzeMasterValue } from '@/shared/utils/analysisEngine';
 import {
   aggregatePatternTransitions,
   toPivotBandSequence,
 } from '@/shared/utils/digitPatternGraph';
-import { predictNextDigitStep } from '@/shared/utils/nextDigitEngine';
 
 describe('digitPatternGraph', () => {
   it('builds pivot band sequence', () => {
@@ -26,15 +25,5 @@ describe('digitPatternGraph', () => {
     const pattern = aggregatePatternTransitions(result.digits, '1', 1, 'highHigh');
 
     expect(pattern.positionMatches).toBeGreaterThan(0);
-  });
-
-  it('surfaces pattern source in prediction step', () => {
-    const result = analyzeMasterValue('00', '1213141516');
-    const stats = buildCodeValueStats(result, [
-      { id: 1, code: '02', type: '저점', description: '저점,고점' },
-    ]);
-    const step = predictNextDigitStep(result, stats, '1');
-
-    expect(step?.source).toBe('pattern');
   });
 });
