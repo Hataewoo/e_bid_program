@@ -16,14 +16,6 @@ import {
   type CodeValueStatRow,
 } from '@/shared/utils/analysisEngine';
 import { buildPrediction, type PredictionResult } from '@/shared/utils/predictionEngine';
-import {
-  buildProbabilityProfile,
-  type ProbabilityProfile,
-} from '@/shared/utils/probabilityEngine';
-import {
-  buildRateRecommendations,
-  type RateRecommendResult,
-} from '@/shared/utils/rateRecommendEngine';
 import { getCachedAnalysis, rememberAnalysisResult } from '@/shared/utils/analysisCache';
 import { persistAnalysisRun, notifyPersistenceFailure } from '@/shared/utils/persistAnalysisToDb';
 import type { LogEntry, LogLevel } from '../types/analysis.types';
@@ -76,27 +68,19 @@ function applyAnalysisDerived(
 ): {
   codeValueStats: CodeValueStatRow[];
   prediction: PredictionResult;
-  probabilityProfile: ProbabilityProfile;
-  rateRecommendations: RateRecommendResult;
 } {
   const codeValueStats = buildCodeValueStats(result, toCodeMatchInputs(codes));
   const prediction = buildPrediction(result, codeValueStats);
-  const probabilityProfile = buildProbabilityProfile(result, codeValueStats);
-  const rateRecommendations = buildRateRecommendations(probabilityProfile);
-  return { codeValueStats, prediction, probabilityProfile, rateRecommendations };
+  return { codeValueStats, prediction };
 }
 
 function applyPipelineDerived(data: {
   codeValueStats: CodeValueStatRow[];
   prediction: PredictionResult;
-  probabilityProfile: ProbabilityProfile;
-  rateRecommendations: RateRecommendResult;
 }) {
   return {
     codeValueStats: data.codeValueStats,
     prediction: data.prediction,
-    probabilityProfile: data.probabilityProfile,
-    rateRecommendations: data.rateRecommendations,
   };
 }
 
@@ -107,8 +91,6 @@ interface AnalysisState {
   codes: Code[];
   codeValueStats: CodeValueStatRow[];
   prediction: PredictionResult | null;
-  probabilityProfile: ProbabilityProfile | null;
-  rateRecommendations: RateRecommendResult | null;
   codesLoading: boolean;
   searchQuery: string;
   selectedMaster: Master | null;
@@ -155,8 +137,6 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
   codes: [],
   codeValueStats: [],
   prediction: null,
-  probabilityProfile: null,
-  rateRecommendations: null,
   codesLoading: false,
   searchQuery: '',
   selectedMaster: null,
@@ -195,14 +175,12 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
     const analysis = result ?? get().currentAnalysisResult;
     const { codes } = get();
     if (!analysis) {
-      set({ codeValueStats: [], prediction: null, probabilityProfile: null, rateRecommendations: null });
+      set({ codeValueStats: [], prediction: null });
       return;
     }
     const stats = buildCodeValueStats(analysis, toCodeMatchInputs(codes));
     const prediction = buildPrediction(analysis, stats);
-    const probabilityProfile = buildProbabilityProfile(analysis, stats);
-    const rateRecommendations = buildRateRecommendations(probabilityProfile);
-    set({ codeValueStats: stats, prediction, probabilityProfile, rateRecommendations });
+    set({ codeValueStats: stats, prediction });
   },
 
   syncAfterCodeRegistryChange: async () => {
@@ -419,8 +397,6 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
       currentAnalysisResult: null,
       codeValueStats: [],
       prediction: null,
-      probabilityProfile: null,
-      rateRecommendations: null,
       showRawData: false,
       showHistory: false,
       statusMessage: translate('analysis.status.reset'),

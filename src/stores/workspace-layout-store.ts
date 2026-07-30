@@ -5,37 +5,9 @@ import { NAV_ITEMS } from '@/lib/constants';
 export type NavItemId = (typeof NAV_ITEMS)[number]['id'];
 export const DEFAULT_NAV_ORDER: NavItemId[] = NAV_ITEMS.map((item) => item.id);
 
-export type AnalysisStepId = 'step1' | 'step2' | 'step3';
-export type AnalysisPanelId = 'masterValue' | 'lowPoint' | 'ibInfo' | 'highPoint';
+export type AnalysisPanelId = 'masterValue' | 'ibInfo';
 
-export const ANALYSIS_STEP_DEFS: Record<
-  AnalysisStepId,
-  { label: string; labelKey: string; panelId: AnalysisPanelId }
-> = {
-  step1: {
-    label: 'STEP1. (Master Value)',
-    labelKey: 'analysis.step.step1',
-    panelId: 'masterValue',
-  },
-  step2: {
-    label: 'STEP2. (Low Point Values. (0~4))',
-    labelKey: 'analysis.step.step2',
-    panelId: 'lowPoint',
-  },
-  step3: {
-    label: 'STEP3. (High Point Values. (5~9))',
-    labelKey: 'analysis.step.step3',
-    panelId: 'highPoint',
-  },
-};
-
-export const DEFAULT_ANALYSIS_STEP_ORDER: AnalysisStepId[] = ['step1', 'step2', 'step3'];
-export const DEFAULT_ANALYSIS_PANEL_ORDER: AnalysisPanelId[] = [
-  'masterValue',
-  'lowPoint',
-  'ibInfo',
-  'highPoint',
-];
+export const DEFAULT_ANALYSIS_PANEL_ORDER: AnalysisPanelId[] = ['masterValue', 'ibInfo'];
 
 export type CodeValueStepId = '1' | '2' | '3';
 
@@ -48,8 +20,6 @@ export const CODE_VALUE_STEP_DEFS: Record<CodeValueStepId, string> = {
 export const DEFAULT_CODE_VALUE_STEP_ORDER: CodeValueStepId[] = ['1', '2', '3'];
 
 interface WorkspaceLayoutState {
-  analysisStepOrder: AnalysisStepId[];
-  analysisActiveStep: AnalysisStepId;
   analysisPanelOrder: AnalysisPanelId[];
   analysisShowMasterList: boolean;
   analysisShowCodeValue: boolean;
@@ -60,8 +30,6 @@ interface WorkspaceLayoutState {
   navOrder: NavItemId[];
   sidebarCollapsed: boolean;
 
-  setAnalysisStepOrder: (order: AnalysisStepId[]) => void;
-  setAnalysisActiveStep: (step: AnalysisStepId) => void;
   setAnalysisPanelOrder: (order: AnalysisPanelId[]) => void;
   toggleMasterList: () => void;
   toggleCodeValue: () => void;
@@ -78,8 +46,6 @@ interface WorkspaceLayoutState {
 }
 
 const DEFAULTS = {
-  analysisStepOrder: [...DEFAULT_ANALYSIS_STEP_ORDER],
-  analysisActiveStep: 'step1' as AnalysisStepId,
   analysisPanelOrder: [...DEFAULT_ANALYSIS_PANEL_ORDER],
   analysisShowMasterList: true,
   analysisShowCodeValue: true,
@@ -89,20 +55,24 @@ const DEFAULTS = {
   sidebarCollapsed: false,
 };
 
+function sanitizeAnalysisPanelOrder(order: unknown): AnalysisPanelId[] {
+  const allowed = new Set<AnalysisPanelId>(['masterValue', 'ibInfo']);
+  if (!Array.isArray(order)) return [...DEFAULT_ANALYSIS_PANEL_ORDER];
+  const filtered = order.filter((id): id is AnalysisPanelId => allowed.has(id as AnalysisPanelId));
+  return filtered.length > 0 ? filtered : [...DEFAULT_ANALYSIS_PANEL_ORDER];
+}
+
 export const useWorkspaceLayoutStore = create<WorkspaceLayoutState>()(
   persist(
     (set) => ({
       ...DEFAULTS,
 
-      setAnalysisStepOrder: (order) => set({ analysisStepOrder: order }),
-      setAnalysisActiveStep: (step) => set({ analysisActiveStep: step }),
-      setAnalysisPanelOrder: (order) => set({ analysisPanelOrder: order }),
+      setAnalysisPanelOrder: (order) =>
+        set({ analysisPanelOrder: sanitizeAnalysisPanelOrder(order) }),
       toggleMasterList: () => set((s) => ({ analysisShowMasterList: !s.analysisShowMasterList })),
       toggleCodeValue: () => set((s) => ({ analysisShowCodeValue: !s.analysisShowCodeValue })),
       resetAnalysisLayout: () =>
         set({
-          analysisStepOrder: [...DEFAULT_ANALYSIS_STEP_ORDER],
-          analysisActiveStep: 'step1',
           analysisPanelOrder: [...DEFAULT_ANALYSIS_PANEL_ORDER],
           analysisShowMasterList: true,
           analysisShowCodeValue: true,
@@ -126,6 +96,16 @@ export const useWorkspaceLayoutStore = create<WorkspaceLayoutState>()(
 
       resetAllLayouts: () => set({ ...DEFAULTS }),
     }),
-    { name: 'csebid-workspace-layout-v1' },
+    {
+      name: 'csebid-workspace-layout-v2',
+      merge: (persisted, current) => {
+        const p = persisted as Partial<WorkspaceLayoutState> | undefined;
+        return {
+          ...current,
+          ...p,
+          analysisPanelOrder: sanitizeAnalysisPanelOrder(p?.analysisPanelOrder),
+        };
+      },
+    },
   ),
 );

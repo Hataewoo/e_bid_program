@@ -81,7 +81,7 @@ export function buildPrediction(
     chain.nextStep
       ? `다음 자리 추천: ${chain.nextStep.candidates
           .slice(0, 4)
-          .map((c) => `${c.digit}(${c.probability.toFixed(1)}%)`)
+          .map((c) => String(c.digit))
           .join(', ')}`
       : '다음 자리 추천 불가',
     chain.suggestedDisplay

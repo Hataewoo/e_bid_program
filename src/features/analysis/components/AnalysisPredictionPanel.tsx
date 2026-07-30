@@ -2,8 +2,7 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import type { AnalysisResult, CodeValueStatRow } from '@/shared/utils/analysisEngine';
 import {
   appendDigitToInput,
-  clampNextDigitTopN,
-  NEXT_DIGIT_TOP_N,
+  formatCodeProfileTargetLabel,
   predictDigitChain,
   type NextDigitCandidate,
   type NextDigitStepResult,
@@ -25,14 +24,13 @@ function CandidateRow({
   return (
     <button
       type="button"
-      className="flex min-w-[4.5rem] flex-col items-center rounded border border-[#808080] bg-white px-2 py-1.5 text-black hover:border-[#000080] hover:bg-[#e8e8ff]"
+      className="flex min-w-[3.5rem] flex-col items-center rounded border border-[#808080] bg-white px-3 py-2 text-black hover:border-[#000080] hover:bg-[#e8e8ff]"
       onClick={() => onPick(candidate.digit)}
-      title={`${candidate.digit} (${candidate.probability}%)`}
+      title={String(candidate.digit)}
     >
       <span className="font-mono text-2xl font-bold leading-none">{candidate.digit}</span>
-      <span className="mt-0.5 text-xs tabular-nums">{candidate.probability.toFixed(1)}%</span>
       {candidate.matchCount > 0 ? (
-        <span className="text-[10px] text-content-muted">{candidate.matchCount}건</span>
+        <span className="mt-1 text-[10px] text-content-muted">{candidate.matchCount}건</span>
       ) : null}
     </button>
   );
@@ -41,10 +39,12 @@ function CandidateRow({
 function StepBlock({
   step,
   label,
+  targetLabel,
   onPickDigit,
 }: {
   step: NextDigitStepResult;
   label: string;
+  targetLabel?: string | null;
   onPickDigit: (digit: number) => void;
 }) {
   return (
@@ -54,17 +54,20 @@ function StepBlock({
         <span>
           prefix: <span className="font-mono">{step.prefix || '(시작)'}</span>
         </span>
+        {targetLabel ? (
+          <span className="font-semibold text-[#006400]">→ {targetLabel}</span>
+        ) : null}
         <span>
           매칭 {step.totalMatches}건 ·{' '}
-          {step.source === 'pattern'
-            ? '패턴 그래프'
-            : step.source === 'prefix'
-              ? '기록 직접'
-              : step.source === 'alternate'
-                ? '저·고점 교차'
-                : step.source === 'blended'
-                  ? '기록+전체 혼합'
-                  : '전체 분포'}
+          {step.source === 'codeProfile'
+            ? '코드 패턴'
+            : step.source === 'pattern'
+              ? '패턴 그래프'
+              : step.source === 'transition'
+                ? 'Master 전환'
+                : step.source === 'prefix'
+                  ? '기록 직접'
+                  : 'Master 분포'}
         </span>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -83,7 +86,6 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
   const { t } = useI18n();
   const [input, setInput] = useState('');
   const [extraChainSteps, setExtraChainSteps] = useState(0);
-  const [topN, setTopN] = useState(NEXT_DIGIT_TOP_N);
 
   const hasData = result.totalCount > 0;
 
@@ -91,9 +93,8 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
     () =>
       predictDigitChain(result, codeValueStats, input, {
         extraSteps: extraChainSteps,
-        topN,
       }),
-    [result, codeValueStats, input, extraChainSteps, topN],
+    [result, codeValueStats, input, extraChainSteps],
   );
 
   const handleInputChange = useCallback((value: string) => {
@@ -121,6 +122,10 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
       ? prediction.suggestedChain.slice(prediction.parsed.decimalPrefix.length)
       : '';
 
+  const resolveStepTargetLabel = useCallback((step: NextDigitStepResult) => {
+    return formatCodeProfileTargetLabel(step.codeProfile);
+  }, []);
+
   return (
     <div className="shrink-0 border-b border-[#404040] bg-[#fffff0] px-3 py-2">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -129,22 +134,9 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
           <div className="mt-0.5 text-xs text-content-muted">{t('analysis.prediction.subtitle')}</div>
         </div>
         {hasData ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-2 text-xs text-black">
-              <span>{t('analysis.prediction.countLabel')}</span>
-              <input
-                type="number"
-                min={1}
-                max={10}
-                value={topN}
-                onChange={(e) => setTopN(clampNextDigitTopN(Number(e.target.value)))}
-                className="win-input w-14 px-1 py-0.5 text-center font-mono text-sm"
-              />
-            </label>
-            <button type="button" className="win-button text-xs" onClick={handleClear}>
-              {t('analysis.prediction.clear')}
-            </button>
-          </div>
+          <button type="button" className="win-button text-xs" onClick={handleClear}>
+            {t('analysis.prediction.clear')}
+          </button>
         ) : null}
       </div>
 
@@ -180,6 +172,7 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
               <StepBlock
                 step={prediction.nextStep}
                 label={t('analysis.prediction.immediate')}
+                targetLabel={resolveStepTargetLabel(prediction.nextStep)}
                 onPickDigit={handlePickDigit}
               />
             </div>
@@ -208,6 +201,7 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
                     key={`chain-${step.prefix}-${idx}`}
                     step={step}
                     label={t('analysis.prediction.chainStep', { step: idx + 1 })}
+                    targetLabel={resolveStepTargetLabel(step)}
                     onPickDigit={handlePickDigit}
                   />
                 ))}
