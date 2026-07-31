@@ -522,13 +522,13 @@ export function predictRunSegment(
       ? collectTotalRunLengthSamples(result.digits, live)
       : { weights: new Map<number, number>(), exact: false, suffix: false };
 
-  let nextSegmentWeights = nextCollected.weights;
-  let remainingWeights = remainingCollected.weights;
-  let totalRunWeights = totalCollected.weights;
+  const nextSegmentWeights = nextCollected.weights;
+  const remainingWeights = remainingCollected.weights;
+  const totalRunWeights = totalCollected.weights;
 
-  let hasExact =
+  const hasExact =
     nextCollected.exact || remainingCollected.exact || totalCollected.exact;
-  let hasSuffix =
+  const hasSuffix =
     nextCollected.suffix || remainingCollected.suffix || totalCollected.suffix;
   let hasProgress = false;
 

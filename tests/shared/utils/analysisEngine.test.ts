@@ -7,7 +7,6 @@ import {
   collectPrimaryRunLengths,
   collectValueRunLengths,
   countBetweenMarkerRule,
-  countBetweenMarkers,
   createEmptyAnalysisResult,
   extractCodeValuesFromBaseSequence,
   STEP2_CODE_VALUE_RULES,
@@ -15,7 +14,6 @@ import {
   extractCodeValuesFromClassRunLengths,
   extractDigits,
   extractSidePatterns,
-  matchCompositePlus,
   toClassSequence,
 } from '@/shared/utils/analysisEngine';
 

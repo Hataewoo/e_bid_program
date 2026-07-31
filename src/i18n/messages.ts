@@ -908,6 +908,7 @@ export const messages = {
     'analysis.prediction.batchPickHint': 'Master pattern context match · not random · 2 low + 2 high',
     'analysis.prediction.singlePickTitle': 'Recommended next digit',
     'analysis.prediction.singlePickConsensus': '{count} pattern(s) agree',
+    'analysis.prediction.segmentPatternFit': 'Pattern structure match',
     'analysis.prediction.countLabel': 'Candidates',
     'analysis.prediction.confidence': 'Confidence',
     'analysis.prediction.empty': 'Enter Master Value and run analysis.',

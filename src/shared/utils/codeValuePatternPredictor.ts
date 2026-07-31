@@ -8,12 +8,10 @@ import {
 import {
   analyzePatternPhases,
   balanceSegmentLengthLists,
-  buildPatternSlotRecommendations,
   collectMergedExpectedRunLengths,
   collectMergedNextSValues,
   describePhaseState,
   dominantPatternLabel,
-  getRecentMasterRunLengths,
   inferNextClassFromPhases,
   getMasterRunLengthsForSide,
   phaseRecommendationsToDigitCandidates,
@@ -272,9 +270,10 @@ export function dedupeDigitCandidates(
 function phaseToBestMatch(
   top: PhaseRecommendation,
   live: LiveSegmentState,
-  prefix: string,
+  _prefix: string,
   digitCandidates: CodeValuePatternDigitCandidate[],
 ): PatternStructuralMatch {
+  void _prefix;
   const nextDigit = digitCandidates[0]?.digit ?? 0;
   const nextClass =
     top.runEndsAfterNext

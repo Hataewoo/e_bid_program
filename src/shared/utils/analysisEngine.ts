@@ -624,8 +624,9 @@ export function extractSidePatterns(
   runs: ClassRun[],
   primary: DigitClass,
   digitLength: number,
-  digits: string,
+  _digits: string,
 ): SidePatterns {
+  void _digits;
   const result = createEmptySidePatterns();
   const safeRuns = filterValidRuns(runs, digitLength);
 

@@ -152,23 +152,6 @@ export function buildPatternTransitionHints(
   return { transitions };
 }
 
-function boostTransitionFit(
-  rec: PhaseRecommendation,
-  currentLabel: string,
-  hints: PatternTransitionHints,
-): PhaseRecommendation {
-  if (rec.phase !== 'transition') return rec;
-  const nextMap = hints.transitions.get(currentLabel);
-  if (!nextMap) return rec;
-  const boost = (nextMap.get(rec.patternLabel) ?? 0) * 0.06;
-  if (boost <= 0) return rec;
-  return {
-    ...rec,
-    fit: Math.min(0.99, rec.fit + boost),
-    reason: `${rec.reason} · 최근 Master 전환 ${currentLabel}→${rec.patternLabel}`,
-  };
-}
-
 function analyzeOpenBetween(
   s: number[],
   side: DigitClass,
@@ -1057,11 +1040,12 @@ export function pickChainStepDigit(
 
 /** phase 추천 → digit — 슬롯당 1개, 0~9 균형·중복 없음 */
 export function phaseRecommendationsToDigitCandidates(
-  live: LiveSegmentState,
+  _live: LiveSegmentState,
   recs: PhaseRecommendation[],
   prefix: string,
   maxCount = 10,
 ): PhaseDigitCandidate[] {
+  void _live;
   const usedDigits = new Set<number>();
   const out: PhaseDigitCandidate[] = [];
   const sorted = [...recs].sort((a, b) => b.fit - a.fit);

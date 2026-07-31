@@ -75,7 +75,7 @@ describe('runSegmentEngine', () => {
 
   it('collects contextual next digits from master snapshots', () => {
     const master = '1123411234';
-    const result = analyzeMasterValue('00', master);
+    analyzeMasterValue('00', master);
     const live = getLiveSegmentState('11');
     expect(live).not.toBeNull();
 
