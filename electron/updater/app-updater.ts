@@ -1,4 +1,7 @@
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { app, type BrowserWindow } from 'electron';
 import type { AppUpdater } from 'electron-updater';
 import { fileLogger } from '../logger/file-logger';
@@ -9,6 +12,29 @@ import { fileLogger } from '../logger/file-logger';
  */
 const require = createRequire(import.meta.url);
 const autoUpdater = (require('electron-updater') as { autoUpdater: AppUpdater }).autoUpdater;
+
+const __updaterDir = path.dirname(fileURLToPath(import.meta.url));
+
+const GITHUB_UPDATE = {
+  provider: 'github' as const,
+  owner: 'Hataewoo',
+  repo: 'e_bid_program',
+};
+
+function readPackageVersion(): string {
+  try {
+    const pkgPath = path.join(__updaterDir, '../../package.json');
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as { version?: string };
+    return pkg.version ?? app.getVersion();
+  } catch {
+    return app.getVersion();
+  }
+}
+
+function configureUpdateFeed(): void {
+  autoUpdater.setFeedURL(GITHUB_UPDATE);
+  fileLogger.info('Update feed configured', GITHUB_UPDATE);
+}
 
 export type AppUpdateCheckResult =
   | { ok: true; status: 'not-available'; currentVersion: string }
@@ -33,6 +59,7 @@ export function isUpdaterEnabled(): boolean {
 export function initAppUpdater(getMainWindow: () => BrowserWindow | null): void {
   if (!isUpdaterEnabled()) return;
 
+  configureUpdateFeed();
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = false;
 
@@ -124,6 +151,10 @@ export async function notifyIfUpdateAvailable(
   getMainWindow: () => BrowserWindow | null,
 ): Promise<void> {
   const result = await checkForAppUpdates();
+  fileLogger.info('Startup update check', {
+    current: readPackageVersion(),
+    result: result.ok ? result.status : result.status,
+  });
   if (result.ok && result.status === 'available') {
     getMainWindow()?.webContents.send('app:update-available', {
       currentVersion: result.currentVersion,
@@ -131,4 +162,27 @@ export async function notifyIfUpdateAvailable(
       releaseNotes: result.releaseNotes,
     });
   }
+}
+
+export function scheduleStartupUpdateCheck(getMainWindow: () => BrowserWindow | null): void {
+  if (!isUpdaterEnabled()) return;
+
+  const run = () => {
+    void notifyIfUpdateAvailable(getMainWindow);
+  };
+
+  const win = getMainWindow();
+  if (!win) {
+    setTimeout(run, 5_000);
+    return;
+  }
+
+  if (win.webContents.isLoading()) {
+    win.webContents.once('did-finish-load', () => {
+      setTimeout(run, 3_000);
+    });
+    return;
+  }
+
+  setTimeout(run, 3_000);
 }

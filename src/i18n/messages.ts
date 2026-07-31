@@ -1,6 +1,7 @@
 export const messages = {
   ko: {
     'app.name': 'CS E-Bid Analyzer',
+    'app.update.banner': '새 버전 v{latest} (현재 v{current}) — 다운로드 가능',
     'toolbar.import': '데이터 일괄 가져오기',
     'toolbar.programInfo': '프로그램 정보',
     'toolbar.theme.light': '라이트',
@@ -40,7 +41,14 @@ export const messages = {
     'nav.statistics': 'Statistics',
     'nav.settings': 'Settings',
     'analysis.prediction.title': 'S 패턴 추천',
-    'analysis.prediction.subtitle': 'Code Value 10패턴 — 다음 구간·run 길이 (소수 digit 추천 없음)',
+    'analysis.prediction.subtitle':
+      'Master Code Value 패턴 · 소수 4자리 후보 3~4세트 · 저·고점 균형',
+    'analysis.prediction.batchPickTitle': '추천 4자리 (소수)',
+    'analysis.prediction.batchVariantLabel': '후보 {index}',
+    'analysis.prediction.batchAlternatesTitle': '대안 {count}건',
+    'analysis.prediction.batchPickHint': 'Master 패턴 맥락 매칭 · 무작위 아님 · 저·고점 2:2 균형',
+    'analysis.prediction.singlePickTitle': '다음 추천 숫자',
+    'analysis.prediction.singlePickConsensus': '패턴 {count}건 합의',
     'analysis.prediction.segmentPatternFit': '패턴 구조 일치',
     'analysis.prediction.countLabel': '추천 개수',
     'analysis.prediction.confidence': '신뢰도',
@@ -70,6 +78,10 @@ export const messages = {
     'analysis.prediction.segmentMatchSuffix': 'S suffix 일치 (끝 10개)',
     'analysis.prediction.segmentMatchProgress': 'run 진행도만 일치 (약한 추천)',
     'analysis.prediction.segmentNoCandidate': '이 위치에 맞는 S 패턴 추천이 없습니다.',
+    'analysis.prediction.patternSlotsTitle': 'Code Value 패턴별 추천 (S)',
+    'analysis.prediction.patternSlotsHint':
+      'Code Value 10패턴 · Master 최근값 + 0~9 균형 (가산점 없음)',
+    'analysis.prediction.patternSlotsUnique': '{count}개 슬롯 · 서로 다른 S {unique}개',
     'analysis.rateRecommend.title': 'AI 투찰율 추천',
     'analysis.rateRecommend.subtitle':
       '저점·고점 통합 분석 · 확률 높은 순 (정수 97~103, 참고용)',
@@ -848,6 +860,7 @@ export const messages = {
   },
   en: {
     'app.name': 'CS E-Bid Analyzer',
+    'app.update.banner': 'Update v{latest} available (current v{current})',
     'toolbar.import': 'Bulk Import',
     'toolbar.programInfo': 'Program Info',
     'toolbar.theme.light': 'Light',
@@ -888,7 +901,13 @@ export const messages = {
     'nav.settings': 'Settings',
     'analysis.prediction.title': 'S Pattern Recommendation',
     'analysis.prediction.subtitle':
-      'Code Value 10 patterns — next segment & run length (no decimal digit picks)',
+      'Full Master Code Value patterns · 3–4 sets of 4 decimal digits · low/high balance',
+    'analysis.prediction.batchPickTitle': 'Recommended 4 digits (decimal)',
+    'analysis.prediction.batchVariantLabel': 'Option {index}',
+    'analysis.prediction.batchAlternatesTitle': '{count} alternate(s)',
+    'analysis.prediction.batchPickHint': 'Master pattern context match · not random · 2 low + 2 high',
+    'analysis.prediction.singlePickTitle': 'Recommended next digit',
+    'analysis.prediction.singlePickConsensus': '{count} pattern(s) agree',
     'analysis.prediction.countLabel': 'Candidates',
     'analysis.prediction.confidence': 'Confidence',
     'analysis.prediction.empty': 'Enter Master Value and run analysis.',
@@ -917,6 +936,10 @@ export const messages = {
     'analysis.prediction.segmentMatchSuffix': 'S suffix match (last 10)',
     'analysis.prediction.segmentMatchProgress': 'Progress-only match (weak)',
     'analysis.prediction.segmentNoCandidate': 'No S-pattern recommendation at this position.',
+    'analysis.prediction.patternSlotsTitle': 'Code Value pattern slots (S)',
+    'analysis.prediction.patternSlotsHint':
+      'Code Value 10 patterns — recent Master + balanced 0~9 (no score bias)',
+    'analysis.prediction.patternSlotsUnique': '{count} slots · {unique} distinct S values',
     'analysis.rateRecommend.title': 'AI Bid Rate Recommendations',
     'analysis.rateRecommend.subtitle':
       'Unified low/high analysis · sorted by probability (int 97–103, reference)',

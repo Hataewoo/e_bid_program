@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   analyzePatternPhases,
+  assignUniqueNextSPerSlot,
   balanceSegmentLengthLists,
+  buildPatternSlotRecommendations,
   buildPatternTransitionHints,
   collectMergedExpectedRunLengths,
   collectMergedNextSValues,
@@ -10,12 +12,57 @@ import {
   phaseRecommendationsToDigitCandidates,
   pickChainStepDigit,
   pickVariedNextSValues,
+  pickSingleNextDigit,
+  sliceRecentRunLengths,
+  wouldFormRepetitivePattern,
 } from '@/shared/utils/codeValuePhaseEngine';
 
 describe('codeValuePhaseEngine', () => {
   it('builds transition hints from pattern label sequence', () => {
     const hints = buildPatternTransitionHints([1, 2, 3, 1, 2], 'low');
     expect(hints.transitions).toBeInstanceOf(Map);
+    const oneMap = hints.transitions.get('S run');
+    if (oneMap) {
+      for (const weight of oneMap.values()) {
+        expect(weight).toBeLessThanOrEqual(1);
+        expect(weight).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('sliceRecentRunLengths keeps only the last 10~20 entries', () => {
+    const long = Array.from({ length: 30 }, (_, i) => (i % 5) + 1);
+    const sliced = sliceRecentRunLengths(long, 15);
+    expect(sliced.length).toBe(15);
+    expect(sliced[0]).toBe(long[long.length - 15]);
+  });
+
+  it('assignUniqueNextSPerSlot avoids duplicate primary S across slots', () => {
+    const live = {
+      side: 'low' as const,
+      completedRunLengths: [1, 2],
+      currentRunProgress: 1,
+      sourceDigits: '12',
+    };
+    const recs = analyzePatternPhases(live, [1, 2, 3, 4, 5, 6, 7, 8, 9, 2, 3, 4]);
+    const unique = assignUniqueNextSPerSlot(recs, live.completedRunLengths, live.side, live.currentRunProgress);
+    const primaries = unique.map((r) => r.nextSValues[0]).filter((v) => v !== undefined);
+    expect(primaries.length).toBe(11);
+    expect(new Set(primaries).size).toBeLessThanOrEqual(10);
+    expect(primaries.some((v) => v! >= 5)).toBe(true);
+  });
+
+  it('phaseRecommendationsToDigitCandidates assigns unique digits per pattern slot', () => {
+    const live = {
+      side: 'low' as const,
+      completedRunLengths: [1],
+      currentRunProgress: 1,
+      sourceDigits: '1',
+    };
+    const recs = analyzePatternPhases(live, [1, 2, 3, 4]);
+    const digits = phaseRecommendationsToDigitCandidates(live, recs, '1', 10);
+    const values = digits.map((d) => d.digit);
+    expect(new Set(values).size).toBe(values.length);
   });
 
   it('always returns at least one recommendation when run is in progress', () => {
@@ -66,10 +113,51 @@ describe('codeValuePhaseEngine', () => {
     expect(picked?.digit).not.toBe(1);
   });
 
-  it('pickVariedNextSValues deprioritizes 1 when S has many ones', () => {
-    const values = pickVariedNextSValues([1, 1, 1, 1], 'low', 1);
-    expect(values.length).toBeGreaterThan(0);
-    expect(values[0]).not.toBe(1);
+  it('wouldFormRepetitivePattern blocks 2323 2111 6667 style', () => {
+    expect(wouldFormRepetitivePattern('232', 3)).toBe(true);
+    expect(wouldFormRepetitivePattern('21', 1)).toBe(true);
+    expect(wouldFormRepetitivePattern('66', 6)).toBe(true);
+    expect(wouldFormRepetitivePattern('1', 5)).toBe(false);
+    expect(wouldFormRepetitivePattern('12', 7)).toBe(false);
+  });
+
+  it('pickSingleNextDigit returns one varied digit', () => {
+    const live = {
+      side: 'low' as const,
+      completedRunLengths: [1, 2],
+      currentRunProgress: 1,
+      sourceDigits: '12',
+    };
+    const recs = analyzePatternPhases(live, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    const pick = pickSingleNextDigit(recs, '23');
+    expect(pick).not.toBeNull();
+    expect(pick!.digit).toBeGreaterThanOrEqual(0);
+    expect(pick!.digit).toBeLessThanOrEqual(9);
+    expect(wouldFormRepetitivePattern('23', pick!.digit)).toBe(false);
+  });
+
+  it('pickVariedNextSValues returns balanced 0~9 order', () => {
+    const values = pickVariedNextSValues([1, 2], 'low', 1);
+    expect(values.length).toBe(10);
+    expect(new Set(values).size).toBe(10);
+    expect(values.some((v) => v <= 4)).toBe(true);
+    expect(values.some((v) => v >= 5)).toBe(true);
+  });
+
+  it('analyzePatternPhases fills all 10 pattern slots with unique S', () => {
+    const live = {
+      side: 'low' as const,
+      completedRunLengths: [1, 2],
+      currentRunProgress: 1,
+      sourceDigits: '12',
+    };
+    const recs = analyzePatternPhases(live, [1, 2, 3, 4, 5, 6, 7, 8, 9, 2, 3, 4]);
+    expect(recs.length).toBe(11);
+    const primaries = recs.map((r) => r.nextSValues[0]).filter((v) => v !== undefined);
+    expect(new Set(primaries).size).toBeLessThanOrEqual(10);
+    expect(primaries.some((v) => v! >= 5)).toBe(true);
+    const slots = buildPatternSlotRecommendations(recs);
+    expect(slots.every((s) => s.nextS >= 0 && s.nextS <= 9)).toBe(true);
   });
 
   it('counts trailing same digits', () => {

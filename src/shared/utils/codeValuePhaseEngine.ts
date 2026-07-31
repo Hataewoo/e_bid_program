@@ -22,24 +22,25 @@ const BETWEEN_FIELDS: (keyof SidePatterns)[] = [
   'plusAlpha_4_3',
 ];
 
-const BETWEEN_GAP_FIELDS = new Set<keyof SidePatterns>(BETWEEN_FIELDS);
-const LOW_BAND = [1, 2, 3, 4];
-const HIGH_BAND = [5, 6, 7, 8, 9];
+/** S·digit 추천 공통 풀 — 0~9 전부 (저·고점 구분 없음) */
+export const ALL_S_DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
 /** digit 추천 — 같은 숫자 연속 run 최소화 */
 const MAX_DIGIT_STREAK = 1;
 
-/** 10패턴 — between 외 단순 run/임계 규칙 */
-const THRESHOLD_PATTERN_FIELDS: (keyof SidePatterns)[] = [
-  'oneDuplicate',
-  'exactTwo',
-  'threeOrMore',
-  'fiveOrMore',
-  'commaAlpha_2_3',
-  'plusAlpha_3_2',
-  'plusAlpha_4_3',
-  'plusAlpha_4_4',
-];
+/** Master 참고 — 최근 S 패턴만 (빈도·전체 이력 사용 안 함) */
+export const RECENT_PATTERN_LOOKBACK_MIN = 10;
+export const RECENT_PATTERN_LOOKBACK_MAX = 20;
+export const RECENT_PATTERN_LOOKBACK = 15;
+
+export interface PatternSlotRecommendation {
+  field: keyof SidePatterns;
+  patternLabel: string;
+  nextS: number;
+  phase: PatternPhaseKind;
+  fit: number;
+  reason: string;
+}
 
 export type PatternPhaseKind = 'repeat' | 'transition';
 
@@ -58,8 +59,32 @@ export interface PhaseRecommendation {
 }
 
 export interface PatternTransitionHints {
-  /** fromLabel → toLabel → 등장 횟수 (순서 tie-break, digit 복사 아님) */
+  /** fromLabel → toLabel → 최근성 가중(0~1, 참고용·빈도 아님) */
   transitions: Map<string, Map<string, number>>;
+}
+
+export function sliceRecentRunLengths(
+  runLengths: number[],
+  lookback = RECENT_PATTERN_LOOKBACK,
+): number[] {
+  const n = Math.min(
+    RECENT_PATTERN_LOOKBACK_MAX,
+    Math.max(RECENT_PATTERN_LOOKBACK_MIN, lookback),
+  );
+  if (runLengths.length <= n) return runLengths;
+  return runLengths.slice(-n);
+}
+
+/** Master S에서 해당 Code Value 필드의 최근 값만 (최대 lookback개) */
+export function recentPatternFieldValues(
+  masterS: number[],
+  side: DigitClass,
+  field: keyof SidePatterns,
+  lookback = RECENT_PATTERN_LOOKBACK,
+): number[] {
+  const recent = sliceRecentRunLengths(masterS, lookback);
+  const patterns = extractCodeValuesFromBaseSequence(recent, side);
+  return (patterns[field] ?? []).slice(-lookback);
 }
 
 function oppositeSide(side: DigitClass): DigitClass {
@@ -101,20 +126,24 @@ export function dominantPatternLabel(s: number[], side: DigitClass): string {
   return 'S run';
 }
 
-/** Master S 시퀀스에서 패턴 라벨 전환만 추출 — digit 복사용 아님 */
+/** Master 최근 S에서 패턴 전환 — 최신 전환만 참고 (빈도 누적 없음) */
 export function buildPatternTransitionHints(
   runLengths: number[],
   side: DigitClass,
+  lookback = RECENT_PATTERN_LOOKBACK,
 ): PatternTransitionHints {
+  const recent = sliceRecentRunLengths(runLengths, lookback);
   const transitions = new Map<string, Map<string, number>>();
   let prev = '';
 
-  for (let i = 0; i < runLengths.length; i += 1) {
-    const prefix = runLengths.slice(0, i + 1);
+  for (let i = 0; i < recent.length; i += 1) {
+    const prefix = recent.slice(0, i + 1);
     const label = dominantPatternLabel(prefix, side);
     if (prev && prev !== label) {
       const nextMap = transitions.get(prev) ?? new Map<string, number>();
-      nextMap.set(label, (nextMap.get(label) ?? 0) + 1);
+      const weight = (i + 1) / recent.length;
+      const prevWeight = nextMap.get(label) ?? 0;
+      nextMap.set(label, Math.max(prevWeight, weight));
       transitions.set(prev, nextMap);
     }
     prev = label;
@@ -131,12 +160,12 @@ function boostTransitionFit(
   if (rec.phase !== 'transition') return rec;
   const nextMap = hints.transitions.get(currentLabel);
   if (!nextMap) return rec;
-  const boost = nextMap.get(rec.patternLabel) ?? 0;
+  const boost = (nextMap.get(rec.patternLabel) ?? 0) * 0.06;
   if (boost <= 0) return rec;
   return {
     ...rec,
-    fit: Math.min(0.99, rec.fit + boost * 0.03),
-    reason: `${rec.reason} · Master 전환 ${currentLabel}→${rec.patternLabel}`,
+    fit: Math.min(0.99, rec.fit + boost),
+    reason: `${rec.reason} · 최근 Master 전환 ${currentLabel}→${rec.patternLabel}`,
   };
 }
 
@@ -146,12 +175,15 @@ function analyzeOpenBetween(
   field: keyof SidePatterns,
   rule: BetweenMarkerRule,
   runProgress: number,
+  recentMaster: number[],
+  slotIndex: number,
 ): PhaseRecommendation | null {
   if (!rule.pairsOnly || rule.markerExact === undefined) return null;
 
   const isMarker = buildMarkerMatch(rule);
   const countMatch = buildCountMatch(rule);
   const label = PATTERN_FIELD_LABELS[field][side];
+  const sideTag = side === 'low' ? '저점' : '고점';
 
   let lastMarkerIdx = -1;
   for (let i = s.length - 1; i >= 0; i -= 1) {
@@ -166,38 +198,39 @@ function analyzeOpenBetween(
   const qualifying = gap.filter(countMatch).length;
   const needMin = rule.countMin ?? rule.countExact ?? 1;
   const marker = rule.markerExact;
+  const pool = buildNextSPoolFromPattern(field, side, recentMaster, slotIndex);
 
   if (qualifying >= needMin) {
     const rem = Math.max(0, marker - runProgress);
-    const base: PhaseRecommendation = {
+    const nextSValues =
+      marker >= 0 && marker <= 9
+        ? [marker, ...pool.filter((v) => v !== marker)]
+        : pool;
+    return {
       phase: 'transition',
       patternLabel: label,
       field,
-      fit: 0.82 + Math.min(qualifying, 5) * 0.02,
-      nextSValues: [marker],
+      fit: 0.82,
+      nextSValues: nextSValues.slice(0, 6),
       expectedRunLength: marker,
       remainingInRun: rem,
       runEndsAfterNext: rem <= 1 && runProgress >= marker - 1,
-      reason: `${label} gap ${qualifying}/${needMin} 충족 → 마커 ${marker} 전환`,
+      nextClass: side,
+      reason: `${sideTag} · ${label} gap ${qualifying}/${needMin} · 마커 ${marker}`,
     };
-    if (marker === 1 && trailingOnesCount(s) >= 2) {
-      return attachVariedNextS(base, s, side, runProgress);
-    }
-    return base;
   }
 
-  const fillTarget = rule.countExact ?? rule.countMin ?? 3;
-  const varied = pickVariedNextSValues(s, side, runProgress);
   return {
-    phase: 'transition',
+    phase: 'repeat',
     patternLabel: label,
     field,
-    fit: 0.7 + qualifying * 0.04,
-    nextSValues: varied,
+    fit: 0.7,
+    nextSValues: pool.slice(0, 6),
     expectedRunLength: runProgress >= 2 ? runProgress : 1,
     remainingInRun: 0,
-    runEndsAfterNext: true,
-    reason: `${label} gap ${qualifying}/${needMin} · 다음 S ${varied.slice(0, 3).join('/')}`,
+    runEndsAfterNext: false,
+    nextClass: side,
+    reason: `${sideTag} · ${label} gap ${qualifying}/${needMin} · Master [${pool.slice(0, 3).join(',')}]`,
   };
 }
 
@@ -210,25 +243,59 @@ function trailingOnesCount(s: number[]): number {
   return count;
 }
 
-function countValueInRecentS(completedS: number[], value: number, lookback = 6): number {
-  return completedS.slice(-lookback).filter((v) => v === value).length;
+/** 0~9 균형 순서 — 슬롯 짝수: 저점(0~4) 우선, 홀수: 고점(5~9) 우선 */
+export function balancedDigitOrder(slotIndex: number): number[] {
+  const low = [0, 1, 2, 3, 4];
+  const high = [5, 6, 7, 8, 9];
+  const rot = (arr: number[], offset: number) => [
+    ...arr.slice(offset % arr.length),
+    ...arr.slice(0, offset % arr.length),
+  ];
+  const offset = Math.floor(slotIndex / 2) % 5;
+  const lo = rot(low, offset);
+  const hi = rot(high, offset);
+  return slotIndex % 2 === 0 ? [...lo, ...hi] : [...hi, ...lo];
 }
 
-/** S 후보 — 최근 S·패턴 겹침 패널티 */
+/** Master 패턴 최근값 → 없으면 균형 순서 */
+function pickFromPatternRecent(
+  recentVals: number[],
+  slotIndex: number,
+  used: Set<number>,
+): number {
+  for (let i = recentVals.length - 1; i >= 0; i -= 1) {
+    const v = recentVals[i]!;
+    if (v >= 0 && v <= 9 && !used.has(v)) return v;
+  }
+  for (const v of balancedDigitOrder(slotIndex)) {
+    if (!used.has(v)) return v;
+  }
+  return ALL_S_DIGITS.find((v) => !used.has(v)) ?? slotIndex % 10;
+}
+
+function buildNextSPoolFromPattern(
+  field: keyof SidePatterns,
+  side: DigitClass,
+  recentMaster: number[],
+  slotIndex: number,
+): number[] {
+  const recentVals = recentPatternFieldValues(recentMaster, side, field);
+  const fromMaster = [...recentVals]
+    .reverse()
+    .filter((v, i, arr) => v >= 0 && v <= 9 && arr.indexOf(v) === i);
+  const balanced = balancedDigitOrder(slotIndex);
+  return [...fromMaster, ...balanced].filter((v, i, arr) => arr.indexOf(v) === i);
+}
+
+/** @deprecated 가산점 제거 — 균형 순환만 반환 */
 export function scoreNextSValue(
   value: number,
   completedS: number[],
   runProgress: number,
 ): number {
-  let score = 1;
-  if (value === 1) {
-    score -= 0.2 * countValueInRecentS(completedS, 1);
-    score -= 0.15 * trailingOnesCount(completedS);
-  }
-  score -= countValueInRecentS(completedS, value) * 0.28;
-  if (value >= 2 && value <= 4) score += 0.18;
-  if (value === runProgress && runProgress >= 2) score += 0.12;
-  return score;
+  void completedS;
+  void runProgress;
+  return value >= 0 && value <= 9 ? 1 : 0;
 }
 
 export function pickVariedNextSValues(
@@ -236,21 +303,10 @@ export function pickVariedNextSValues(
   side: DigitClass,
   runProgress: number,
 ): number[] {
-  const pool = [2, 3, 4, 5, 6, 7, 1];
-  const scored = pool.map((value) => ({
-    value,
-    score: scoreNextSValue(value, completedS, runProgress),
-  }));
-  scored.sort((a, b) => b.score - a.score || a.value - b.value);
-
-  const picked: number[] = [];
-  for (const row of scored) {
-    if (picked.includes(row.value)) continue;
-    if (row.value === 1 && picked.length >= 2) continue;
-    picked.push(row.value);
-    if (picked.length >= 5) break;
-  }
-  return picked.length > 0 ? picked : [2, 3, 4];
+  void side;
+  void runProgress;
+  const slot = completedS.length % 10;
+  return balancedDigitOrder(slot);
 }
 
 /** S/run 길이 병합 후보 — 패턴 라벨·fit·합의 강도 */
@@ -359,18 +415,16 @@ export function balanceSegmentLengthLists(
 /** 모든 phase rec에서 S 후보 pool (값별 dedupe, 패턴 fit 누적) */
 export function collectMergedNextSValues(
   recs: PhaseRecommendation[],
-  completedS: number[],
-  runProgress: number,
+  _completedS: number[],
+  _runProgress: number,
   maxCount = 12,
 ): MergedSegmentLengthCandidate[] {
   const byValue = new Map<number, { fit: number; labels: Set<string> }>();
 
   for (const rec of recs) {
     for (const raw of rec.nextSValues) {
-      if (raw === 1 && countValueInRecentS(completedS, 1) >= 2) continue;
-      const overlap = scoreNextSValue(raw, completedS, runProgress);
-      const contribution = rec.fit * 0.55 + overlap * 0.45;
-      accumulateSegmentLengthCandidate(byValue, raw, contribution, rec.patternLabel);
+      if (raw < 0 || raw > 9) continue;
+      accumulateSegmentLengthCandidate(byValue, raw, rec.fit, rec.patternLabel);
     }
   }
 
@@ -421,6 +475,7 @@ function evaluateThresholdPatterns(
   s: number[],
   side: DigitClass,
   runProgress: number,
+  recentMaster: number[],
 ): PhaseRecommendation[] {
   const recs: PhaseRecommendation[] = [];
   const varied = pickVariedNextSValues(s, side, runProgress);
@@ -433,11 +488,11 @@ function evaluateThresholdPatterns(
         phase: 'transition',
         patternLabel: PATTERN_FIELD_LABELS.oneDuplicate[side],
         field: 'oneDuplicate',
-        fit: 0.76 - dup1 * 0.02,
-        nextSValues: varied.filter((v) => v !== 1).slice(0, 4),
+        fit: 0.76,
+        nextSValues: buildNextSPoolFromPattern('oneDuplicate', side, recentMaster, 0),
         expectedRunLength: runProgress >= 2 ? runProgress : 1,
         runEndsAfterNext: true,
-        reason: `1 중복 ${dup1}건 · 다음 S 다양화`,
+        reason: `1 중복 ${dup1}건 · Master 패턴 참고`,
       }),
     );
   }
@@ -445,35 +500,33 @@ function evaluateThresholdPatterns(
   const threeCount = patterns.threeOrMore.length;
   const needsThree = runProgress < MATCH_RULES.THREE_OR_MORE_MIN && threeCount === 0;
   if (needsThree || runProgress >= MATCH_RULES.THREE_OR_MORE_MIN) {
-    const threePool = [3, 4, 5, 6].filter((v) => scoreNextSValue(v, s, runProgress) > 0.4);
     recs.push(
       makePhaseRec({
         phase: runProgress >= MATCH_RULES.THREE_OR_MORE_MIN ? 'transition' : 'repeat',
         patternLabel: PATTERN_FIELD_LABELS.threeOrMore[side],
         field: 'threeOrMore',
         fit: needsThree ? 0.74 : 0.8,
-        nextSValues: threePool.length > 0 ? threePool : [3, 4],
+        nextSValues: buildNextSPoolFromPattern('threeOrMore', side, recentMaster, 1),
         expectedRunLength: runProgress >= MATCH_RULES.THREE_OR_MORE_MIN ? runProgress : 3,
         runEndsAfterNext: runProgress >= MATCH_RULES.THREE_OR_MORE_MIN,
         reason: needsThree
-          ? `3 이상 미충족 → S ${threePool.slice(0, 3).join('/')}`
-          : `3 이상 ${threeCount}건 → 전환 S ${varied.slice(0, 3).join('/')}`,
+          ? `3 이상 미충족 · Master 3 이상 패턴`
+          : `3 이상 ${threeCount}건 · Master 참고 S ${varied.slice(0, 3).join('/')}`,
       }),
     );
   }
 
   if (patterns.fiveOrMore.length > 0 || s.some((v) => v >= MATCH_RULES.FIVE_OR_MORE_MIN)) {
-    const fivePool = [5, 6, 7].filter((v) => scoreNextSValue(v, s, runProgress) > 0.35);
     recs.push(
       makePhaseRec({
         phase: 'transition',
         patternLabel: PATTERN_FIELD_LABELS.fiveOrMore[side],
         field: 'fiveOrMore',
         fit: 0.72,
-        nextSValues: fivePool.length > 0 ? fivePool : [5, 6],
+        nextSValues: buildNextSPoolFromPattern('fiveOrMore', side, recentMaster, 2),
         expectedRunLength: runProgress >= 2 ? runProgress : 1,
         runEndsAfterNext: true,
-        reason: `5 이상 패턴 → S ${fivePool.slice(0, 3).join('/') || '5/6'}`,
+        reason: `5 이상 패턴 · Master 참고`,
       }),
     );
   }
@@ -485,10 +538,10 @@ function evaluateThresholdPatterns(
         patternLabel: PATTERN_FIELD_LABELS.exactTwo[side],
         field: 'exactTwo',
         fit: 0.7,
-        nextSValues: varied.filter((v) => v !== 2).slice(0, 3).concat([2]).slice(0, 4),
+        nextSValues: buildNextSPoolFromPattern('exactTwo', side, recentMaster, 3),
         expectedRunLength: runProgress >= 2 ? runProgress : 2,
         runEndsAfterNext: true,
-        reason: `2 run · 다음 S ${varied.slice(0, 3).join('/')}`,
+        reason: `2 run · Master 2 패턴 참고`,
       }),
     );
   }
@@ -500,12 +553,14 @@ function evaluateCommaMarkerPatterns(
   s: number[],
   side: DigitClass,
   runProgress: number,
+  recentMaster: number[],
 ): PhaseRecommendation[] {
   const recs: PhaseRecommendation[] = [];
   const rules = STEP2_CODE_VALUE_RULES.between;
   const commaFields: (keyof SidePatterns)[] = ['commaAlpha_2_3', 'plusAlpha_3_2', 'plusAlpha_4_3'];
 
-  for (const field of commaFields) {
+  for (let fi = 0; fi < commaFields.length; fi += 1) {
+    const field = commaFields[fi]!;
     const rule = rules[field as keyof typeof rules];
     if (!rule || rule.pairsOnly) continue;
     const label = PATTERN_FIELD_LABELS[field][side];
@@ -513,199 +568,237 @@ function evaluateCommaMarkerPatterns(
     const hitCount = patterns[field]?.length ?? 0;
     if (hitCount === 0 && s.length < 2) continue;
 
-    const target = rule.countExact ?? rule.countMin ?? 2;
-    const pool = pickVariedNextSValues(s, side, runProgress).filter(
-      (v) => v >= (rule.markerMin ?? 2) && v <= CODE_VALUE_ALPHA_MAX,
-    );
+    const pool = buildNextSPoolFromPattern(field, side, recentMaster, fi + 4);
     recs.push(
       makePhaseRec({
         phase: hitCount > 0 ? 'transition' : 'repeat',
         patternLabel: label,
         field,
-        fit: 0.68 + hitCount * 0.04,
-        nextSValues: pool.length > 0 ? pool.slice(0, 4) : [target, target + 1],
+        fit: 0.68,
+        nextSValues: pool.slice(0, 6),
         expectedRunLength: runProgress >= 2 ? runProgress : 1,
         runEndsAfterNext: true,
-        reason: `${label} ${hitCount}건 · S ${(pool[0] ?? target).toString()}`,
+        reason: `${label} ${hitCount}건 · Master 패턴 S ${pool.slice(0, 3).join('/')}`,
       }),
     );
   }
   return recs;
 }
 
-function dedupePhaseRecommendations(recs: PhaseRecommendation[]): PhaseRecommendation[] {
-  const byField = new Map<string, PhaseRecommendation>();
-  for (const rec of recs) {
-    const key = rec.field;
-    const prev = byField.get(key);
-    if (!prev || rec.fit > prev.fit) byField.set(key, rec);
-  }
-  return [...byField.values()];
-}
-
-function attachVariedNextS(
-  rec: PhaseRecommendation,
-  s: number[],
+function makeDefaultPatternRec(
+  field: keyof SidePatterns,
   side: DigitClass,
-  runProgress: number,
+  live: LiveSegmentState,
+  recentMaster: number[],
+  slotIndex: number,
 ): PhaseRecommendation {
-  const nextSValues = pickVariedNextSValues(s, side, runProgress);
+  const label = PATTERN_FIELD_LABELS[field][side];
+  const livePatterns = extractCodeValuesFromBaseSequence(live.completedRunLengths, side);
+  const active = (livePatterns[field]?.length ?? 0) > 0;
+  const sideTag = side === 'low' ? '저점' : '고점';
+  const recentVals = recentPatternFieldValues(recentMaster, side, field);
   return {
-    ...rec,
-    nextSValues,
-    expectedRunLength: runProgress >= 2 ? runProgress : 1,
+    phase: active ? 'repeat' : 'transition',
+    patternLabel: label,
+    field,
+    fit: active ? 0.8 : 0.72,
+    nextSValues: buildNextSPoolFromPattern(field, side, recentMaster, slotIndex),
+    expectedRunLength: live.currentRunProgress >= 2 ? live.currentRunProgress : 1,
+    runEndsAfterNext: !active,
+    nextClass: active ? side : oppositeSide(side),
+    reason: `${sideTag} · ${label} · Master [${recentVals.slice(-3).join(',') || '-'}]`,
   };
 }
 
-function singleDigitTransitionRec(
-  s: number[],
+/** 슬롯 간 중복 없이 primary S — Master 최근값 우선, 없으면 0~9 균형 순환 */
+function pickUnusedPrimaryS(
+  preferred: number[],
+  usedS: Set<number>,
+  slotIndex: number,
+  recentMaster: number[],
+  field: keyof SidePatterns,
+  side: DigitClass,
+): number | undefined {
+  const fromPreferred = preferred.find((v) => v >= 0 && v <= 9 && !usedS.has(v));
+  if (fromPreferred !== undefined) return fromPreferred;
+
+  const recentVals = recentPatternFieldValues(recentMaster, side, field);
+  return pickFromPatternRecent(recentVals, slotIndex, usedS);
+}
+
+/** 10패턴 슬롯별 primary S — 슬롯 간 값 중복 없음 */
+export function assignUniqueNextSPerSlot(
+  recs: PhaseRecommendation[],
+  liveS: number[],
   side: DigitClass,
   runProgress: number,
-  reason: string,
-): PhaseRecommendation {
-  const nextSValues = pickVariedNextSValues(s, side, runProgress);
-  return {
-    phase: 'transition',
-    patternLabel: 'S run',
-    field: 'threeOrMore',
-    fit: 0.9,
-    nextSValues,
-    expectedRunLength: runProgress >= 2 ? runProgress : 1,
-    remainingInRun: 0,
-    runEndsAfterNext: true,
-    reason: `${reason} · 다음 S ${nextSValues.slice(0, 3).join('/')} · ${runProgress}자 후 전환`,
-  };
+  recentMaster: number[] = liveS,
+): PhaseRecommendation[] {
+  void runProgress;
+  const usedS = new Set<number>();
+  const sorted = [...recs].sort((a, b) => b.fit - a.fit || a.patternLabel.localeCompare(b.patternLabel));
+  const out: PhaseRecommendation[] = [];
+
+  sorted.forEach((rec, slotIndex) => {
+    const pool = [
+      ...rec.nextSValues,
+      ...buildNextSPoolFromPattern(rec.field, side, recentMaster, slotIndex),
+    ].filter((v, i, arr) => v >= 0 && v <= 9 && arr.indexOf(v) === i);
+
+    const primary = pickUnusedPrimaryS(pool, usedS, slotIndex, recentMaster, rec.field, side)
+      ?? ALL_S_DIGITS[slotIndex % 10]!;
+
+    usedS.add(primary);
+    const rest = pool.filter((v) => v !== primary && !usedS.has(v)).slice(0, 2);
+    out.push({
+      ...rec,
+      nextSValues: [primary, ...rest],
+      reason: `${rec.reason} · 슬롯 S${primary}`,
+    });
+  });
+
+  return out;
+}
+
+export function buildPatternSlotRecommendations(
+  recs: PhaseRecommendation[],
+): PatternSlotRecommendation[] {
+  return recs
+    .filter((rec) => rec.nextSValues.length > 0)
+    .map((rec) => ({
+      field: rec.field,
+      patternLabel: rec.patternLabel,
+      nextS: rec.nextSValues[0]!,
+      phase: rec.phase,
+      fit: rec.fit,
+      reason: rec.reason,
+    }))
+    .sort((a, b) => b.fit - a.fit || a.patternLabel.localeCompare(b.patternLabel));
 }
 
 function evaluateRunLengthPatterns(
   s: number[],
   side: DigitClass,
   runProgress: number,
+  recentMaster: number[],
 ): PhaseRecommendation[] {
   const recs: PhaseRecommendation[] = [];
 
   if (runProgress >= 1) {
-    recs.push(singleDigitTransitionRec(s, side, runProgress, '1자 run 다양화'));
+    recs.push({
+      phase: 'transition',
+      patternLabel: 'S run',
+      field: 'threeOrMore',
+      fit: 0.9,
+      nextSValues: buildNextSPoolFromPattern('threeOrMore', side, recentMaster, 0),
+      expectedRunLength: runProgress >= 2 ? runProgress : 1,
+      remainingInRun: 0,
+      runEndsAfterNext: true,
+      reason: `1자 run · Master 3 이상 패턴 참고`,
+    });
   }
 
   if (runProgress >= MATCH_RULES.THREE_OR_MORE_MIN) {
-    const varied = pickVariedNextSValues(s, side, runProgress);
     recs.push({
       phase: 'transition',
       patternLabel: PATTERN_FIELD_LABELS.threeOrMore[side],
       field: 'threeOrMore',
       fit: 0.78,
-      nextSValues: varied,
+      nextSValues: buildNextSPoolFromPattern('threeOrMore', side, recentMaster, 1),
       expectedRunLength: runProgress,
       remainingInRun: 0,
       runEndsAfterNext: true,
-      reason: `3 이상 run ${runProgress}자 완료 → 다음 S ${varied.slice(0, 3).join('/')}`,
+      reason: `3 이상 run ${runProgress}자 완료 · Master 참고`,
     });
   }
 
   if (runProgress >= MATCH_RULES.EXACT_TWO_LENGTH) {
-    const varied = pickVariedNextSValues(s, side, runProgress);
     recs.push({
       phase: 'transition',
       patternLabel: PATTERN_FIELD_LABELS.exactTwo[side],
       field: 'exactTwo',
       fit: 0.84,
-      nextSValues: varied,
+      nextSValues: buildNextSPoolFromPattern('exactTwo', side, recentMaster, 2),
       expectedRunLength: runProgress,
       remainingInRun: 0,
       runEndsAfterNext: true,
-      reason: `${runProgress}자 run 완료 → 다음 S ${varied.slice(0, 3).join('/')}`,
+      reason: `${runProgress}자 run 완료 · Master 2 패턴 참고`,
     });
   }
 
   const ones = trailingOnesCount(s);
   if (ones >= 1 && runProgress >= 1) {
-    const varied = pickVariedNextSValues(s, side, runProgress);
     recs.push({
       phase: 'transition',
       patternLabel: PATTERN_FIELD_LABELS.oneDuplicate[side],
       field: 'oneDuplicate',
-      fit: ones >= 2 ? 0.75 : 0.8,
-      nextSValues: varied,
+      fit: 0.8,
+      nextSValues: buildNextSPoolFromPattern('oneDuplicate', side, recentMaster, 3),
       expectedRunLength: runProgress >= 2 ? runProgress : 1,
       remainingInRun: 0,
       runEndsAfterNext: true,
-      reason: `1 중복 S×${ones} → 다음 S ${varied.slice(0, 3).join('/')}`,
+      reason: `1 중복 S×${ones} · Master 1 중복 참고`,
     });
-  }
-
-  if (runProgress >= MATCH_RULES.THREE_OR_MORE_MIN && runProgress < MATCH_RULES.FIVE_OR_MORE_MIN) {
-    const hasThreePlus = s.some((v) => v >= MATCH_RULES.THREE_OR_MORE_MIN);
-    if (hasThreePlus) {
-      recs.push(singleDigitTransitionRec(s, side, runProgress, '5 이상 전 전환'));
-    }
   }
 
   return recs;
 }
 
-function defaultRunRecommendation(
-  s: number[],
-  side: DigitClass,
-  runProgress: number,
-): PhaseRecommendation {
-  return singleDigitTransitionRec(s, side, runProgress, 'run 진행');
-}
-
 /**
- * 현재 S + run 진행도에서 repeat/transition phase 추천.
- * Master runLengths는 패턴 전환 순서 tie-break만 사용.
+ * 현재 S + Code Value 10패턴 — Master 최근값 기반, 0~9 균형 배분.
+ * 가산점·빈도 가중 없음.
  */
 export function analyzePatternPhases(
   live: LiveSegmentState,
   masterRunLengths: number[],
+  lookback = RECENT_PATTERN_LOOKBACK,
 ): PhaseRecommendation[] {
   const side = live.side;
   const s = live.completedRunLengths;
   const progress = live.currentRunProgress;
-  const currentLabel = dominantPatternLabel(s, side);
-  const hints = buildPatternTransitionHints(masterRunLengths, side);
+  const recentMaster = sliceRecentRunLengths(masterRunLengths, lookback);
   const betweenRules = STEP2_CODE_VALUE_RULES.between;
 
-  const recs: PhaseRecommendation[] = [];
+  const byField = new Map<keyof SidePatterns, PhaseRecommendation>();
 
   for (const field of BETWEEN_FIELDS) {
     const rule = betweenRules[field as keyof typeof betweenRules];
     if (!rule) continue;
-    const rec = analyzeOpenBetween(s, side, field, rule, progress);
-    if (rec) recs.push(boostTransitionFit(rec, currentLabel, hints));
+    const slotIndex = PATTERN_FIELDS.indexOf(field);
+    const rec = analyzeOpenBetween(s, side, field, rule, progress, recentMaster, slotIndex);
+    if (rec) byField.set(field, rec);
   }
 
-  recs.push(
-    ...evaluateRunLengthPatterns(s, side, progress).map((rec) =>
-      boostTransitionFit(rec, currentLabel, hints),
-    ),
-  );
-
-  recs.push(
-    ...evaluateThresholdPatterns(s, side, progress).map((rec) =>
-      boostTransitionFit(rec, currentLabel, hints),
-    ),
-  );
-
-  recs.push(
-    ...evaluateCommaMarkerPatterns(s, side, progress).map((rec) =>
-      boostTransitionFit(rec, currentLabel, hints),
-    ),
-  );
-
-  if (recs.length === 0 && progress > 0) {
-    recs.push(defaultRunRecommendation(s, side, progress));
+  for (const rec of evaluateRunLengthPatterns(s, side, progress, recentMaster)) {
+    const prev = byField.get(rec.field);
+    if (!prev || rec.fit > prev.fit) byField.set(rec.field, rec);
   }
 
-  const merged = dedupePhaseRecommendations(recs);
-  merged.sort(
+  for (const rec of evaluateThresholdPatterns(s, side, progress, recentMaster)) {
+    const prev = byField.get(rec.field);
+    if (!prev || rec.fit > prev.fit) byField.set(rec.field, rec);
+  }
+
+  for (const rec of evaluateCommaMarkerPatterns(s, side, progress, recentMaster)) {
+    const prev = byField.get(rec.field);
+    if (!prev || rec.fit > prev.fit) byField.set(rec.field, rec);
+  }
+
+  PATTERN_FIELDS.forEach((field, slotIndex) => {
+    if (!byField.has(field)) {
+      byField.set(field, makeDefaultPatternRec(field, side, live, recentMaster, slotIndex));
+    }
+  });
+
+  const merged = PATTERN_FIELDS.map((field) => byField.get(field)!);
+  const unique = assignUniqueNextSPerSlot(merged, s, side, progress, recentMaster);
+  unique.sort(
     (a, b) =>
       b.fit - a.fit ||
       (a.expectedRunLength ?? 99) - (b.expectedRunLength ?? 99) ||
       (a.phase === 'transition' ? 1 : 0) - (b.phase === 'transition' ? 1 : 0),
   );
-  return merged;
+  return unique;
 }
 
 export function countTrailingSameDigit(prefix: string): number {
@@ -729,10 +822,6 @@ export function recentDigitsInPrefix(prefix: string, lookback: number): number[]
   return out;
 }
 
-function bandDigits(side: DigitClass): number[] {
-  return side === 'low' ? LOW_BAND : HIGH_BAND;
-}
-
 export function countDigitInRecent(prefix: string, digit: number, lookback: number): number {
   let count = 0;
   for (let i = prefix.length - 1; i >= 0 && i >= prefix.length - lookback; i -= 1) {
@@ -741,44 +830,25 @@ export function countDigitInRecent(prefix: string, digit: number, lookback: numb
   return count;
 }
 
-/** 패턴 허용 시 최근 digit·연속 회피 */
+/** 0~9 균형 순환 — 저·고점 band 구분 없음 */
 export function pickVariedBandDigits(
   side: DigitClass,
   prefix: string,
   maxCount: number,
+  slotIndex = prefix.length,
 ): number[] {
-  const band = bandDigits(side);
-  const recent = recentDigitsInPrefix(prefix, 6);
-  const recentSet = new Set(recent);
+  void side;
   const last = prefix.length > 0 ? Number(prefix[prefix.length - 1]) : null;
   const trailing = countTrailingSameDigit(prefix);
-
-  const scored = band.map((digit) => {
-    let score = 1;
-    if (digit === last) score -= 0.65 + trailing * 0.2;
-    if (recentSet.has(digit)) score -= 0.22;
-    score -= countDigitInRecent(prefix, digit, 6) * 0.12;
-    return { digit, score };
-  });
-
-  scored.sort((a, b) => b.score - a.score || a.digit - b.digit);
-  const unique: number[] = [];
-  for (const row of scored) {
-    if (unique.includes(row.digit)) continue;
-    if (row.digit === last && trailing >= MAX_DIGIT_STREAK && unique.length > 0) continue;
-    unique.push(row.digit);
-    if (unique.length >= maxCount) break;
+  const order = balancedDigitOrder(slotIndex);
+  const out: number[] = [];
+  for (const digit of order) {
+    if (out.includes(digit)) continue;
+    if (digit === last && trailing >= MAX_DIGIT_STREAK && out.length > 0) continue;
+    out.push(digit);
+    if (out.length >= maxCount) break;
   }
-  return unique.length > 0 ? unique : band.slice(0, maxCount);
-}
-
-function mustContinueRun(
-  prefix: string,
-  rec: PhaseRecommendation,
-): boolean {
-  void prefix;
-  void rec;
-  return false;
+  return out.length > 0 ? out : [...ALL_S_DIGITS].slice(0, maxCount);
 }
 
 export function getMasterRunLengthsForSide(
@@ -786,6 +856,14 @@ export function getMasterRunLengthsForSide(
   side: DigitClass,
 ): number[] {
   return side === 'low' ? result.lowRunLengths : result.highRunLengths;
+}
+
+export function getRecentMasterRunLengths(
+  result: AnalysisResult,
+  side: DigitClass,
+  lookback = RECENT_PATTERN_LOOKBACK,
+): number[] {
+  return sliceRecentRunLengths(getMasterRunLengthsForSide(result, side), lookback);
 }
 
 export function getLastDigitInClass(prefix: string, cls: DigitClass): number | null {
@@ -797,53 +875,165 @@ export function getLastDigitInClass(prefix: string, cls: DigitClass): number | n
   return cls === 'low' ? 0 : 5;
 }
 
-function rankDigitsForSValue(
+function digitForSAndSlot(
   sValue: number,
-  targetClass: DigitClass,
+  slotIndex: number,
   prefix: string,
-): number[] {
-  const varied = pickVariedBandDigits(targetClass, prefix, 5);
-  const low = sValue >= 0 && sValue <= 4;
-  const high = sValue >= 5 && sValue <= 9;
-  const inBand = targetClass === 'low' ? low : high;
-  if (inBand && !recentDigitsInPrefix(prefix, 5).includes(sValue)) {
-    return [sValue, ...varied.filter((d) => d !== sValue)];
-  }
-  if (targetClass === 'low' && sValue >= 2 && sValue <= 4) {
-    const d = sValue <= 4 ? sValue : varied[0]!;
-    return [d, ...varied.filter((x) => x !== d)];
-  }
-  if (targetClass === 'high' && sValue >= 5) {
-    return [sValue, ...varied.filter((d) => d !== sValue)];
-  }
-  return varied;
-}
-
-function digitsForPhaseRec(
-  rec: PhaseRecommendation,
-  live: LiveSegmentState,
-  prefix: string,
-): Array<{ digit: number; sValue: number }> {
-  const targetClass = rec.runEndsAfterNext ? oppositeSide(live.side) : live.side;
-  const out: Array<{ digit: number; sValue: number }> = [];
-  const seen = new Set<number>();
-
-  for (const sValue of rec.nextSValues) {
-    for (const digit of rankDigitsForSValue(sValue, targetClass, prefix)) {
-      if (seen.has(digit)) continue;
-      seen.add(digit);
-      out.push({ digit, sValue });
-      if (out.length >= 4) return out;
+  used: Set<number>,
+): number {
+  if (sValue >= 0 && sValue <= 9 && !used.has(sValue)) {
+    const last = prefix.length > 0 ? Number(prefix[prefix.length - 1]) : null;
+    if (sValue !== last || countTrailingSameDigit(prefix) < MAX_DIGIT_STREAK) {
+      return sValue;
     }
   }
-  return out;
+  for (const d of balancedDigitOrder(slotIndex)) {
+    if (!used.has(d)) return d;
+  }
+  return ALL_S_DIGITS.find((d) => !used.has(d)) ?? slotIndex % 10;
 }
 
-function repetitionPenalty(prefix: string, digit: number): number {
-  const trailing = countTrailingSameDigit(prefix);
-  const last = prefix.length > 0 ? Number(prefix[prefix.length - 1]) : null;
-  if (last === digit) return 0.45 + trailing * 0.2;
-  return countDigitInRecent(prefix, digit, 6) * 0.14;
+export interface SingleNextDigitPick {
+  digit: number;
+  patternLabel: string;
+  reason: string;
+  consensusCount: number;
+}
+
+/** 2323(ABAB)·2111(연속)·6667(연속 run) 형태 방지 */
+export function wouldFormRepetitivePattern(prefix: string, digit: number): boolean {
+  if (!Number.isInteger(digit) || digit < 0 || digit > 9) return true;
+  const ch = String(digit);
+  const next = prefix + ch;
+
+  let streak = 1;
+  for (let i = next.length - 2; i >= 0; i -= 1) {
+    if (next[i] === ch) streak += 1;
+    else break;
+  }
+  if (streak >= 2) return true;
+
+  if (next.length >= 4) {
+    const tail = next.slice(-4);
+    if (tail[0] === tail[2] && tail[1] === tail[3] && tail[0] !== tail[1]) return true;
+  }
+
+  if (next.length >= 3) {
+    const tail3 = next.slice(-3);
+    if (tail3[0] === tail3[1] && tail3[1] === tail3[2]) return true;
+  }
+
+  return false;
+}
+
+function recentDigitCounts(prefix: string, lookback = 8): Map<number, number> {
+  const counts = new Map<number, number>();
+  for (let i = prefix.length - 1; i >= 0 && i >= prefix.length - lookback; i -= 1) {
+    const d = Number(prefix[i]);
+    if (!Number.isInteger(d) || d < 0 || d > 9) continue;
+    counts.set(d, (counts.get(d) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function isDigitOverusedInRecent(prefix: string, digit: number, maxCount = 2): boolean {
+  return (recentDigitCounts(prefix).get(digit) ?? 0) >= maxCount;
+}
+
+/** 패턴 1건 → digit 후보 (S=0 슬롯 filler 제외, Master S값 풀 순회) */
+function proposedDigitFromPhaseRec(
+  rec: PhaseRecommendation,
+  slotIndex: number,
+  prefix: string,
+): number | null {
+  const pool = rec.nextSValues.filter((v) => v >= 1 && v <= 9);
+  const used = new Set<number>();
+  for (const sValue of pool) {
+    const digit = digitForSAndSlot(sValue, slotIndex, prefix, used);
+    if (wouldFormRepetitivePattern(prefix, digit)) continue;
+    if (isDigitOverusedInRecent(prefix, digit)) continue;
+    used.add(digit);
+    return digit;
+  }
+  return null;
+}
+
+/** 상위 패턴 합의 + 0~9 균형 — 다음 digit 1개만 */
+export function pickSingleNextDigit(
+  recs: PhaseRecommendation[],
+  prefix: string,
+): SingleNextDigitPick | null {
+  if (recs.length === 0) return null;
+
+  const topRecs = [...recs].sort((a, b) => b.fit - a.fit).slice(0, 5);
+  const votes = new Map<number, { count: number; label: string; fit: number }>();
+
+  topRecs.forEach((rec, slotIndex) => {
+    const digit = proposedDigitFromPhaseRec(rec, slotIndex, prefix);
+    if (digit === null) return;
+    const phaseTag = rec.phase === 'repeat' ? '반복' : '전환';
+    const label = `${phaseTag} · ${rec.patternLabel}`;
+    const row = votes.get(digit) ?? { count: 0, label, fit: 0 };
+    row.count += 1;
+    row.fit += rec.fit;
+    if (row.count === 1) row.label = label;
+    votes.set(digit, row);
+  });
+
+  const ranked = [...votes.entries()].sort(
+    (a, b) => b[1].count - a[1].count || b[1].fit - a[1].fit,
+  );
+
+  for (const [digit, meta] of ranked) {
+    if (wouldFormRepetitivePattern(prefix, digit)) continue;
+    if (isDigitOverusedInRecent(prefix, digit)) continue;
+    return {
+      digit,
+      patternLabel: meta.label,
+      consensusCount: meta.count,
+      reason: `${meta.label} · 패턴 ${meta.count}건 · 중복 패턴 회피`,
+    };
+  }
+
+  const topDigit = proposedDigitFromPhaseRec(topRecs[0]!, 0, prefix);
+  if (topDigit !== null && !wouldFormRepetitivePattern(prefix, topDigit) && !isDigitOverusedInRecent(prefix, topDigit)) {
+    const base = topRecs[0]!;
+    const phaseTag = base.phase === 'repeat' ? '반복' : '전환';
+    return {
+      digit: topDigit,
+      patternLabel: `${phaseTag} · ${base.patternLabel}`,
+      consensusCount: 1,
+      reason: `${phaseTag} · ${base.patternLabel} · 최우선 패턴`,
+    };
+  }
+
+  for (const digit of balancedDigitOrder(prefix.length)) {
+    if (wouldFormRepetitivePattern(prefix, digit)) continue;
+    if (isDigitOverusedInRecent(prefix, digit)) continue;
+    const base = recs[0]!;
+    const phaseTag = base.phase === 'repeat' ? '반복' : '전환';
+    return {
+      digit,
+      patternLabel: `${phaseTag} · ${base.patternLabel}`,
+      consensusCount: 0,
+      reason: `0~9 균형 · 중복 패턴 회피`,
+    };
+  }
+
+  for (const digit of ALL_S_DIGITS) {
+    if (!wouldFormRepetitivePattern(prefix, digit)) {
+      const base = recs[0]!;
+      const phaseTag = base.phase === 'repeat' ? '반복' : '전환';
+      return {
+        digit,
+        patternLabel: `${phaseTag} · ${base.patternLabel}`,
+        consensusCount: 0,
+        reason: `대안 digit · 반복 패턴 최소`,
+      };
+    }
+  }
+
+  return null;
 }
 
 export interface PhaseDigitCandidate {
@@ -852,19 +1042,7 @@ export interface PhaseDigitCandidate {
   patternLabel: string;
 }
 
-function filterAntiRepeatCandidates(
-  candidates: PhaseDigitCandidate[],
-  prefix: string,
-): PhaseDigitCandidate[] {
-  const last = prefix.length > 0 ? Number(prefix[prefix.length - 1]) : null;
-  const trailing = countTrailingSameDigit(prefix);
-  if (last === null || trailing < MAX_DIGIT_STREAK) return candidates;
-
-  const withoutLast = candidates.filter((c) => c.digit !== last);
-  return withoutLast.length > 0 ? withoutLast : candidates;
-}
-
-/** 연쇄 추천 — 같은 digit 연속 금지 (대안 있을 때) */
+/** 연쇄 추천 — 직전 digit과 다르면 우선 */
 export function pickChainStepDigit(
   candidates: PhaseDigitCandidate[],
   prefix: string,
@@ -872,44 +1050,37 @@ export function pickChainStepDigit(
 ): PhaseDigitCandidate | null {
   void topRec;
   if (candidates.length === 0) return null;
-
-  const pool = filterAntiRepeatCandidates(candidates, prefix);
-  const ranked = pool
-    .map((c) => ({ ...c, score: c.fit - repetitionPenalty(prefix, c.digit) }))
-    .sort((a, b) => b.score - a.score || a.digit - b.digit);
-
-  return ranked[0] ?? pool[0] ?? null;
+  const last = prefix.length > 0 ? Number(prefix[prefix.length - 1]) : null;
+  const alt = candidates.find((c) => c.digit !== last);
+  return alt ?? candidates[0] ?? null;
 }
 
-/** phase 추천 → digit 후보 — 패턴별 S→digit, digit·패턴 겹침 제거 */
+/** phase 추천 → digit — 슬롯당 1개, 0~9 균형·중복 없음 */
 export function phaseRecommendationsToDigitCandidates(
   live: LiveSegmentState,
   recs: PhaseRecommendation[],
   prefix: string,
-  maxCount = 5,
+  maxCount = 10,
 ): PhaseDigitCandidate[] {
-  const bestByDigit = new Map<number, PhaseDigitCandidate>();
+  const usedDigits = new Set<number>();
+  const out: PhaseDigitCandidate[] = [];
+  const sorted = [...recs].sort((a, b) => b.fit - a.fit);
 
-  for (const rec of recs) {
+  sorted.forEach((rec, slotIndex) => {
+    if (out.length >= maxCount) return;
     const phaseTag = rec.phase === 'repeat' ? '반복' : '전환';
-
-    for (const { digit, sValue } of digitsForPhaseRec(rec, live, prefix)) {
-      const label = `${phaseTag} · ${rec.patternLabel} · S${sValue}`;
-      const adjustedFit = Math.max(
-        0.1,
-        rec.fit - repetitionPenalty(prefix, digit) - countDigitInRecent(prefix, digit, 5) * 0.05,
-      );
-      const prev = bestByDigit.get(digit);
-      if (!prev || adjustedFit > prev.fit) {
-        bestByDigit.set(digit, { digit, fit: adjustedFit, patternLabel: label });
-      }
+    const sValue = rec.nextSValues[0] ?? slotIndex % 10;
+    let digit = digitForSAndSlot(sValue, slotIndex, prefix, usedDigits);
+    if (usedDigits.has(digit)) {
+      digit = pickFromPatternRecent([], slotIndex, usedDigits);
     }
-  }
+    usedDigits.add(digit);
+    const sideTag = rec.nextClass === 'high' ? '고점' : rec.nextClass === 'low' ? '저점' : '';
+    const label = `${phaseTag} · ${rec.patternLabel}${sideTag ? ` · ${sideTag}` : ''} · S${sValue}`;
+    out.push({ digit, fit: rec.fit, patternLabel: label });
+  });
 
-  const ranked = [...bestByDigit.values()]
-    .sort((a, b) => b.fit - a.fit || a.digit - b.digit);
-
-  return filterAntiRepeatCandidates(ranked, prefix).slice(0, maxCount);
+  return out.slice(0, maxCount);
 }
 
 export function inferNextClassFromPhases(

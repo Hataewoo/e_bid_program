@@ -1,8 +1,15 @@
 import type { AnalysisResult } from './analysisEngine';
+import { pickBatchNextDigits, pickMultipleBatchNextDigits } from './codeValuePatternPredictor';
 
 export {
+  BATCH_DECIMAL_DIGITS,
+  BATCH_VARIANT_COUNT,
   formatCodeValuePatternTargetLabel,
+  pickBatchNextDigits,
+  pickMultipleBatchNextDigits,
   predictFromCodeValuePatterns,
+  type BatchNextDigitsPick,
+  type BatchDigitStepPick,
   type CodeValuePatternPrediction,
 } from './codeValuePatternPredictor';
 
@@ -66,23 +73,42 @@ export function getLastReferenceDigit(prefix: string, masterDigits: string): num
 }
 
 /** @deprecated 소수 digit 추천 제거 — S 패턴만 사용 */
-export function predictNextDigitStep(_result: AnalysisResult, _prefix: string = ''): null {
+export function predictNextDigitStep(_result?: AnalysisResult, _prefix?: string): null {
+  void _result;
+  void _prefix;
   return null;
 }
 
-/** @deprecated 소수 digit 연쇄 추천 제거 — S 패턴만 사용 */
-export function predictDigitChain(): {
+/** 소수 4자리 연쇄 추천 — 후보 세트 포함 */
+export function predictDigitChain(
+  result: AnalysisResult,
+  rawInput = '',
+): {
   parsed: ParsedBidInput;
-  nextStep: null;
-  chainSteps: never[];
+  nextStep: import('./codeValuePatternPredictor').BatchDigitStepPick | null;
+  chainSteps: import('./codeValuePatternPredictor').BatchDigitStepPick[];
   suggestedChain: string;
   suggestedDisplay: string;
+  batchPicks: import('./codeValuePatternPredictor').BatchNextDigitsPick[];
 } {
+  const parsed = parseBidRateInput(rawInput);
+  const batchPicks = pickMultipleBatchNextDigits(result, parsed.decimalPrefix);
+  const primary = batchPicks[0] ?? pickBatchNextDigits(result, parsed.decimalPrefix);
+  const chainSteps = primary?.steps ?? [];
+  const suggestedChain = primary?.chain ?? '';
+  const suggestedDisplay =
+    parsed.integerPart !== null
+      ? `${parsed.integerPart}.${parsed.decimalPrefix}${suggestedChain}`
+      : parsed.decimalPrefix.length > 0 || suggestedChain.length > 0
+        ? parsed.displayValue.replace(/\.$/, '') + suggestedChain
+        : suggestedChain;
+
   return {
-    parsed: { integerPart: null, decimalPrefix: '', displayValue: '' },
-    nextStep: null,
-    chainSteps: [],
-    suggestedChain: '',
-    suggestedDisplay: '',
+    parsed,
+    nextStep: chainSteps[0] ?? null,
+    chainSteps,
+    suggestedChain,
+    suggestedDisplay,
+    batchPicks,
   };
 }

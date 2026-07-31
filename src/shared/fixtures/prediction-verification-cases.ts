@@ -1,9 +1,13 @@
 import type { PredictionVerificationCase } from '@/shared/utils/predictionVerification';
 
 const S_PATTERN_VALUE_LOW =
-  '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 전환 · S run · 90%';
+  '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 1618 · Master Code Value 패턴 · 저·고점 균형';
+const S_PATTERN_VALUE_LOW_90 =
+  '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 1615 · Master Code Value 패턴 · 저·고점 균형';
 const S_PATTERN_VALUE_HIGH =
-  '고점(STEP3) · 전환 · S run → run 종료 · 다음 구간: 저점(0~4) · 전환 · S run · 90%';
+  '고점(STEP3) · 전환 · S run → run 종료 · 다음 구간: 저점(0~4) · 추천 4자리 2515 · Master Code Value 패턴 · 저·고점 균형';
+const S_PATTERN_VALUE_HIGH_S_RUN =
+  '고점(STEP3) · 전환 · S run → run 종료 · 다음 구간: 저점(0~4) · 추천 4자리 1618 · Master Code Value 패턴 · 저·고점 균형';
 
 /**
  * Prediction baseline — S 패턴 phase 엔진 (SRC-BUILTIN).
@@ -29,7 +33,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     expected: {
       value: S_PATTERN_VALUE_HIGH,
       topCode: '02',
-      confidence: 100,
+      confidence: 76,
       dominantSide: 'balanced',
       modeDigit: null,
       step2Count: 5,
@@ -48,6 +52,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
       topCode: '01',
       dominantSide: 'low',
       modeDigit: null,
+      confidence: 76,
       step2Count: 10,
       step3Count: 0,
     },
@@ -60,11 +65,11 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '5566778899',
     codes: [{ code: '23', type: '고점', description: '고점,고점' }],
     expected: {
-      value: S_PATTERN_VALUE_HIGH,
+      value: S_PATTERN_VALUE_HIGH_S_RUN,
       topCode: '23',
       dominantSide: 'high',
       modeDigit: null,
-      confidence: 100,
+      confidence: 76,
       step2Count: 0,
       step3Count: 10,
     },
@@ -77,9 +82,10 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '01234',
     codes: [],
     expected: {
-      value: S_PATTERN_VALUE_LOW,
+      value:
+        '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 1617 · Master Code Value 패턴 · 저·고점 균형',
       topCode: null,
-      confidence: 100,
+      confidence: 76,
       dominantSide: 'low',
       modeDigit: null,
     },
@@ -108,11 +114,11 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '3',
     codes: [{ code: '99', type: '저점', description: '1 중복' }],
     expected: {
-      value: S_PATTERN_VALUE_LOW,
+      value: S_PATTERN_VALUE_LOW_90,
       topCode: '99',
       dominantSide: 'low',
       modeDigit: null,
-      confidence: 100,
+      confidence: 76,
       step2Count: 1,
       step3Count: 0,
     },
@@ -126,7 +132,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     codes: [{ code: 'XX', type: '저점', description: 'unknown rule' }],
     expected: {
       topCode: 'XX',
-      confidence: 100,
+      confidence: 76,
       dominantSide: 'low',
       modeDigit: null,
     },
@@ -152,7 +158,8 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '56789',
     codes: [{ code: '20', type: '고점', description: '저점,고점' }],
     expected: {
-      value: S_PATTERN_VALUE_HIGH,
+      value:
+        '고점(STEP3) · 전환 · S run → run 종료 · 다음 구간: 저점(0~4) · 추천 4자리 2616 · Master Code Value 패턴 · 저·고점 균형',
       dominantSide: 'high',
       modeDigit: null,
       step2Count: 0,

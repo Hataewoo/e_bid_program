@@ -8,16 +8,22 @@ import {
 import {
   analyzePatternPhases,
   balanceSegmentLengthLists,
+  buildPatternSlotRecommendations,
   collectMergedExpectedRunLengths,
   collectMergedNextSValues,
   describePhaseState,
   dominantPatternLabel,
-  getMasterRunLengthsForSide,
+  getRecentMasterRunLengths,
   inferNextClassFromPhases,
+  getMasterRunLengthsForSide,
   phaseRecommendationsToDigitCandidates,
+  pickSingleNextDigit,
   pickVariedNextSValues,
+  type PatternSlotRecommendation,
   type PhaseRecommendation,
+  type SingleNextDigitPick,
 } from './codeValuePhaseEngine';
+import { pickDigitFromMasterPatterns } from './masterPatternDigitEngine';
 import {
   getLiveSegmentState,
   type LiveSegmentState,
@@ -28,19 +34,33 @@ import {
 const PATTERN_FIELDS = Object.keys(PATTERN_FIELD_LABELS) as (keyof SidePatterns)[];
 const S_SUFFIX_LEN = 10;
 const MIN_STRUCTURAL_FIT = 0.68;
+export const BATCH_DECIMAL_DIGITS = 4;
+export const BATCH_VARIANT_COUNT = 4;
 
-export type { PhaseRecommendation, PatternPhaseKind } from './codeValuePhaseEngine';
+export type {
+  PhaseRecommendation,
+  PatternPhaseKind,
+  PatternSlotRecommendation,
+  SingleNextDigitPick,
+} from './codeValuePhaseEngine';
 export {
   analyzePatternPhases,
+  assignUniqueNextSPerSlot,
   balanceSegmentLengthLists,
+  buildPatternSlotRecommendations,
   buildPatternTransitionHints,
   collectMergedExpectedRunLengths,
   collectMergedNextSValues,
   countTrailingSameDigit,
   dominantPatternLabel,
+  getRecentMasterRunLengths,
   pickChainStepDigit,
+  pickSingleNextDigit,
   pickVariedBandDigits,
   pickVariedNextSValues,
+  recentPatternFieldValues,
+  sliceRecentRunLengths,
+  wouldFormRepetitivePattern,
 } from './codeValuePhaseEngine';
 
 export interface PatternStructuralMatch {
@@ -61,6 +81,19 @@ export interface CodeValuePatternDigitCandidate {
   patternLabel: string;
 }
 
+export interface BatchDigitStepPick extends SingleNextDigitPick {
+  step: number;
+}
+
+export interface BatchNextDigitsPick {
+  digits: number[];
+  chain: string;
+  steps: BatchDigitStepPick[];
+  /** UI 표시용 — 1부터 */
+  variantIndex?: number;
+  rankOffset?: number;
+}
+
 export interface CodeValuePatternPrediction {
   live: LiveSegmentState;
   sideLabel: string;
@@ -72,6 +105,11 @@ export interface CodeValuePatternPrediction {
   segment: RunSegmentPrediction;
   bestMatch: PatternStructuralMatch | null;
   phaseRecommendations: PhaseRecommendation[];
+  patternSlotRecommendations: PatternSlotRecommendation[];
+  /** @deprecated 첫 자리 — batchDigitPick.steps[0] 참고 */
+  nextDigitPick: SingleNextDigitPick | null;
+  batchDigitPick: BatchNextDigitsPick | null;
+  batchDigitPicks: BatchNextDigitsPick[];
   rationale: string[];
 }
 
@@ -283,6 +321,7 @@ function fitToSegmentCandidates(
 function buildSegmentFromPhases(
   live: LiveSegmentState,
   recs: PhaseRecommendation[],
+  prefix: string,
 ): RunSegmentPrediction {
   const top = recs[0] ?? null;
   const fit = top?.fit ?? 0.7;
@@ -291,50 +330,38 @@ function buildSegmentFromPhases(
 
   const nextPool = collectMergedNextSValues(recs, s, progress, 12);
   const expectedPool = collectMergedExpectedRunLengths(recs, progress, 12);
-  const balanced = balanceSegmentLengthLists(nextPool, expectedPool, 5);
+  const balanced = balanceSegmentLengthLists(nextPool, expectedPool, 1);
+  const singlePick = pickSingleNextDigit(recs, prefix);
+  const nextSegment: SegmentValueCandidate[] = [];
 
-  const nextSegment: SegmentValueCandidate[] = balanced.next.map((row, i) => ({
-    value: row.value,
-    score: row.fit,
-    probability: Math.round((row.fit / (balanced.next[0]?.fit ?? 1)) * (100 - i * 8) * 10) / 10,
-  }));
-
-  if (nextSegment.length === 0) {
-    for (const value of pickVariedNextSValues(s, live.side, progress).slice(0, 4)) {
-      nextSegment.push({ value, score: fit, probability: 100 - nextSegment.length * 10 });
+  if (singlePick) {
+    nextSegment.push({
+      value: singlePick.digit,
+      score: top?.fit ?? 0.7,
+      probability: Math.min(100, 70 + singlePick.consensusCount * 3),
+    });
+  } else if (balanced.next[0]) {
+    const row = balanced.next[0];
+    nextSegment.push({ value: row.value, score: row.fit, probability: 100 });
+  } else {
+    const fallback = pickVariedNextSValues(s, live.side, progress)[0];
+    if (fallback !== undefined) {
+      nextSegment.push({ value: fallback, score: fit, probability: 100 });
     }
   }
 
-  const expectedRun: SegmentValueCandidate[] = balanced.expected.map((row, i) => ({
+  const expectedRun: SegmentValueCandidate[] = balanced.expected.slice(0, 1).map((row) => ({
     value: row.value,
     score: row.fit,
-    probability: Math.round((row.fit / (balanced.expected[0]?.fit ?? 1)) * (100 - i * 8) * 10) / 10,
+    probability: 100,
   }));
 
-  if (expectedRun.length === 0 && progress >= 1) {
-    const fallback = progress;
-    const overlapsNext = nextSegment.some((c) => c.value === fallback);
-    const allowOverlap = top?.runEndsAfterNext || progress >= 2;
-    if (allowOverlap && (!overlapsNext || top?.runEndsAfterNext)) {
-      expectedRun.push({
-        value: fallback,
-        score: fit,
-        probability: 100,
-      });
-    } else if (progress === 1 && !nextSegment.some((c) => c.value === 1)) {
-      expectedRun.push({ value: 1, score: fit * 0.9, probability: 90 });
-    } else {
-      const alt = expectedPool.find((row) => !nextSegment.some((c) => c.value === row.value));
-      if (alt) {
-        expectedRun.push({
-          value: alt.value,
-          score: alt.fit,
-          probability: Math.round((alt.fit / (expectedPool[0]?.fit ?? 1)) * 1000) / 10,
-        });
-      } else if (allowOverlap) {
-        expectedRun.push({ value: fallback, score: fit, probability: 100 });
-      }
-    }
+  if (expectedRun.length === 0 && progress >= 1 && nextSegment[0]) {
+    expectedRun.push({
+      value: progress,
+      score: fit,
+      probability: progress === nextSegment[0].value ? 90 : 100,
+    });
   }
 
   const remaining = fitToSegmentCandidates(
@@ -355,9 +382,88 @@ function buildSegmentFromPhases(
     runEndsAfterNextDigit: runEnds,
     activePatternLabels: collectActivePatternLabels(live.completedRunLengths, live.side),
     matchTier: top ? (top.phase === 'transition' ? 'suffix' : 'progress') : 'none',
-    sampleCount: recs.length > 0 ? 1 : 0,
+    sampleCount: recs.length,
     segmentConfidence: top?.fit ?? 0,
   };
+}
+
+/** Code Value 패턴 — 소수점 4자리 연쇄 (Master 전체 패턴 · 매 자리 재분석 · 저·고점 균형) */
+export function pickBatchNextDigits(
+  result: AnalysisResult,
+  prefix: string,
+  count = BATCH_DECIMAL_DIGITS,
+  rankOffset = 0,
+): BatchNextDigitsPick | null {
+  if (result.totalCount === 0 || count < 1) return null;
+
+  const steps: BatchDigitStepPick[] = [];
+  let workingPrefix = prefix;
+  const bandTally = { low: 0, high: 0 };
+
+  for (let step = 1; step <= count; step += 1) {
+    const liveDigits = workingPrefix.length > 0 ? workingPrefix : result.digits;
+    const live = getLiveSegmentState(liveDigits);
+    if (!live) break;
+
+    const masterRunLengths = getMasterRunLengthsForSide(result, live.side);
+    const phaseRecs = analyzePatternPhases(live, masterRunLengths);
+    const phasePick = pickSingleNextDigit(phaseRecs, workingPrefix);
+    const phaseBoost = phasePick
+      ? new Map([[phasePick.digit, phasePick.patternLabel]])
+      : undefined;
+
+    const stepRank = rankOffset === 0 ? 0 : rankOffset + ((step - 1) % 2);
+
+    const pick =
+      pickDigitFromMasterPatterns(
+        result,
+        live,
+        workingPrefix,
+        step - 1,
+        count,
+        bandTally,
+        phaseBoost,
+        stepRank,
+      ) ?? phasePick;
+
+    if (!pick) break;
+
+    if (pick.digit <= 4) bandTally.low += 1;
+    else bandTally.high += 1;
+
+    steps.push({ ...pick, step });
+    workingPrefix += String(pick.digit);
+  }
+
+  if (steps.length < count) return null;
+
+  const digits = steps.map((s) => s.digit);
+  return {
+    digits,
+    chain: digits.join(''),
+    steps,
+    rankOffset,
+  };
+}
+
+/** Master 패턴 기반 4자리 후보 3~4세트 — rank 순위를 바꿔 서로 다른 연쇄 생성 */
+export function pickMultipleBatchNextDigits(
+  result: AnalysisResult,
+  prefix: string,
+  count = BATCH_DECIMAL_DIGITS,
+  maxVariants = BATCH_VARIANT_COUNT,
+): BatchNextDigitsPick[] {
+  const out: BatchNextDigitsPick[] = [];
+  const seen = new Set<string>();
+
+  for (let attempt = 0; attempt < maxVariants + 6 && out.length < maxVariants; attempt += 1) {
+    const batch = pickBatchNextDigits(result, prefix, count, attempt);
+    if (!batch || seen.has(batch.chain)) continue;
+    seen.add(batch.chain);
+    out.push({ ...batch, variantIndex: out.length + 1 });
+  }
+
+  return out;
 }
 
 /**
@@ -376,7 +482,19 @@ export function predictFromCodeValuePatterns(
 
   const masterRunLengths = getMasterRunLengthsForSide(result, live.side);
   const phaseRecs = analyzePatternPhases(live, masterRunLengths);
-  const digitCandidates = phaseRecommendationsToDigitCandidates(live, phaseRecs, prefix, 5);
+  const batchDigitPicks = pickMultipleBatchNextDigits(result, prefix, BATCH_DECIMAL_DIGITS);
+  const batchDigitPick = batchDigitPicks[0] ?? pickBatchNextDigits(result, prefix, BATCH_DECIMAL_DIGITS);
+  const nextDigitPick = batchDigitPick?.steps[0] ?? pickSingleNextDigit(phaseRecs, prefix);
+  const patternSlotRecommendations: PatternSlotRecommendation[] = [];
+  const digitCandidates = batchDigitPick
+    ? batchDigitPick.steps.map((step, i) => ({
+        digit: step.digit,
+        fit: phaseRecs[i]?.fit ?? phaseRecs[0]?.fit ?? 0.7,
+        patternLabel: step.patternLabel,
+      }))
+    : nextDigitPick
+      ? [{ digit: nextDigitPick.digit, fit: phaseRecs[0]?.fit ?? 0.7, patternLabel: nextDigitPick.patternLabel }]
+      : phaseRecommendationsToDigitCandidates(live, phaseRecs, prefix, BATCH_DECIMAL_DIGITS);
   const top = phaseRecs[0] ?? null;
   const nextClass = inferNextClassFromPhases(live, phaseRecs);
   const bestMatch = top ? phaseToBestMatch(top, live, prefix, digitCandidates) : null;
@@ -385,14 +503,18 @@ export function predictFromCodeValuePatterns(
     describePhaseState(live, top),
     `다음 구간: ${classLabel(nextClass)}`,
   ];
-  if (top) {
+  if (batchDigitPick) {
+    rationale.push(
+      `추천 4자리 ${batchDigitPick.chain} · Master Code Value 패턴 · 저·고점 균형`,
+    );
+    if (batchDigitPicks.length > 1) {
+      rationale.push(`대안 ${batchDigitPicks.slice(1).map((b) => b.chain).join(' / ')}`);
+    }
+  } else if (nextDigitPick) {
+    rationale.push(`추천 digit ${nextDigitPick.digit} · ${nextDigitPick.reason}`);
+  } else if (top) {
     rationale.push(`${top.phase === 'repeat' ? '반복' : '전환'} · ${top.patternLabel} · ${Math.round(top.fit * 100)}%`);
     rationale.push(top.reason);
-  }
-  if (digitCandidates.length > 0) {
-    rationale.push(
-      `digit ${digitCandidates.map((c) => `${c.digit}(${c.patternLabel})`).join(', ')}`,
-    );
   }
 
   return {
@@ -403,9 +525,13 @@ export function predictFromCodeValuePatterns(
     repeatDescription: describePhaseState(live, top),
     activePatternLabels: collectActivePatternLabels(live.completedRunLengths, live.side),
     digitCandidates,
-    segment: buildSegmentFromPhases(live, phaseRecs),
+    segment: buildSegmentFromPhases(live, phaseRecs, prefix),
     bestMatch,
     phaseRecommendations: phaseRecs,
+    patternSlotRecommendations,
+    nextDigitPick,
+    batchDigitPick,
+    batchDigitPicks,
     rationale,
   };
 }

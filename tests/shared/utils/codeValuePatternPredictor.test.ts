@@ -3,6 +3,7 @@ import { analyzeMasterValue } from '@/shared/utils/analysisEngine';
 import {
   analyzePatternPhases,
   buildPatternTransitionHints,
+  wouldFormRepetitivePattern,
 } from '@/shared/utils/codeValuePhaseEngine';
 import {
   dedupeDigitCandidates,
@@ -68,12 +69,13 @@ describe('codeValuePatternPredictor', () => {
     expect(pred).not.toBeNull();
     expect(pred!.repeatDescription).toContain('저점');
     expect(pred!.phaseRecommendations.length).toBeGreaterThan(0);
-    expect(pred!.digitCandidates.length).toBeGreaterThan(0);
-    expect(pred!.digitCandidates.length).toBeLessThanOrEqual(5);
-    const uniqueDigits = new Set(pred!.digitCandidates.map((c) => c.digit));
-    expect(uniqueDigits.size).toBe(pred!.digitCandidates.length);
-    expect(pred!.segment.sampleCount).toBeGreaterThan(0);
-    expect(pred!.segment.nextSegmentCandidates.length).toBeGreaterThan(0);
+    expect(pred!.batchDigitPick).not.toBeNull();
+    expect(pred!.batchDigitPick!.digits).toHaveLength(4);
+    expect(pred!.batchDigitPick!.chain).toHaveLength(4);
+    expect(pred!.digitCandidates.length).toBe(4);
+    expect(pred!.nextDigitPick).not.toBeNull();
+    expect(pred!.nextDigitPick!.digit).toBe(pred!.digitCandidates[0]!.digit);
+    expect(pred!.segment.nextSegmentCandidates.length).toBeLessThanOrEqual(1);
     const uniqueS = new Set(pred!.segment.nextSegmentCandidates.map((c) => c.value));
     expect(uniqueS.size).toBe(pred!.segment.nextSegmentCandidates.length);
     const nextValues = pred!.segment.nextSegmentCandidates.map((c) => c.value);
@@ -131,6 +133,23 @@ describe('codeValuePatternPredictor', () => {
     const next = pred!.segment.nextSegmentCandidates.map((c) => c.value);
     expect(next.length).toBeGreaterThan(0);
     expect(next.every((v) => v === 1)).toBe(false);
+  });
+
+  it('pickBatchNextDigits returns 4 varied digits from Code Value phases', () => {
+    const result = analyzeMasterValue('00', '112345678901234567890');
+    const pred = predictFromCodeValuePatterns(result, '');
+    expect(pred!.batchDigitPick).not.toBeNull();
+    expect(pred!.batchDigitPick!.chain).toMatch(/^\d{4}$/);
+    const digits = pred!.batchDigitPick!.digits;
+    expect(digits.filter((d) => d <= 4).length).toBe(2);
+    expect(digits.filter((d) => d >= 5).length).toBe(2);
+    const chain = pred!.batchDigitPick!.chain;
+    let prefix = '';
+    for (const ch of chain) {
+      const digit = Number(ch);
+      expect(wouldFormRepetitivePattern(prefix, digit)).toBe(false);
+      prefix += ch;
+    }
   });
 
   it('uses master only for pattern transition hints not digit copy', () => {
