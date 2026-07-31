@@ -135,14 +135,16 @@ describe('codeValuePatternPredictor', () => {
     expect(next.every((v) => v === 1)).toBe(false);
   });
 
-  it('pickBatchNextDigits returns 4 varied digits from Code Value phases', () => {
+  it('pickBatchNextDigits returns 4 digits from Code Value pattern flow', () => {
     const result = analyzeMasterValue('00', '112345678901234567890');
     const pred = predictFromCodeValuePatterns(result, '');
     expect(pred!.batchDigitPick).not.toBeNull();
     expect(pred!.batchDigitPick!.chain).toMatch(/^\d{4}$/);
     const digits = pred!.batchDigitPick!.digits;
-    expect(digits.filter((d) => d <= 4).length).toBe(2);
-    expect(digits.filter((d) => d >= 5).length).toBe(2);
+    expect(digits).toHaveLength(4);
+    for (const step of pred!.batchDigitPick!.steps) {
+      expect(step.reason).toMatch(/반복|전환|저점|고점/);
+    }
     const chain = pred!.batchDigitPick!.chain;
     let prefix = '';
     for (const ch of chain) {

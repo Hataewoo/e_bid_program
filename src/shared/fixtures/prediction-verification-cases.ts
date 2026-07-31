@@ -1,13 +1,13 @@
 import type { PredictionVerificationCase } from '@/shared/utils/predictionVerification';
 
 const S_PATTERN_VALUE_LOW =
-  '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 1618 · Master Code Value 패턴 · 저·고점 균형';
+  '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 2130 · Code Value 패턴 흐름';
 const S_PATTERN_VALUE_LOW_90 =
-  '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 1615 · Master Code Value 패턴 · 저·고점 균형';
+  '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 1023 · Code Value 패턴 흐름';
 const S_PATTERN_VALUE_HIGH =
-  '고점(STEP3) · 전환 · S run → run 종료 · 다음 구간: 저점(0~4) · 추천 4자리 2515 · Master Code Value 패턴 · 저·고점 균형';
+  '고점(STEP3) · 전환 · S run → run 종료 · 다음 구간: 저점(0~4) · 추천 4자리 6579 · Code Value 패턴 흐름';
 const S_PATTERN_VALUE_HIGH_S_RUN =
-  '고점(STEP3) · 전환 · S run → run 종료 · 다음 구간: 저점(0~4) · 추천 4자리 1618 · Master Code Value 패턴 · 저·고점 균형';
+  '고점(STEP3) · 전환 · S run → run 종료 · 다음 구간: 저점(0~4) · 추천 4자리 6785 · Code Value 패턴 흐름';
 
 /**
  * Prediction baseline — S 패턴 phase 엔진 (SRC-BUILTIN).
@@ -83,7 +83,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     codes: [],
     expected: {
       value:
-        '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 1617 · Master Code Value 패턴 · 저·고점 균형',
+        '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 0324 · Code Value 패턴 흐름',
       topCode: null,
       confidence: 76,
       dominantSide: 'low',
@@ -158,8 +158,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '56789',
     codes: [{ code: '20', type: '고점', description: '저점,고점' }],
     expected: {
-      value:
-        '고점(STEP3) · 전환 · S run → run 종료 · 다음 구간: 저점(0~4) · 추천 4자리 2616 · Master Code Value 패턴 · 저·고점 균형',
+      value: S_PATTERN_VALUE_HIGH,
       dominantSide: 'high',
       modeDigit: null,
       step2Count: 0,
