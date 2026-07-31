@@ -21,7 +21,7 @@ import {
   type PhaseRecommendation,
   type SingleNextDigitPick,
 } from './codeValuePhaseEngine';
-import { pickDigitFromMasterPatterns } from './masterPatternDigitEngine';
+import { pickDigitFromMasterPatterns, type BatchBandMode } from './masterPatternDigitEngine';
 import {
   getLiveSegmentState,
   type LiveSegmentState,
@@ -34,6 +34,8 @@ const S_SUFFIX_LEN = 10;
 const MIN_STRUCTURAL_FIT = 0.68;
 export const BATCH_DECIMAL_DIGITS = 4;
 export const BATCH_VARIANT_COUNT = 4;
+
+export type { BatchBandMode };
 
 export type {
   PhaseRecommendation,
@@ -386,12 +388,19 @@ function buildSegmentFromPhases(
   };
 }
 
+function digitMatchesBandMode(digit: number, bandMode: BatchBandMode): boolean {
+  if (bandMode === 'low') return digit >= 0 && digit <= 4;
+  if (bandMode === 'high') return digit >= 5 && digit <= 9;
+  return true;
+}
+
 /** Code Value 패턴 — 소수점 4자리 연쇄 (Master 전체 패턴 · 매 자리 재분석 · 저·고점 균형) */
 export function pickBatchNextDigits(
   result: AnalysisResult,
   prefix: string,
   count = BATCH_DECIMAL_DIGITS,
   rankOffset = 0,
+  bandMode: BatchBandMode = 'balanced',
 ): BatchNextDigitsPick | null {
   if (result.totalCount === 0 || count < 1) return null;
 
@@ -413,7 +422,7 @@ export function pickBatchNextDigits(
 
     const stepRank = rankOffset === 0 ? 0 : rankOffset + ((step - 1) % 2);
 
-    const pick =
+    let pick =
       pickDigitFromMasterPatterns(
         result,
         live,
@@ -423,7 +432,12 @@ export function pickBatchNextDigits(
         bandTally,
         phaseBoost,
         stepRank,
+        bandMode,
       ) ?? phasePick;
+
+    if (pick && !digitMatchesBandMode(pick.digit, bandMode)) {
+      pick = null;
+    }
 
     if (!pick) break;
 
@@ -451,12 +465,13 @@ export function pickMultipleBatchNextDigits(
   prefix: string,
   count = BATCH_DECIMAL_DIGITS,
   maxVariants = BATCH_VARIANT_COUNT,
+  bandMode: BatchBandMode = 'balanced',
 ): BatchNextDigitsPick[] {
   const out: BatchNextDigitsPick[] = [];
   const seen = new Set<string>();
 
   for (let attempt = 0; attempt < maxVariants + 6 && out.length < maxVariants; attempt += 1) {
-    const batch = pickBatchNextDigits(result, prefix, count, attempt);
+    const batch = pickBatchNextDigits(result, prefix, count, attempt, bandMode);
     if (!batch || seen.has(batch.chain)) continue;
     seen.add(batch.chain);
     out.push({ ...batch, variantIndex: out.length + 1 });

@@ -17,6 +17,8 @@ const PATTERN_FIELDS = Object.keys(PATTERN_FIELD_LABELS) as (keyof SidePatterns)
 const MIN_SNAPSHOT_SCORE = 0.32;
 const S_PREFIX_SUFFIX_LEN = 10;
 
+export type BatchBandMode = 'balanced' | 'low' | 'high';
+
 export interface MasterPatternSnapshot {
   side: DigitClass;
   sBefore: number[];
@@ -153,7 +155,11 @@ function preferredBandForStep(
   stepIndex: number,
   batchSize: number,
   tally: { low: number; high: number },
+  bandMode: BatchBandMode = 'balanced',
 ): DigitClass | 'any' {
+  if (bandMode === 'low') return 'low';
+  if (bandMode === 'high') return 'high';
+
   const targetLow = Math.ceil(batchSize / 2);
   const targetHigh = Math.floor(batchSize / 2);
   const needLow = targetLow - tally.low;
@@ -161,6 +167,12 @@ function preferredBandForStep(
   if (needLow > needHigh) return 'low';
   if (needHigh > needLow) return 'high';
   return stepIndex % 2 === 0 ? 'low' : 'high';
+}
+
+function bandModeReasonSuffix(bandMode: BatchBandMode): string {
+  if (bandMode === 'low') return '저점(0~4)만';
+  if (bandMode === 'high') return '고점(5~9)만';
+  return '저·고점 균형';
 }
 
 function recentDigitCounts(prefix: string, lookback = 8): Map<number, number> {
@@ -195,12 +207,14 @@ export function pickDigitFromMasterPatterns(
   bandTally: { low: number; high: number },
   phaseLabelBoost?: Map<number, string>,
   rankOffset = 0,
+  bandMode: BatchBandMode = 'balanced',
 ): SingleNextDigitPick | null {
   const snapshots = indexMasterPatternSnapshots(result.digits);
   const votes = new Map<number, { weight: number; label: string; hits: number }>();
   const lowVotes = new Map<number, { weight: number; label: string; hits: number }>();
   const highVotes = new Map<number, { weight: number; label: string; hits: number }>();
-  const preferredBand = preferredBandForStep(stepIndex, batchSize, bandTally);
+  const preferredBand = preferredBandForStep(stepIndex, batchSize, bandTally, bandMode);
+  const reasonSuffix = bandModeReasonSuffix(bandMode);
 
   for (const snap of snapshots) {
     if (snap.nextDigit === null || snap.nextDigit < 0 || snap.nextDigit > 9) continue;
@@ -276,7 +290,7 @@ export function pickDigitFromMasterPatterns(
         digit,
         patternLabel: `전환 · ${meta.label}`,
         consensusCount: meta.hits,
-        reason: `${meta.label} · Master 패턴 ${meta.hits}건 · 저·고점 균형`,
+        reason: `${meta.label} · Master 패턴 ${meta.hits}건 · ${reasonSuffix}`,
       };
     }
     return null;

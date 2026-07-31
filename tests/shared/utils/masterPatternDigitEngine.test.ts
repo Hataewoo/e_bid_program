@@ -6,7 +6,10 @@ import {
   pickDigitFromMasterPatterns,
 } from '@/shared/utils/masterPatternDigitEngine';
 import { getLiveSegmentState } from '@/shared/utils/runSegmentEngine';
-import { predictFromCodeValuePatterns } from '@/shared/utils/codeValuePatternPredictor';
+import {
+  pickMultipleBatchNextDigits,
+  predictFromCodeValuePatterns,
+} from '@/shared/utils/codeValuePatternPredictor';
 
 describe('masterPatternDigitEngine', () => {
   it('indexes full master with Code Value pattern counts', () => {
@@ -50,6 +53,26 @@ describe('masterPatternDigitEngine', () => {
       expect(batch.chain).toMatch(/^\d{4}$/);
       expect(batch.digits.filter((d) => d <= 4).length).toBe(2);
       expect(batch.digits.filter((d) => d >= 5).length).toBe(2);
+    }
+  });
+
+  it('pickMultipleBatchNextDigits low-only uses digits 0~4 only', () => {
+    const result = analyzeMasterValue('00', '012345678901234567890');
+    const batches = pickMultipleBatchNextDigits(result, '', 4, 4, 'low');
+    expect(batches.length).toBeGreaterThanOrEqual(1);
+    for (const batch of batches) {
+      expect(batch.digits).toHaveLength(4);
+      expect(batch.digits.every((d) => d >= 0 && d <= 4)).toBe(true);
+    }
+  });
+
+  it('pickMultipleBatchNextDigits high-only uses digits 5~9 only', () => {
+    const result = analyzeMasterValue('00', '012345678901234567890');
+    const batches = pickMultipleBatchNextDigits(result, '', 4, 4, 'high');
+    expect(batches.length).toBeGreaterThanOrEqual(1);
+    for (const batch of batches) {
+      expect(batch.digits).toHaveLength(4);
+      expect(batch.digits.every((d) => d >= 5 && d <= 9)).toBe(true);
     }
   });
 

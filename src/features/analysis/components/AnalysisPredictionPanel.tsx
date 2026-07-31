@@ -1,12 +1,26 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import type { AnalysisResult } from '@/shared/utils/analysisEngine';
-import { parseBidRateInput, predictFromCodeValuePatterns } from '@/shared/utils/nextDigitEngine';
+import {
+  BATCH_DECIMAL_DIGITS,
+  BATCH_VARIANT_COUNT,
+  parseBidRateInput,
+  pickMultipleBatchNextDigits,
+  predictFromCodeValuePatterns,
+  type BatchBandMode,
+} from '@/shared/utils/nextDigitEngine';
 import type { BatchNextDigitsPick } from '@/shared/utils/codeValuePatternPredictor';
+import type { MessageKey } from '@/i18n/messages';
 import { useI18n } from '@/i18n/use-i18n';
 
 interface AnalysisPredictionPanelProps {
   result: AnalysisResult;
 }
+
+const BAND_MODE_OPTIONS: { id: BatchBandMode; labelKey: MessageKey }[] = [
+  { id: 'balanced', labelKey: 'analysis.prediction.bandModeAll' },
+  { id: 'low', labelKey: 'analysis.prediction.bandModeLow' },
+  { id: 'high', labelKey: 'analysis.prediction.bandModeHigh' },
+];
 
 function BatchVariantCard({ batch, compact }: { batch: BatchNextDigitsPick; compact?: boolean }) {
   const { t } = useI18n();
@@ -49,7 +63,13 @@ function BatchVariantCard({ batch, compact }: { batch: BatchNextDigitsPick; comp
   );
 }
 
-function BatchDigitPickBlock({ batches }: { batches: BatchNextDigitsPick[] }) {
+function BatchDigitPickBlock({
+  batches,
+  hintKey = 'analysis.prediction.batchPickHint',
+}: {
+  batches: BatchNextDigitsPick[];
+  hintKey?: MessageKey;
+}) {
   const { t } = useI18n();
   const primary = batches[0];
   const alternates = batches.slice(1);
@@ -72,7 +92,7 @@ function BatchDigitPickBlock({ batches }: { batches: BatchNextDigitsPick[] }) {
         </div>
       ) : null}
       <div className="text-center text-[10px] text-content-muted">
-        {t('analysis.prediction.batchPickHint')}
+        {t(hintKey)}
       </div>
     </div>
   );
@@ -120,6 +140,7 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
 }: AnalysisPredictionPanelProps) {
   const { t } = useI18n();
   const [input, setInput] = useState('');
+  const [bandMode, setBandMode] = useState<BatchBandMode>('balanced');
 
   const hasData = result.totalCount > 0;
   const decimalPrefix = useMemo(() => parseBidRateInput(input).decimalPrefix, [input]);
@@ -129,17 +150,35 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
     [hasData, result, decimalPrefix],
   );
 
+  const bandBatches = useMemo(() => {
+    if (!hasData || bandMode === 'balanced') return [];
+    return pickMultipleBatchNextDigits(
+      result,
+      decimalPrefix,
+      BATCH_DECIMAL_DIGITS,
+      BATCH_VARIANT_COUNT,
+      bandMode,
+    );
+  }, [hasData, result, decimalPrefix, bandMode]);
+
   const handleClear = useCallback(() => {
     setInput('');
   }, []);
 
   const displayPrefix = parseBidRateInput(input).displayValue || input;
-  const batches =
+  const balancedBatches =
     patternPred?.batchDigitPicks && patternPred.batchDigitPicks.length > 0
       ? patternPred.batchDigitPicks
       : patternPred?.batchDigitPick
         ? [patternPred.batchDigitPick]
         : [];
+  const activeBatches = bandMode === 'balanced' ? balancedBatches : bandBatches;
+  const batchHintKey: MessageKey =
+    bandMode === 'low'
+      ? 'analysis.prediction.batchPickHintLow'
+      : bandMode === 'high'
+        ? 'analysis.prediction.batchPickHintHigh'
+        : 'analysis.prediction.batchPickHint';
 
   return (
     <div className="shrink-0 border-b border-[#404040] bg-[#fffff0] px-3 py-2">
@@ -177,9 +216,25 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
             ) : null}
           </div>
 
-          {batches.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-[#000080]">
+              {t('analysis.prediction.bandModeLabel')}
+            </span>
+            {BAND_MODE_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={`win-button text-xs ${bandMode === option.id ? 'win-button-primary' : ''}`}
+                onClick={() => setBandMode(option.id)}
+              >
+                {t(option.labelKey)}
+              </button>
+            ))}
+          </div>
+
+          {activeBatches.length > 0 ? (
             <>
-              <BatchDigitPickBlock batches={batches} />
+              <BatchDigitPickBlock batches={activeBatches} hintKey={batchHintKey} />
               <SegmentContextBlock
                 segment={patternPred!.segment}
                 repeatDescription={patternPred!.repeatDescription}

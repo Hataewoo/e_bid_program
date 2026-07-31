@@ -8,6 +8,7 @@ export {
   pickBatchNextDigits,
   pickMultipleBatchNextDigits,
   predictFromCodeValuePatterns,
+  type BatchBandMode,
   type BatchNextDigitsPick,
   type BatchDigitStepPick,
   type CodeValuePatternPrediction,
