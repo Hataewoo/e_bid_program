@@ -21,6 +21,7 @@ import {
   classDigitOrder,
   wouldFormRepetitivePattern,
   countTrailingSameDigit,
+  sliceRecentRunLengths,
   type PatternSlotRecommendation,
   type PhaseRecommendation,
   type SingleNextDigitPick,
@@ -403,6 +404,38 @@ function resolveTargetDigitClass(
   return live.side;
 }
 
+/**
+ * 저점만/고점만 — 해당 side Code Value(S·패턴) 맥락으로 분석.
+ * 현재 digit run이 반대 side여도 Master·prefix에서 동 side 마지막 위치를 참고.
+ */
+function resolveBandScopedLive(
+  liveDigits: string,
+  result: AnalysisResult,
+  bandMode: BatchBandMode,
+): LiveSegmentState | null {
+  const live = getLiveSegmentState(liveDigits);
+  if (!live) return null;
+  if (bandMode === 'pattern-flow') return live;
+
+  const targetSide: DigitClass = bandMode;
+  if (live.side === targetSide) return live;
+
+  const master = result.digits;
+  for (let i = master.length - 1; i >= 0; i -= 1) {
+    const subLive = getLiveSegmentState(master.slice(0, i + 1));
+    if (subLive?.side === targetSide) {
+      return { ...subLive, sourceDigits: liveDigits };
+    }
+  }
+
+  return {
+    side: targetSide,
+    completedRunLengths: sliceRecentRunLengths(getMasterRunLengthsForSide(result, targetSide)),
+    currentRunProgress: 1,
+    sourceDigits: liveDigits,
+  };
+}
+
 function recentDigitCounts(prefix: string, lookback = 8): Map<number, number> {
   const counts = new Map<number, number>();
   for (let i = prefix.length - 1; i >= 0 && i >= prefix.length - lookback; i -= 1) {
@@ -443,17 +476,20 @@ function describeFlowReason(
   live: LiveSegmentState,
   top: PhaseRecommendation | null,
   targetClass: DigitClass,
+  bandMode: BatchBandMode = 'pattern-flow',
 ): string {
   const band = targetClass === 'low' ? '저점(0~4)' : '고점(5~9)';
-  if (!top) return `${band} · run ${live.currentRunProgress}자`;
+  const scope =
+    bandMode === 'low' ? ' · 저점 run 전용' : bandMode === 'high' ? ' · 고점 run 전용' : '';
+  if (!top) return `${band} · run ${live.currentRunProgress}자${scope}`;
   const phaseTag = top.phase === 'repeat' ? '반복' : '전환';
   if (top.remainingInRun && top.remainingInRun > 0) {
-    return `${phaseTag} · ${top.patternLabel} · ${band} · run ${live.currentRunProgress}자 · 남 ${top.remainingInRun}`;
+    return `${phaseTag} · ${top.patternLabel} · ${band} · run ${live.currentRunProgress}자 · 남 ${top.remainingInRun}${scope}`;
   }
   if (top.runEndsAfterNext) {
-    return `${phaseTag} · ${top.patternLabel} · ${band} · run 종료 예상`;
+    return `${phaseTag} · ${top.patternLabel} · ${band} · run 종료 예상${scope}`;
   }
-  return `${phaseTag} · ${top.patternLabel} · ${band} · run ${live.currentRunProgress}자`;
+  return `${phaseTag} · ${top.patternLabel} · ${band} · run ${live.currentRunProgress}자${scope}`;
 }
 
 /**
@@ -462,7 +498,7 @@ function describeFlowReason(
  */
 export function pickPatternFlowDigit(
   result: AnalysisResult,
-  live: LiveSegmentState,
+  contextLive: LiveSegmentState,
   phaseRecs: PhaseRecommendation[],
   prefix: string,
   targetClass: DigitClass,
@@ -470,11 +506,13 @@ export function pickPatternFlowDigit(
     rankOffset?: number;
     phaseRecStart?: number;
     usedInBatch?: Set<number>;
+    bandMode?: BatchBandMode;
   } = {},
 ): SingleNextDigitPick | null {
   const rankOffset = options.rankOffset ?? 0;
   const phaseRecStart = options.phaseRecStart ?? 0;
   const usedInBatch = options.usedInBatch;
+  const bandMode = options.bandMode ?? 'pattern-flow';
 
   const sorted = [...phaseRecs].sort((a, b) => b.fit - a.fit);
   const topRecs = sorted.slice(phaseRecStart, phaseRecStart + 5);
@@ -494,12 +532,12 @@ export function pickPatternFlowDigit(
     votes.set(digit, row);
   });
 
-  const segmentWeights = collectSegmentDigitTransitions(result.digits, live);
+  const segmentWeights = collectSegmentDigitTransitions(result.digits, contextLive);
   for (const [digit, w] of segmentWeights) {
     if (!digitMatchesClass(digit, targetClass)) continue;
     const row = votes.get(digit) ?? {
       weight: 0,
-      label: dominantPatternLabel(live.completedRunLengths, live.side),
+      label: dominantPatternLabel(contextLive.completedRunLengths, contextLive.side),
       hits: 0,
     };
     row.weight += w * 1.4;
@@ -515,7 +553,7 @@ export function pickPatternFlowDigit(
 
   const masterPick = pickDigitFromMasterPatterns(
     result,
-    live,
+    contextLive,
     prefix,
     targetClass,
     phaseBoost.size > 0 ? phaseBoost : undefined,
@@ -538,7 +576,7 @@ export function pickPatternFlowDigit(
     (a, b) => b[1].weight - a[1].weight || b[1].hits - a[1].hits || a[0] - b[0],
   );
 
-  const flowReason = describeFlowReason(live, top, targetClass);
+  const flowReason = describeFlowReason(contextLive, top, targetClass, bandMode);
   let skipped = 0;
   for (const [digit, meta] of ranked) {
     if (!digitMatchesClass(digit, targetClass)) continue;
@@ -576,7 +614,7 @@ export function pickPatternFlowDigit(
     if (isDigitOverusedInRecent(prefix, digit)) continue;
     return {
       digit,
-      patternLabel: dominantPatternLabel(live.completedRunLengths, live.side),
+      patternLabel: dominantPatternLabel(contextLive.completedRunLengths, contextLive.side),
       consensusCount: 0,
       reason: `${flowReason} · 패턴 대안`,
     };
@@ -612,16 +650,25 @@ export function pickBatchNextDigits(
     const live = getLiveSegmentState(liveDigits);
     if (!live) break;
 
-    const masterRunLengths = getMasterRunLengthsForSide(result, live.side);
-    const phaseRecs = analyzePatternPhases(live, masterRunLengths);
+    const contextLive = resolveBandScopedLive(liveDigits, result, bandMode) ?? live;
+    const masterRunLengths = getMasterRunLengthsForSide(result, contextLive.side);
+    const phaseRecs = analyzePatternPhases(contextLive, masterRunLengths);
     const targetClass = resolveTargetDigitClass(live, bandMode);
     const stepRank = rankBase + ((step - 1) % 2);
 
-    const pick = pickPatternFlowDigit(result, live, phaseRecs, workingPrefix, targetClass, {
-      rankOffset: stepRank,
-      phaseRecStart,
-      usedInBatch,
-    });
+    const pick = pickPatternFlowDigit(
+      result,
+      contextLive,
+      phaseRecs,
+      workingPrefix,
+      targetClass,
+      {
+        rankOffset: stepRank,
+        phaseRecStart,
+        usedInBatch,
+        bandMode,
+      },
+    );
 
     if (!pick || !digitMatchesBandMode(pick.digit, bandMode)) break;
 

@@ -61,7 +61,16 @@ describe('masterPatternDigitEngine', () => {
     for (const batch of batches) {
       expect(batch.digits).toHaveLength(4);
       expect(batch.digits.every((d) => d >= 0 && d <= 4)).toBe(true);
+      expect(batch.steps[0]!.reason).toMatch(/저점|반복|전환/);
     }
+  });
+
+  it('low-only analyzes low-side patterns when master ends on high', () => {
+    const result = analyzeMasterValue('00', '0123456789');
+    const batches = pickMultipleBatchNextDigits(result, '', 4, 2, 'low');
+    expect(batches.length).toBeGreaterThanOrEqual(1);
+    expect(batches[0]!.digits.every((d) => d <= 4)).toBe(true);
+    expect(batches[0]!.steps.some((s) => s.reason.includes('저점 run 전용'))).toBe(true);
   });
 
   it('pickMultipleBatchNextDigits high-only uses digits 5~9 only', () => {
