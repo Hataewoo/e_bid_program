@@ -23,23 +23,23 @@ describe('masterPatternDigitEngine', () => {
   it('pickDigitFromMasterPatterns prefers pattern context not fixed digit', () => {
     const result = analyzeMasterValue('00', '012345678901234567890');
     const live = getLiveSegmentState('0')!;
-    const pick = pickDigitFromMasterPatterns(result, live, '0', 0, 4, { low: 0, high: 0 });
+    const pick = pickDigitFromMasterPatterns(result, live, '0', 'low');
     expect(pick).not.toBeNull();
     expect(pick!.digit).toBeGreaterThanOrEqual(0);
-    expect(pick!.digit).toBeLessThanOrEqual(9);
+    expect(pick!.digit).toBeLessThanOrEqual(4);
     expect(pick!.reason).toContain('Master 패턴');
   });
 
-  it('batch 4 digits balances low and high bands', () => {
+  it('batch 4 digits follows pattern flow not forced 2:2 balance', () => {
     const result = analyzeMasterValue('00', '012345678901234567890');
     const pred = predictFromCodeValuePatterns(result, '');
     expect(pred!.batchDigitPick).not.toBeNull();
     const digits = pred!.batchDigitPick!.digits;
     expect(digits).toHaveLength(4);
-    const low = digits.filter((d) => d <= 4).length;
-    const high = digits.filter((d) => d >= 5).length;
-    expect(low).toBe(2);
-    expect(high).toBe(2);
+    for (const step of pred!.batchDigitPick!.steps) {
+      expect(step.reason.length).toBeGreaterThan(0);
+      expect(step.patternLabel.length).toBeGreaterThan(0);
+    }
   });
 
   it('pickMultipleBatchNextDigits returns up to 4 distinct chains', () => {
@@ -51,8 +51,6 @@ describe('masterPatternDigitEngine', () => {
     expect(new Set(chains).size).toBe(chains.length);
     for (const batch of pred!.batchDigitPicks) {
       expect(batch.chain).toMatch(/^\d{4}$/);
-      expect(batch.digits.filter((d) => d <= 4).length).toBe(2);
-      expect(batch.digits.filter((d) => d >= 5).length).toBe(2);
     }
   });
 

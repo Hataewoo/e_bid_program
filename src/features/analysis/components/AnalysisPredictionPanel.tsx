@@ -17,7 +17,7 @@ interface AnalysisPredictionPanelProps {
 }
 
 const BAND_MODE_OPTIONS: { id: BatchBandMode; labelKey: MessageKey }[] = [
-  { id: 'balanced', labelKey: 'analysis.prediction.bandModeAll' },
+  { id: 'pattern-flow', labelKey: 'analysis.prediction.bandModeAll' },
   { id: 'low', labelKey: 'analysis.prediction.bandModeLow' },
   { id: 'high', labelKey: 'analysis.prediction.bandModeHigh' },
 ];
@@ -140,7 +140,7 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
 }: AnalysisPredictionPanelProps) {
   const { t } = useI18n();
   const [input, setInput] = useState('');
-  const [bandMode, setBandMode] = useState<BatchBandMode>('balanced');
+  const [bandMode, setBandMode] = useState<BatchBandMode>('pattern-flow');
 
   const hasData = result.totalCount > 0;
   const decimalPrefix = useMemo(() => parseBidRateInput(input).decimalPrefix, [input]);
@@ -151,7 +151,7 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
   );
 
   const bandBatches = useMemo(() => {
-    if (!hasData || bandMode === 'balanced') return [];
+    if (!hasData || bandMode === 'pattern-flow') return [];
     return pickMultipleBatchNextDigits(
       result,
       decimalPrefix,
@@ -172,7 +172,7 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
       : patternPred?.batchDigitPick
         ? [patternPred.batchDigitPick]
         : [];
-  const activeBatches = bandMode === 'balanced' ? balancedBatches : bandBatches;
+  const activeBatches = bandMode === 'pattern-flow' ? balancedBatches : bandBatches;
   const batchHintKey: MessageKey =
     bandMode === 'low'
       ? 'analysis.prediction.batchPickHintLow'

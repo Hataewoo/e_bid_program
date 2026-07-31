@@ -17,12 +17,17 @@ import {
   phaseRecommendationsToDigitCandidates,
   pickSingleNextDigit,
   pickVariedNextSValues,
+  digitMatchesClass,
+  classDigitOrder,
+  wouldFormRepetitivePattern,
+  countTrailingSameDigit,
   type PatternSlotRecommendation,
   type PhaseRecommendation,
   type SingleNextDigitPick,
 } from './codeValuePhaseEngine';
-import { pickDigitFromMasterPatterns, type BatchBandMode } from './masterPatternDigitEngine';
+import { pickDigitFromMasterPatterns } from './masterPatternDigitEngine';
 import {
+  collectSegmentDigitTransitions,
   getLiveSegmentState,
   type LiveSegmentState,
   type RunSegmentPrediction,
@@ -35,7 +40,8 @@ const MIN_STRUCTURAL_FIT = 0.68;
 export const BATCH_DECIMAL_DIGITS = 4;
 export const BATCH_VARIANT_COUNT = 4;
 
-export type { BatchBandMode };
+/** pattern-flow: Code Value run 흐름 · low/high: 해당 밴드만 */
+export type BatchBandMode = 'pattern-flow' | 'low' | 'high';
 
 export type {
   PhaseRecommendation,
@@ -388,25 +394,218 @@ function buildSegmentFromPhases(
   };
 }
 
+function resolveTargetDigitClass(
+  live: LiveSegmentState,
+  bandMode: BatchBandMode,
+): DigitClass {
+  if (bandMode === 'low') return 'low';
+  if (bandMode === 'high') return 'high';
+  return live.side;
+}
+
+function recentDigitCounts(prefix: string, lookback = 8): Map<number, number> {
+  const counts = new Map<number, number>();
+  for (let i = prefix.length - 1; i >= 0 && i >= prefix.length - lookback; i -= 1) {
+    const d = Number(prefix[i]);
+    if (!Number.isInteger(d) || d < 0 || d > 9) continue;
+    counts.set(d, (counts.get(d) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function isDigitOverusedInRecent(prefix: string, digit: number, maxCount = 1): boolean {
+  return (recentDigitCounts(prefix).get(digit) ?? 0) >= maxCount;
+}
+
+function digitFromPhaseRecForClass(
+  rec: PhaseRecommendation,
+  slotIndex: number,
+  prefix: string,
+  targetClass: DigitClass,
+): number | null {
+  const pool = rec.nextSValues.filter((v) => v >= 0 && v <= 9 && digitMatchesClass(v, targetClass));
+  for (const sValue of pool) {
+    if (wouldFormRepetitivePattern(prefix, sValue)) continue;
+    if (isDigitOverusedInRecent(prefix, sValue)) continue;
+    const last = prefix.length > 0 ? Number(prefix[prefix.length - 1]) : null;
+    if (sValue === last && countTrailingSameDigit(prefix) >= 1) continue;
+    return sValue;
+  }
+  for (const d of classDigitOrder(targetClass, slotIndex)) {
+    if (wouldFormRepetitivePattern(prefix, d)) continue;
+    if (isDigitOverusedInRecent(prefix, d)) continue;
+    return d;
+  }
+  return null;
+}
+
+function describeFlowReason(
+  live: LiveSegmentState,
+  top: PhaseRecommendation | null,
+  targetClass: DigitClass,
+): string {
+  const band = targetClass === 'low' ? '저점(0~4)' : '고점(5~9)';
+  if (!top) return `${band} · run ${live.currentRunProgress}자`;
+  const phaseTag = top.phase === 'repeat' ? '반복' : '전환';
+  if (top.remainingInRun && top.remainingInRun > 0) {
+    return `${phaseTag} · ${top.patternLabel} · ${band} · run ${live.currentRunProgress}자 · 남 ${top.remainingInRun}`;
+  }
+  if (top.runEndsAfterNext) {
+    return `${phaseTag} · ${top.patternLabel} · ${band} · run 종료 예상`;
+  }
+  return `${phaseTag} · ${top.patternLabel} · ${band} · run ${live.currentRunProgress}자`;
+}
+
+/**
+ * Code Value phase + Master S 전환 + Master 패턴 — run side 흐름에 맞는 digit 1개.
+ * 강제 2:2 균형 없음 — live.side(현 run) 기준 저·고점 결정.
+ */
+export function pickPatternFlowDigit(
+  result: AnalysisResult,
+  live: LiveSegmentState,
+  phaseRecs: PhaseRecommendation[],
+  prefix: string,
+  targetClass: DigitClass,
+  options: {
+    rankOffset?: number;
+    phaseRecStart?: number;
+    usedInBatch?: Set<number>;
+  } = {},
+): SingleNextDigitPick | null {
+  const rankOffset = options.rankOffset ?? 0;
+  const phaseRecStart = options.phaseRecStart ?? 0;
+  const usedInBatch = options.usedInBatch;
+
+  const sorted = [...phaseRecs].sort((a, b) => b.fit - a.fit);
+  const topRecs = sorted.slice(phaseRecStart, phaseRecStart + 5);
+  if (topRecs.length === 0 && sorted.length > 0) topRecs.push(sorted[0]!);
+
+  const votes = new Map<number, { weight: number; label: string; hits: number }>();
+
+  topRecs.forEach((rec, slotIndex) => {
+    const digit = digitFromPhaseRecForClass(rec, slotIndex + phaseRecStart, prefix, targetClass);
+    if (digit === null) return;
+    const phaseTag = rec.phase === 'repeat' ? '반복' : '전환';
+    const label = `${phaseTag} · ${rec.patternLabel}`;
+    const row = votes.get(digit) ?? { weight: 0, label, hits: 0 };
+    row.weight += rec.fit * (rec.phase === 'repeat' ? 1.05 : 1.0);
+    row.hits += 1;
+    if (row.hits === 1) row.label = label;
+    votes.set(digit, row);
+  });
+
+  const segmentWeights = collectSegmentDigitTransitions(result.digits, live);
+  for (const [digit, w] of segmentWeights) {
+    if (!digitMatchesClass(digit, targetClass)) continue;
+    const row = votes.get(digit) ?? {
+      weight: 0,
+      label: dominantPatternLabel(live.completedRunLengths, live.side),
+      hits: 0,
+    };
+    row.weight += w * 1.4;
+    row.hits += 1;
+    votes.set(digit, row);
+  }
+
+  const top = topRecs[0] ?? null;
+  const phaseBoost = new Map<number, string>();
+  for (const [digit, meta] of votes) {
+    phaseBoost.set(digit, meta.label);
+  }
+
+  const masterPick = pickDigitFromMasterPatterns(
+    result,
+    live,
+    prefix,
+    targetClass,
+    phaseBoost.size > 0 ? phaseBoost : undefined,
+    0,
+    usedInBatch,
+  );
+  if (masterPick) {
+    const row = votes.get(masterPick.digit) ?? {
+      weight: 0,
+      label: masterPick.patternLabel,
+      hits: 0,
+    };
+    row.weight += 0.35 + masterPick.consensusCount * 0.08;
+    row.hits += masterPick.consensusCount;
+    row.label = masterPick.patternLabel;
+    votes.set(masterPick.digit, row);
+  }
+
+  const ranked = [...votes.entries()].sort(
+    (a, b) => b[1].weight - a[1].weight || b[1].hits - a[1].hits || a[0] - b[0],
+  );
+
+  const flowReason = describeFlowReason(live, top, targetClass);
+  let skipped = 0;
+  for (const [digit, meta] of ranked) {
+    if (!digitMatchesClass(digit, targetClass)) continue;
+    if (usedInBatch?.has(digit)) continue;
+    if (wouldFormRepetitivePattern(prefix, digit)) continue;
+    if (isDigitOverusedInRecent(prefix, digit)) continue;
+    if (skipped < rankOffset) {
+      skipped += 1;
+      continue;
+    }
+    return {
+      digit,
+      patternLabel: meta.label,
+      consensusCount: meta.hits,
+      reason: `${flowReason} · ${meta.label} · ${meta.hits}건`,
+    };
+  }
+
+  if (masterPick && !usedInBatch?.has(masterPick.digit)) {
+    return { ...masterPick, reason: `${flowReason} · ${masterPick.reason}` };
+  }
+
+  const phaseOnly = pickSingleNextDigit(topRecs.length > 0 ? topRecs : phaseRecs, prefix);
+  if (
+    phaseOnly &&
+    digitMatchesClass(phaseOnly.digit, targetClass) &&
+    !usedInBatch?.has(phaseOnly.digit)
+  ) {
+    return { ...phaseOnly, reason: `${flowReason} · ${phaseOnly.reason}` };
+  }
+
+  for (const digit of classDigitOrder(targetClass, prefix.length + rankOffset)) {
+    if (usedInBatch?.has(digit)) continue;
+    if (wouldFormRepetitivePattern(prefix, digit)) continue;
+    if (isDigitOverusedInRecent(prefix, digit)) continue;
+    return {
+      digit,
+      patternLabel: dominantPatternLabel(live.completedRunLengths, live.side),
+      consensusCount: 0,
+      reason: `${flowReason} · 패턴 대안`,
+    };
+  }
+
+  return null;
+}
+
 function digitMatchesBandMode(digit: number, bandMode: BatchBandMode): boolean {
   if (bandMode === 'low') return digit >= 0 && digit <= 4;
   if (bandMode === 'high') return digit >= 5 && digit <= 9;
   return true;
 }
 
-/** Code Value 패턴 — 소수점 4자리 연쇄 (Master 전체 패턴 · 매 자리 재분석 · 저·고점 균형) */
+/** Code Value 패턴 — 소수점 4자리 연쇄 (패턴 흐름 · 매 자리 재분석) */
 export function pickBatchNextDigits(
   result: AnalysisResult,
   prefix: string,
   count = BATCH_DECIMAL_DIGITS,
-  rankOffset = 0,
-  bandMode: BatchBandMode = 'balanced',
+  variantSeed = 0,
+  bandMode: BatchBandMode = 'pattern-flow',
 ): BatchNextDigitsPick | null {
   if (result.totalCount === 0 || count < 1) return null;
 
   const steps: BatchDigitStepPick[] = [];
   let workingPrefix = prefix;
-  const bandTally = { low: 0, high: 0 };
+  const usedInBatch = new Set<number>();
+  const phaseRecStart = variantSeed % 4;
+  const rankBase = Math.floor(variantSeed / 4);
 
   for (let step = 1; step <= count; step += 1) {
     const liveDigits = workingPrefix.length > 0 ? workingPrefix : result.digits;
@@ -415,35 +614,18 @@ export function pickBatchNextDigits(
 
     const masterRunLengths = getMasterRunLengthsForSide(result, live.side);
     const phaseRecs = analyzePatternPhases(live, masterRunLengths);
-    const phasePick = pickSingleNextDigit(phaseRecs, workingPrefix);
-    const phaseBoost = phasePick
-      ? new Map([[phasePick.digit, phasePick.patternLabel]])
-      : undefined;
+    const targetClass = resolveTargetDigitClass(live, bandMode);
+    const stepRank = rankBase + ((step - 1) % 2);
 
-    const stepRank = rankOffset === 0 ? 0 : rankOffset + ((step - 1) % 2);
+    const pick = pickPatternFlowDigit(result, live, phaseRecs, workingPrefix, targetClass, {
+      rankOffset: stepRank,
+      phaseRecStart,
+      usedInBatch,
+    });
 
-    let pick =
-      pickDigitFromMasterPatterns(
-        result,
-        live,
-        workingPrefix,
-        step - 1,
-        count,
-        bandTally,
-        phaseBoost,
-        stepRank,
-        bandMode,
-      ) ?? phasePick;
+    if (!pick || !digitMatchesBandMode(pick.digit, bandMode)) break;
 
-    if (pick && !digitMatchesBandMode(pick.digit, bandMode)) {
-      pick = null;
-    }
-
-    if (!pick) break;
-
-    if (pick.digit <= 4) bandTally.low += 1;
-    else bandTally.high += 1;
-
+    usedInBatch.add(pick.digit);
     steps.push({ ...pick, step });
     workingPrefix += String(pick.digit);
   }
@@ -455,22 +637,22 @@ export function pickBatchNextDigits(
     digits,
     chain: digits.join(''),
     steps,
-    rankOffset,
+    rankOffset: variantSeed,
   };
 }
 
-/** Master 패턴 기반 4자리 후보 3~4세트 — rank 순위를 바꿔 서로 다른 연쇄 생성 */
+/** Master 패턴 + Code Value 흐름 기반 4자리 후보 3~4세트 */
 export function pickMultipleBatchNextDigits(
   result: AnalysisResult,
   prefix: string,
   count = BATCH_DECIMAL_DIGITS,
   maxVariants = BATCH_VARIANT_COUNT,
-  bandMode: BatchBandMode = 'balanced',
+  bandMode: BatchBandMode = 'pattern-flow',
 ): BatchNextDigitsPick[] {
   const out: BatchNextDigitsPick[] = [];
   const seen = new Set<string>();
 
-  for (let attempt = 0; attempt < maxVariants + 6 && out.length < maxVariants; attempt += 1) {
+  for (let attempt = 0; attempt < maxVariants + 8 && out.length < maxVariants; attempt += 1) {
     const batch = pickBatchNextDigits(result, prefix, count, attempt, bandMode);
     if (!batch || seen.has(batch.chain)) continue;
     seen.add(batch.chain);
@@ -518,9 +700,7 @@ export function predictFromCodeValuePatterns(
     `다음 구간: ${classLabel(nextClass)}`,
   ];
   if (batchDigitPick) {
-    rationale.push(
-      `추천 4자리 ${batchDigitPick.chain} · Master Code Value 패턴 · 저·고점 균형`,
-    );
+    rationale.push(`추천 4자리 ${batchDigitPick.chain} · Code Value 패턴 흐름`);
     if (batchDigitPicks.length > 1) {
       rationale.push(`대안 ${batchDigitPicks.slice(1).map((b) => b.chain).join(' / ')}`);
     }

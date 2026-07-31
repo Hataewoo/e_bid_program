@@ -7,6 +7,7 @@ export {
   formatCodeValuePatternTargetLabel,
   pickBatchNextDigits,
   pickMultipleBatchNextDigits,
+  pickPatternFlowDigit,
   predictFromCodeValuePatterns,
   type BatchBandMode,
   type BatchNextDigitsPick,

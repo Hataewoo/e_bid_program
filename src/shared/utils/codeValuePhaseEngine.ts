@@ -240,6 +240,17 @@ export function balancedDigitOrder(slotIndex: number): number[] {
   return slotIndex % 2 === 0 ? [...lo, ...hi] : [...hi, ...lo];
 }
 
+export function digitMatchesClass(digit: number, cls: DigitClass): boolean {
+  return cls === 'low' ? digit >= 0 && digit <= 4 : digit >= 5 && digit <= 9;
+}
+
+/** 패턴 흐름 fallback — target class 내 digit 순환 (저·고점 교차 없음) */
+export function classDigitOrder(cls: DigitClass, slotIndex: number): number[] {
+  const pool = cls === 'low' ? [0, 1, 2, 3, 4] : [5, 6, 7, 8, 9];
+  const offset = slotIndex % pool.length;
+  return [...pool.slice(offset), ...pool.slice(0, offset)];
+}
+
 /** Master 패턴 최근값 → 없으면 균형 순서 */
 function pickFromPatternRecent(
   recentVals: number[],

@@ -5,10 +5,10 @@ import {
   toClassSequence,
 } from './analysisEngine';
 import {
+  ALL_S_DIGITS,
+  classDigitOrder,
   dominantPatternLabel,
   wouldFormRepetitivePattern,
-  balancedDigitOrder,
-  ALL_S_DIGITS,
   type SingleNextDigitPick,
 } from './codeValuePhaseEngine';
 import { getLiveSegmentState, type LiveSegmentState } from './runSegmentEngine';
@@ -16,8 +16,6 @@ import { getLiveSegmentState, type LiveSegmentState } from './runSegmentEngine';
 const PATTERN_FIELDS = Object.keys(PATTERN_FIELD_LABELS) as (keyof SidePatterns)[];
 const MIN_SNAPSHOT_SCORE = 0.32;
 const S_PREFIX_SUFFIX_LEN = 10;
-
-export type BatchBandMode = 'balanced' | 'low' | 'high';
 
 export interface MasterPatternSnapshot {
   side: DigitClass;
@@ -151,28 +149,8 @@ function isLowDigit(digit: number): boolean {
   return digit >= 0 && digit <= 4;
 }
 
-function preferredBandForStep(
-  stepIndex: number,
-  batchSize: number,
-  tally: { low: number; high: number },
-  bandMode: BatchBandMode = 'balanced',
-): DigitClass | 'any' {
-  if (bandMode === 'low') return 'low';
-  if (bandMode === 'high') return 'high';
-
-  const targetLow = Math.ceil(batchSize / 2);
-  const targetHigh = Math.floor(batchSize / 2);
-  const needLow = targetLow - tally.low;
-  const needHigh = targetHigh - tally.high;
-  if (needLow > needHigh) return 'low';
-  if (needHigh > needLow) return 'high';
-  return stepIndex % 2 === 0 ? 'low' : 'high';
-}
-
-function bandModeReasonSuffix(bandMode: BatchBandMode): string {
-  if (bandMode === 'low') return '저점(0~4)만';
-  if (bandMode === 'high') return '고점(5~9)만';
-  return '저·고점 균형';
+function digitMatchesClass(digit: number, cls: DigitClass): boolean {
+  return cls === 'low' ? isLowDigit(digit) : digit >= 5 && digit <= 9;
 }
 
 function recentDigitCounts(prefix: string, lookback = 8): Map<number, number> {
@@ -185,66 +163,51 @@ function recentDigitCounts(prefix: string, lookback = 8): Map<number, number> {
   return counts;
 }
 
-function isDigitOverusedInRecent(prefix: string, digit: number, maxCount = 2): boolean {
+function isDigitOverusedInRecent(prefix: string, digit: number, maxCount = 1): boolean {
   return (recentDigitCounts(prefix).get(digit) ?? 0) >= maxCount;
 }
 
-function digitMatchesBand(digit: number, band: DigitClass | 'any'): boolean {
-  if (band === 'any') return true;
-  return band === 'low' ? isLowDigit(digit) : digit >= 5 && digit <= 9;
-}
-
 /**
- * Master 전체 Code Value 패턴(3·5·9 이상, 1사이 등) + 저·고점 균형으로 digit 1개.
- * 무작위가 아니라 Master에서 유사 패턴 맥락의 next digit 가중 합의.
+ * Master Code Value 패턴(3·5·9 이상, 1사이 등) — targetClass 범위 내 digit 1개.
+ * 패턴 흐름(run side)에 맞는 저·고점에서만 Master 유사 맥락 next digit 가중 합의.
  */
 export function pickDigitFromMasterPatterns(
   result: AnalysisResult,
   live: LiveSegmentState,
   prefix: string,
-  stepIndex: number,
-  batchSize: number,
-  bandTally: { low: number; high: number },
+  targetClass: DigitClass,
   phaseLabelBoost?: Map<number, string>,
   rankOffset = 0,
-  bandMode: BatchBandMode = 'balanced',
+  usedInBatch?: Set<number>,
 ): SingleNextDigitPick | null {
   const snapshots = indexMasterPatternSnapshots(result.digits);
   const votes = new Map<number, { weight: number; label: string; hits: number }>();
-  const lowVotes = new Map<number, { weight: number; label: string; hits: number }>();
-  const highVotes = new Map<number, { weight: number; label: string; hits: number }>();
-  const preferredBand = preferredBandForStep(stepIndex, batchSize, bandTally, bandMode);
-  const reasonSuffix = bandModeReasonSuffix(bandMode);
 
   for (const snap of snapshots) {
     if (snap.nextDigit === null || snap.nextDigit < 0 || snap.nextDigit > 9) continue;
+    if (!digitMatchesClass(snap.nextDigit, targetClass)) continue;
     const score = snapshotContextScore(live, snap);
     if (score < MIN_SNAPSHOT_SCORE) continue;
 
     const weight = score * score;
-    const targetMaps = isLowDigit(snap.nextDigit) ? [votes, lowVotes] : [votes, highVotes];
-    for (const map of targetMaps) {
-      const row = map.get(snap.nextDigit) ?? {
-        weight: 0,
-        label: snap.dominantLabel,
-        hits: 0,
-      };
-      row.weight += weight;
-      row.hits += 1;
-      if (row.hits === 1) row.label = snap.dominantLabel;
-      map.set(snap.nextDigit, row);
-    }
+    const row = votes.get(snap.nextDigit) ?? {
+      weight: 0,
+      label: snap.dominantLabel,
+      hits: 0,
+    };
+    row.weight += weight;
+    row.hits += 1;
+    if (row.hits === 1) row.label = snap.dominantLabel;
+    votes.set(snap.nextDigit, row);
   }
 
-  // 저·고점 밴드 후보 부족 시 — 유사 맥락 threshold 완화
-  const bandPool = preferredBand === 'low' ? lowVotes : preferredBand === 'high' ? highVotes : votes;
-  if (bandPool.size === 0) {
+  if (votes.size === 0) {
     for (const snap of snapshots) {
       if (snap.nextDigit === null || snap.nextDigit < 0 || snap.nextDigit > 9) continue;
-      if (!digitMatchesBand(snap.nextDigit, preferredBand)) continue;
+      if (!digitMatchesClass(snap.nextDigit, targetClass)) continue;
       const score = snapshotContextScore(live, snap);
       if (score < 0.18) continue;
-      const row = bandPool.get(snap.nextDigit) ?? {
+      const row = votes.get(snap.nextDigit) ?? {
         weight: 0,
         label: snap.dominantLabel,
         hits: 0,
@@ -252,85 +215,71 @@ export function pickDigitFromMasterPatterns(
       row.weight += score * 0.5;
       row.hits += 1;
       if (row.hits === 1) row.label = snap.dominantLabel;
-      bandPool.set(snap.nextDigit, row);
+      votes.set(snap.nextDigit, row);
     }
   }
 
   if (phaseLabelBoost) {
     for (const [digit, label] of phaseLabelBoost.entries()) {
+      if (!digitMatchesClass(digit, targetClass)) continue;
       const row = votes.get(digit) ?? { weight: 0, label, hits: 0 };
-      row.weight += 0.15;
+      row.weight += 0.2;
       row.label = label;
       votes.set(digit, row);
     }
   }
 
-  const ranked = [...bandPool.entries()].sort(
-    (a, b) => b[1].weight - a[1].weight || b[1].hits - a[1].hits,
-  );
-  const rankedAny = [...votes.entries()].sort(
+  const ranked = [...votes.entries()].sort(
     (a, b) => b[1].weight - a[1].weight || b[1].hits - a[1].hits,
   );
 
-  const tryPickFrom = (
-    pool: [number, { weight: number; label: string; hits: number }][],
-    band: DigitClass | 'any',
-    skipRank = 0,
-  ): SingleNextDigitPick | null => {
-    let skipped = 0;
-    for (const [digit, meta] of pool) {
-      if (!digitMatchesBand(digit, band)) continue;
-      if (wouldFormRepetitivePattern(prefix, digit)) continue;
-      if (isDigitOverusedInRecent(prefix, digit)) continue;
-      if (skipped < skipRank) {
-        skipped += 1;
-        continue;
-      }
-      return {
-        digit,
-        patternLabel: `전환 · ${meta.label}`,
-        consensusCount: meta.hits,
-        reason: `${meta.label} · Master 패턴 ${meta.hits}건 · ${reasonSuffix}`,
-      };
+  const classLabel = targetClass === 'low' ? '저점' : '고점';
+  let skipped = 0;
+  for (const [digit, meta] of ranked) {
+    if (!digitMatchesClass(digit, targetClass)) continue;
+    if (usedInBatch?.has(digit)) continue;
+    if (wouldFormRepetitivePattern(prefix, digit)) continue;
+    if (isDigitOverusedInRecent(prefix, digit)) continue;
+    if (skipped < rankOffset) {
+      skipped += 1;
+      continue;
     }
-    return null;
-  };
+    return {
+      digit,
+      patternLabel: `${classLabel} · ${meta.label}`,
+      consensusCount: meta.hits,
+      reason: `${meta.label} · Master 패턴 ${meta.hits}건 · ${classLabel} run`,
+    };
+  }
 
-  const bandPick = tryPickFrom(ranked, preferredBand, rankOffset);
-  if (bandPick) return bandPick;
-
-  const anyPick = tryPickFrom(rankedAny, preferredBand, rankOffset);
-  if (anyPick) return anyPick;
-
-  for (const digit of balancedDigitOrder(prefix.length + stepIndex + rankOffset)) {
-    if (!digitMatchesBand(digit, preferredBand)) continue;
+  for (const digit of classDigitOrder(targetClass, prefix.length + rankOffset)) {
+    if (usedInBatch?.has(digit)) continue;
     if (wouldFormRepetitivePattern(prefix, digit)) continue;
     if (isDigitOverusedInRecent(prefix, digit)) continue;
     return {
       digit,
-      patternLabel: `전환 · ${dominantPatternLabel(live.completedRunLengths, live.side)}`,
+      patternLabel: `${classLabel} · ${dominantPatternLabel(live.completedRunLengths, live.side)}`,
       consensusCount: 0,
-      reason: `0~9 균형 · Master 패턴 대안`,
+      reason: `${classLabel} run · Master 패턴 대안`,
     };
   }
 
-  const relaxedPick = tryPickFrom(rankedAny, 'any', rankOffset);
-  if (relaxedPick) return relaxedPick;
-
   for (const digit of ALL_S_DIGITS) {
+    if (!digitMatchesClass(digit, targetClass)) continue;
+    if (usedInBatch?.has(digit)) continue;
     if (wouldFormRepetitivePattern(prefix, digit)) continue;
     return {
       digit,
-      patternLabel: `전환 · S run`,
+      patternLabel: `${classLabel} · S run`,
       consensusCount: 0,
-      reason: `대안 digit · 반복 패턴 최소`,
+      reason: `${classLabel} · 반복 패턴 최소 대안`,
     };
   }
 
   return null;
 }
 
-/** Master 저·고점 digit 분포 — 균형 참고용 */
+/** Master 저·고점 digit 분포 — 참고용 */
 export function masterDigitBandProfile(masterDigits: string): { low: number; high: number } {
   let low = 0;
   let high = 0;
