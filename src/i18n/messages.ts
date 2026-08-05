@@ -1,6 +1,7 @@
 export const messages = {
   ko: {
     'app.name': 'CS E-Bid Analyzer',
+    'app.update.banner': '새 버전 v{latest} (현재 v{current}) — 다운로드 가능',
     'toolbar.import': '데이터 일괄 가져오기',
     'toolbar.programInfo': '프로그램 정보',
     'toolbar.theme.light': '라이트',
@@ -851,6 +852,7 @@ export const messages = {
   },
   en: {
     'app.name': 'CS E-Bid Analyzer',
+    'app.update.banner': 'Update v{latest} available (current v{current})',
     'toolbar.import': 'Bulk Import',
     'toolbar.programInfo': 'Program Info',
     'toolbar.theme.light': 'Light',

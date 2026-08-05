@@ -1,5 +1,6 @@
-export type DigitBand = 'low' | 'high';
-export type PivotBandChar = 'L' | 'H' | 'M';
+import { isDigitInSubBand, type DigitBand, type DigitSubBand } from './digitSubBand';
+
+export type PivotBandChar = 'L' | 'H';
 
 export interface PatternTransitionResult {
   counts: Map<number, number>;
@@ -21,13 +22,7 @@ const DECIMAL_CYCLE = 4;
 
 export function getDigitBand(digit: number): DigitBand | null {
   if (!Number.isInteger(digit) || digit < 0 || digit > 9) return null;
-  if (digit < 5) return 'low';
-  if (digit > 5) return 'high';
-  return null;
-}
-
-export function isDigitInBand(digit: number, band: DigitBand): boolean {
-  return band === 'low' ? digit < 5 : digit > 5;
+  return digit <= 4 ? 'low' : 'high';
 }
 
 function countNextDigitsAfterPrefix(
@@ -66,9 +61,7 @@ function countNextDigitsAfterPrefix(
 
 export function toPivotBandChar(digit: number): PivotBandChar | null {
   if (!Number.isInteger(digit) || digit < 0 || digit > 9) return null;
-  if (digit < 5) return 'L';
-  if (digit > 5) return 'H';
-  return 'M';
+  return digit <= 4 ? 'L' : 'H';
 }
 
 export function toPivotBandSequence(digits: string): string {
@@ -101,14 +94,20 @@ function buildPivotRuns(
   return runs;
 }
 
-function getTrailingRunInfo(prefix: string): { band: DigitBand | null; length: number } {
-  if (!prefix) return { band: null, length: 0 };
-  const lastBand = getDigitBand(Number(prefix[prefix.length - 1]));
+function getTrailingRunInfo(
+  prefix: string,
+  masterDigits: string,
+): { band: DigitBand | null; length: number } {
+  const refDigit = prefix.length > 0 ? prefix[prefix.length - 1] : masterDigits.slice(-1);
+  if (!refDigit) return { band: null, length: 0 };
+
+  const lastBand = getDigitBand(Number(refDigit));
   if (lastBand === null) return { band: null, length: 0 };
 
+  const source = prefix.length > 0 ? prefix : masterDigits;
   let length = 0;
-  for (let i = prefix.length - 1; i >= 0; i -= 1) {
-    if (getDigitBand(Number(prefix[i] ?? '')) !== lastBand) break;
+  for (let i = source.length - 1; i >= 0; i -= 1) {
+    if (getDigitBand(Number(source[i] ?? '')) !== lastBand) break;
     length += 1;
   }
   return { band: lastBand, length };
@@ -118,10 +117,10 @@ function addWeightedCount(
   counts: Map<number, number>,
   digit: number,
   weight: number,
-  targetBand: DigitBand | null,
+  targetSubBand: DigitSubBand | null,
 ): boolean {
   if (!Number.isInteger(digit) || digit < 0 || digit > 9) return false;
-  if (targetBand && !isDigitInBand(digit, targetBand)) return false;
+  if (targetSubBand && !isDigitInSubBand(digit, targetSubBand)) return false;
   counts.set(digit, (counts.get(digit) ?? 0) + weight);
   return true;
 }
@@ -129,7 +128,7 @@ function addWeightedCount(
 function countBandPatternTransitions(
   masterDigits: string,
   prefix: string,
-  targetBand: DigitBand | null,
+  targetSubBand: DigitSubBand | null,
 ): { counts: Map<number, number>; totalMatches: number; bandPatternMatches: number } {
   const counts = new Map<number, number>();
   let totalMatches = 0;
@@ -151,7 +150,7 @@ function countBandPatternTransitions(
     else if (slice.slice(-1) === prefix.slice(-1)) weight = PATTERN_WEIGHTS.bandPattern + 0.08;
 
     const next = Number(masterDigits[i + prefix.length]);
-    if (addWeightedCount(counts, next, weight, targetBand)) {
+    if (addWeightedCount(counts, next, weight, targetSubBand)) {
       totalMatches += weight;
     }
   }
@@ -163,22 +162,23 @@ function countPositionTransitions(
   masterDigits: string,
   prefix: string,
   decimalPosition: number,
-  targetBand: DigitBand | null,
+  targetSubBand: DigitSubBand | null,
 ): { counts: Map<number, number>; totalMatches: number; positionMatches: number } {
   const counts = new Map<number, number>();
   let totalMatches = 0;
   let positionMatches = 0;
 
   const slot = (Math.max(1, decimalPosition) - 1) % DECIMAL_CYCLE;
-  const lastDigit = prefix ? prefix[prefix.length - 1] : null;
+  const lastDigitChar =
+    prefix.length > 0 ? prefix[prefix.length - 1] : masterDigits.slice(-1) || null;
 
   for (let i = 0; i < masterDigits.length - 1; i += 1) {
     if (i % DECIMAL_CYCLE !== slot) continue;
-    if (lastDigit !== null && masterDigits[i] !== lastDigit) continue;
+    if (lastDigitChar !== null && masterDigits[i] !== lastDigitChar) continue;
 
     positionMatches += 1;
     const next = Number(masterDigits[i + 1]);
-    if (addWeightedCount(counts, next, PATTERN_WEIGHTS.position, targetBand)) {
+    if (addWeightedCount(counts, next, PATTERN_WEIGHTS.position, targetSubBand)) {
       totalMatches += PATTERN_WEIGHTS.position;
     }
   }
@@ -189,13 +189,13 @@ function countPositionTransitions(
 function countRunBoundaryTransitions(
   masterDigits: string,
   prefix: string,
-  targetBand: DigitBand | null,
+  targetSubBand: DigitSubBand | null,
 ): { counts: Map<number, number>; totalMatches: number; runBoundaryMatches: number } {
   const counts = new Map<number, number>();
   let totalMatches = 0;
   let runBoundaryMatches = 0;
 
-  const trailing = getTrailingRunInfo(prefix);
+  const trailing = getTrailingRunInfo(prefix, masterDigits);
   if (!trailing.band || trailing.length <= 0) {
     return { counts, totalMatches, runBoundaryMatches };
   }
@@ -211,7 +211,7 @@ function countRunBoundaryTransitions(
 
     runBoundaryMatches += 1;
     const next = Number(nextChar);
-    if (addWeightedCount(counts, next, PATTERN_WEIGHTS.runBoundary, targetBand)) {
+    if (addWeightedCount(counts, next, PATTERN_WEIGHTS.runBoundary, targetSubBand)) {
       totalMatches += PATTERN_WEIGHTS.runBoundary;
     }
   }
@@ -230,7 +230,7 @@ export function aggregatePatternTransitions(
   masterDigits: string,
   prefix: string,
   decimalPosition: number,
-  targetBand: DigitBand | null,
+  targetSubBand: DigitSubBand | null,
 ): PatternTransitionResult {
   const counts = new Map<number, number>();
   let totalMatches = 0;
@@ -239,22 +239,22 @@ export function aggregatePatternTransitions(
   let exactMatches = exact.totalMatches;
   if (prefix) {
     for (const [digit, c] of exact.counts) {
-      if (targetBand && !isDigitInBand(digit, targetBand)) continue;
+      if (targetSubBand && !isDigitInSubBand(digit, targetSubBand)) continue;
       const weighted = c * PATTERN_WEIGHTS.exact;
       counts.set(digit, (counts.get(digit) ?? 0) + weighted);
       totalMatches += weighted;
     }
   }
 
-  const band = countBandPatternTransitions(masterDigits, prefix, targetBand);
+  const band = countBandPatternTransitions(masterDigits, prefix, targetSubBand);
   mergeWeightedCounts(counts, band.counts);
   totalMatches += band.totalMatches;
 
-  const position = countPositionTransitions(masterDigits, prefix, decimalPosition, targetBand);
+  const position = countPositionTransitions(masterDigits, prefix, decimalPosition, targetSubBand);
   mergeWeightedCounts(counts, position.counts);
   totalMatches += position.totalMatches;
 
-  const runBoundary = countRunBoundaryTransitions(masterDigits, prefix, targetBand);
+  const runBoundary = countRunBoundaryTransitions(masterDigits, prefix, targetSubBand);
   mergeWeightedCounts(counts, runBoundary.counts);
   totalMatches += runBoundary.totalMatches;
 

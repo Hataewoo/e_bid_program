@@ -1,5 +1,5 @@
 import type { AnalysisResult, CodeValueStatRow } from './analysisEngine';
-import { predictDigitChain } from './nextDigitEngine';
+import { formatCodeValuePatternTargetLabel, predictFromCodeValuePatterns } from './codeValuePatternPredictor';
 
 export type PredictionDominantSide = 'low' | 'high' | 'balanced';
 
@@ -40,8 +40,8 @@ export function createEmptyPrediction(masterNo: string): PredictionResult {
 }
 
 /**
- * 분석 결과 + CodeValue 통계 기반 다음 자리 예측 요약.
- * 상세 입력·연쇄 추천은 Analysis 화면의 nextDigitEngine UI에서 처리.
+ * 분석 결과 + CodeValue 통계 기반 S 패턴 예측 요약.
+ * 소수점 digit(0~9) 추천은 포함하지 않음 — Analysis S 패턴 패널 참고.
  */
 export function buildPrediction(
   result: AnalysisResult,
@@ -54,24 +54,18 @@ export function buildPrediction(
   const sortedCodes = [...codeStats].sort((a, b) => b.count - a.count);
   const topCode = sortedCodes[0] ?? null;
   const dominantSide = resolveDominantSide(result);
-  const chain = predictDigitChain(result, codeStats, '');
+  const patternPred = predictFromCodeValuePatterns(result, '');
+  const segmentSummary = formatCodeValuePatternTargetLabel(patternPred);
+  const topSegment = patternPred?.segment.nextSegmentCandidates[0] ?? null;
+  const segmentConfidence = patternPred?.segment.segmentConfidence ?? 0;
 
-  const topCandidate = chain.nextStep?.candidates[0] ?? null;
-  const modeDigit = topCandidate?.digit ?? null;
-  const value =
-    chain.recommendedCombo.length > 0
-      ? chain.parsed.integerPart !== null
-        ? `${chain.parsed.integerPart}.${chain.recommendedCombo}`
-        : `xx.${chain.recommendedCombo}`
-      : modeDigit !== null
-        ? `xx.${modeDigit}`
-        : '';
-
-  const confidence = topCandidate
-    ? Math.min(100, Math.round(topCandidate.probability))
-    : topCode && topCode.count > 0
-      ? Math.min(100, Math.round(topCode.percent))
-      : 0;
+  const confidence = topSegment
+    ? Math.min(100, Math.round(topSegment.probability))
+    : segmentConfidence > 0
+      ? Math.min(100, Math.round(segmentConfidence * 100))
+      : topCode && topCode.count > 0
+        ? Math.min(100, Math.round(topCode.percent))
+        : 0;
 
   const dominantLabel =
     dominantSide === 'low'
@@ -85,25 +79,18 @@ export function buildPrediction(
       ? `최다 매칭 코드: ${topCode.code} (${topCode.count}건, ${topCode.percent.toFixed(1)}%)`
       : '등록된 코드 매칭 없음',
     `구간 판단: ${dominantLabel}`,
-    chain.nextStep
-      ? `다음 자리 추천: ${chain.nextStep.candidates
-          .slice(0, 4)
-          .map((c) => `${c.digit}(${c.probability.toFixed(1)}%)`)
-          .join(', ')}`
-      : '다음 자리 추천 불가',
-    chain.recommendedCombo
-      ? `4자리 조합: xx.${chain.recommendedCombo} (매 자리 저·고→세분화→Master)`
-      : '4자리 조합 없음',
-  ];
+    segmentSummary ? `S 패턴: ${segmentSummary}` : 'S 패턴 추천 불가',
+    topSegment ? `다음 구간 길이 후보: ${topSegment.value} (${topSegment.probability}%)` : '',
+  ].filter(Boolean);
 
   return {
     masterNo: result.masterNo,
-    value,
+    value: segmentSummary ?? '',
     topCode: topCode?.code ?? null,
     topCodeCount: topCode?.count ?? 0,
     topCodeDescription: topCode?.description ?? '',
     dominantSide,
-    modeDigit,
+    modeDigit: null,
     confidence,
     rationale,
     step2Count: result.lowCount,

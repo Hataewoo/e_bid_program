@@ -10,8 +10,8 @@ import {
   downloadAppUpdate,
   initAppUpdater,
   isUpdaterEnabled,
-  notifyIfUpdateAvailable,
   quitAndInstallAppUpdate,
+  scheduleStartupUpdateCheck,
 } from './updater/app-updater';
 import { handleAnalysisRun } from './analysis/analysis-run-handler';
 import {
@@ -537,9 +537,7 @@ app.whenReady().then(async () => {
   createWindow();
 
   if (app.isPackaged) {
-    window.setTimeout(() => {
-      void notifyIfUpdateAvailable(() => mainWindow);
-    }, 8_000);
+    scheduleStartupUpdateCheck(() => mainWindow);
   }
 
   app.on('activate', () => {

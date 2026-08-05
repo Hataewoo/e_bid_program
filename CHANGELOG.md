@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.9] — 2026-08-05
+
+4자리 조합 예측 — 모든 자리에 저·고 + 세분화 패턴 경로 적용.
+
+### Added
+
+- **digitSubBand / codeValueFlowEngine** — 저·고 4구간(저점의 저점·고점 등) 판단 + Master Value 실제 숫자 추천.
+- **4자리 조합** — 1~4번째 자리 각각 독립적으로 저·고 run → 세분화 → Master 추천.
+
+### Changed
+
+- Analysis 예측 패널 — 자리별 저·고 → 세분화 판단 경로 표시.
+- 패턴 값(S, Code/Values)은 판단용만 사용, 추천 숫자는 Master Value에서만 선택.
+
+---
+
 ## [1.1.3] — 2026-07-29
 
 다음 자리 예측 — 저·고점 교차 + 패턴 그래프.

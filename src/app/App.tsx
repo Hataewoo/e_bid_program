@@ -1,5 +1,6 @@
 import { RouterProvider } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { GlobalAppUpdateBanner } from './components/GlobalAppUpdateBanner';
 import { GlobalBusyOverlay } from './components/GlobalBusyOverlay';
 import { GlobalConfirmDialog } from '@/components/ui/GlobalConfirmDialog';
 import { GlobalErrorListeners } from './components/GlobalErrorListeners';
@@ -13,6 +14,7 @@ export function App() {
       <GlobalBusyOverlay />
       <GlobalConfirmDialog />
       <div className="flex h-full min-h-0 flex-col">
+        <GlobalAppUpdateBanner />
         <div className="min-h-0 flex-1">
           <RouterProvider router={router} />
         </div>

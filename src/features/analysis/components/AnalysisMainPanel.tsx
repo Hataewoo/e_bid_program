@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback } from 'react';
 import {
   DndContext,
   KeyboardSensor,
@@ -10,28 +10,25 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { AnalysisResult } from '@/shared/utils/analysisEngine';
-import { resolvePatternHighlightIndices } from '@/shared/utils/analysisEngine';
-import {
-  ANALYSIS_STEP_DEFS,
-  type AnalysisPanelId,
-  useWorkspaceLayoutStore,
-} from '@/stores/workspace-layout-store';
+import { type AnalysisPanelId, useWorkspaceLayoutStore } from '@/stores/workspace-layout-store';
 import { useI18n } from '@/i18n/use-i18n';
 import type { MessageKey } from '@/i18n/messages';
-import type { PatternHighlightState, PatternModalState } from '../types/pattern-rows';
 import { SortableDockPanel } from '@/components/layout/SortableDockPanel';
-import { buildHighlightIndexSet } from '../utils/highlight-index';
 import { MasterValuePanel } from './HighlightedMasterValue';
-import { PointValuesPanel } from './PointValuesPanel';
 
 interface AnalysisMainPanelProps {
   result: AnalysisResult;
-  activeHighlight: PatternHighlightState | null;
-  onOpenModal: (modal: PatternModalState) => void;
-  onPopup: (side: 'low' | 'high') => void;
-  onPatternHighlight: (highlight: PatternHighlightState | null) => void;
-  onPatternPin: (highlight: PatternHighlightState | null) => void;
 }
+
+const PANEL_HEIGHT: Record<AnalysisPanelId, string> = {
+  masterValue: 'h-[480px]',
+  ibInfo: 'h-[160px]',
+};
+
+const PANEL_TITLE_KEYS: Record<AnalysisPanelId, MessageKey> = {
+  masterValue: 'analysis.panel.masterValue',
+  ibInfo: 'analysis.panel.ibInfo',
+};
 
 const IbInformationBox = memo(function IbInformationBox({ result }: { result: AnalysisResult }) {
   const { t } = useI18n();
@@ -63,39 +60,10 @@ const IbInformationBox = memo(function IbInformationBox({ result }: { result: An
   );
 });
 
-const PANEL_HEIGHT: Record<AnalysisPanelId, string> = {
-  masterValue: 'h-[480px]',
-  lowPoint: 'h-[560px]',
-  ibInfo: 'h-[160px]',
-  highPoint: 'h-[560px]',
-};
-
-const PANEL_TITLE_KEYS: Record<AnalysisPanelId, MessageKey> = {
-  masterValue: 'analysis.panel.masterValue',
-  lowPoint: 'analysis.panel.lowPoint',
-  ibInfo: 'analysis.panel.ibInfo',
-  highPoint: 'analysis.panel.highPoint',
-};
-
-export const AnalysisMainPanel = memo(function AnalysisMainPanel({
-  result,
-  activeHighlight,
-  onOpenModal,
-  onPopup,
-  onPatternHighlight,
-  onPatternPin,
-}: AnalysisMainPanelProps) {
+export const AnalysisMainPanel = memo(function AnalysisMainPanel({ result }: AnalysisMainPanelProps) {
   const { t } = useI18n();
   const panelOrder = useWorkspaceLayoutStore((s) => s.analysisPanelOrder);
-  const activeStep = useWorkspaceLayoutStore((s) => s.analysisActiveStep);
   const setPanelOrder = useWorkspaceLayoutStore((s) => s.setAnalysisPanelOrder);
-
-  const focusedPanelId = ANALYSIS_STEP_DEFS[activeStep].panelId;
-
-  const highlightIndices = useMemo(
-    () => buildHighlightIndexSet(result, activeHighlight, resolvePatternHighlightIndices),
-    [result, activeHighlight],
-  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -119,59 +87,16 @@ export const AnalysisMainPanel = memo(function AnalysisMainPanel({
   const renderPanelContent = (panelId: AnalysisPanelId) => {
     switch (panelId) {
       case 'masterValue':
-        return <MasterValuePanel digits={result.digits} highlightIndices={highlightIndices} />;
-      case 'lowPoint':
-        return (
-          <PointValuesPanel
-            side="low"
-            result={result}
-            activeHighlight={activeHighlight}
-            onOpenModal={onOpenModal}
-            onPopup={() => onPopup('low')}
-            onPatternHighlight={onPatternHighlight}
-            onPatternPin={onPatternPin}
-          />
-        );
+        return <MasterValuePanel digits={result.digits} highlightIndices={new Set()} />;
       case 'ibInfo':
         return (
           <div className="min-h-0 flex-1 overflow-auto p-1">
             <IbInformationBox result={result} />
           </div>
         );
-      case 'highPoint':
-        return (
-          <PointValuesPanel
-            side="high"
-            result={result}
-            activeHighlight={activeHighlight}
-            onOpenModal={onOpenModal}
-            onPopup={() => onPopup('high')}
-            onPatternHighlight={onPatternHighlight}
-            onPatternPin={onPatternPin}
-          />
-        );
       default:
         return null;
     }
-  };
-
-  const renderPanelTitle = (panelId: AnalysisPanelId) => {
-    if (panelId === 'masterValue') {
-      return (
-        <>
-          {t(PANEL_TITLE_KEYS.masterValue)}
-          {activeHighlight ? (
-            <span className="ml-1 text-[10px] font-normal text-[#000080]">
-              {t('analysis.panel.highlightRef', {
-                side: activeHighlight.side === 'low' ? 'Low' : 'High',
-                code: activeHighlight.code,
-              })}
-            </span>
-          ) : null}
-        </>
-      );
-    }
-    return t(PANEL_TITLE_KEYS[panelId]);
   };
 
   return (
@@ -183,11 +108,9 @@ export const AnalysisMainPanel = memo(function AnalysisMainPanel({
               <SortableDockPanel
                 key={panelId}
                 id={panelId}
-                title={renderPanelTitle(panelId)}
-                isFocused={focusedPanelId === panelId}
-                className={`shrink-0 ${PANEL_HEIGHT[panelId]} ${
-                  panelId === 'lowPoint' || panelId === 'highPoint' ? 'p-0' : ''
-                }`}
+                title={t(PANEL_TITLE_KEYS[panelId])}
+                isFocused={panelId === 'masterValue'}
+                className={`shrink-0 ${PANEL_HEIGHT[panelId]}`}
               >
                 {renderPanelContent(panelId)}
               </SortableDockPanel>

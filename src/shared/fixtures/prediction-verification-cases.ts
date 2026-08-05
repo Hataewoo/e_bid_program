@@ -1,7 +1,17 @@
 import type { PredictionVerificationCase } from '@/shared/utils/predictionVerification';
 
+const S_PATTERN_VALUE_LOW =
+  '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 2130 · Code Value 패턴 흐름';
+const S_PATTERN_VALUE_LOW_90 =
+  '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 1023 · Code Value 패턴 흐름';
+const S_PATTERN_VALUE_HIGH =
+  '고점(STEP3) · 전환 · S run → run 종료 · 다음 구간: 저점(0~4) · 추천 4자리 6579 · Code Value 패턴 흐름';
+const S_PATTERN_VALUE_HIGH_S_RUN =
+  '고점(STEP3) · 전환 · S run → run 종료 · 다음 구간: 저점(0~4) · 추천 4자리 6785 · Code Value 패턴 흐름';
+
 /**
- * Prediction pattern-flow engine baseline (SRC-BUILTIN).
+ * Prediction baseline — S 패턴 phase 엔진 (SRC-BUILTIN).
+ * 소수 digit(0~9) 연쇄 추천은 포함하지 않음.
  */
 export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[] = [
   {
@@ -21,11 +31,11 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '0123456789',
     codes: [{ code: '02', type: '저점', description: '저점,고점' }],
     expected: {
-      value: 'xx.4423',
+      value: S_PATTERN_VALUE_HIGH,
       topCode: '02',
-      confidence: 94,
+      confidence: 76,
       dominantSide: 'balanced',
-      modeDigit: 4,
+      modeDigit: null,
       step2Count: 5,
       step3Count: 5,
     },
@@ -38,10 +48,11 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '0011223344',
     codes: [{ code: '01', type: '저점', description: '저점,저점' }],
     expected: {
-      value: 'xx.4444',
+      value: S_PATTERN_VALUE_LOW,
       topCode: '01',
       dominantSide: 'low',
-      modeDigit: 4,
+      modeDigit: null,
+      confidence: 76,
       step2Count: 10,
       step3Count: 0,
     },
@@ -54,11 +65,13 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '5566778899',
     codes: [{ code: '23', type: '고점', description: '고점,고점' }],
     expected: {
-      value: 'xx.9999',
+      value: S_PATTERN_VALUE_HIGH_S_RUN,
       topCode: '23',
       dominantSide: 'high',
-      modeDigit: 9,
-      confidence: 97,
+      modeDigit: null,
+      confidence: 76,
+      step2Count: 0,
+      step3Count: 10,
     },
   },
   {
@@ -69,11 +82,12 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '01234',
     codes: [],
     expected: {
-      value: 'xx.4444',
+      value:
+        '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 0324 · Code Value 패턴 흐름',
       topCode: null,
-      confidence: 94,
+      confidence: 76,
       dominantSide: 'low',
-      modeDigit: 4,
+      modeDigit: null,
     },
   },
   {
@@ -89,7 +103,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     expected: {
       topCode: '01',
       dominantSide: 'low',
-      modeDigit: 2,
+      modeDigit: null,
     },
   },
   {
@@ -100,11 +114,11 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '3',
     codes: [{ code: '99', type: '저점', description: '1 중복' }],
     expected: {
-      value: 'xx.0000',
+      value: S_PATTERN_VALUE_LOW_90,
       topCode: '99',
       dominantSide: 'low',
-      modeDigit: 0,
-      confidence: 50,
+      modeDigit: null,
+      confidence: 76,
       step2Count: 1,
       step3Count: 0,
     },
@@ -118,9 +132,9 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     codes: [{ code: 'XX', type: '저점', description: 'unknown rule' }],
     expected: {
       topCode: 'XX',
-      confidence: 94,
+      confidence: 76,
       dominantSide: 'low',
-      modeDigit: 4,
+      modeDigit: null,
     },
   },
   {
@@ -144,9 +158,9 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '56789',
     codes: [{ code: '20', type: '고점', description: '저점,고점' }],
     expected: {
-      value: 'xx.7777',
+      value: S_PATTERN_VALUE_HIGH,
       dominantSide: 'high',
-      modeDigit: 7,
+      modeDigit: null,
       step2Count: 0,
       step3Count: 5,
     },
@@ -160,7 +174,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     codes: [{ code: '05', type: '저점', description: '저점,저점,저점' }],
     expected: {
       dominantSide: 'low',
-      modeDigit: 4,
+      modeDigit: null,
       step2Count: 5,
       step3Count: 0,
     },

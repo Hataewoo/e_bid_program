@@ -7,7 +7,7 @@ const sampleCodes: Code[] = [
 ];
 
 describe('analysisRunService', () => {
-  it('runs shared pipeline with step2/step3 and research fields', () => {
+  it('runs shared pipeline with research fields and prediction', () => {
     const output = runAnalysisPipeline({
       masterNo: '00',
       masterValue: '0123456789',
@@ -20,8 +20,5 @@ describe('analysisRunService', () => {
     expect(output.researchFields.step3).toBe('56789');
     expect(output.codeValueStats.length).toBeGreaterThan(0);
     expect(output.prediction.value).toBeTruthy();
-    expect(output.probabilityProfile.totalDigits).toBe(10);
-    expect(output.rateRecommendations.recommendations.length).toBeGreaterThan(0);
-    expect(output.rateRecommendations.recommendations[0]?.rate).toMatch(/^\d{2,3}\.\d{4}$/);
   });
 });

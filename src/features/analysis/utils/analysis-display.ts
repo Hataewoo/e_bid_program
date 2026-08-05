@@ -24,13 +24,21 @@ export function filterDigitsByClass(digits: string, cls: 'low' | 'high'): string
 
 export function formatPatternValues(values: number[]): string {
   if (values.length === 0) return '-';
-  return values.join(', ');
+  return values.join(',');
 }
 
-/** S 시퀀스(L/H run 길이) 표시 */
+/** UI에 표시할 run 시퀀스 — 한 줄당 숫자 개수 */
+const RUN_LENGTH_DISPLAY_CHUNK = 36;
+
+/** STEP2/3 — 저·고점 교차 run 연속 횟수 (Code Value 1단계) */
 export function formatRunLengthSequence(lengths: number[]): string {
   if (lengths.length === 0) return '';
-  return lengths.join(', ');
+  const parts = lengths.map(String);
+  const lines: string[] = [];
+  for (let i = 0; i < parts.length; i += RUN_LENGTH_DISPLAY_CHUNK) {
+    lines.push(parts.slice(i, i + RUN_LENGTH_DISPLAY_CHUNK).join(', '));
+  }
+  return lines.join('\n');
 }
 
 export function formatMasterValueForDisplay(

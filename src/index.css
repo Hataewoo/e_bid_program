@@ -405,25 +405,41 @@
   }
 
   .win-pattern-values-table {
-    @apply w-full border-collapse;
+    @apply w-full border-collapse table-fixed;
     font-family: 'MS Sans Serif', 'Segoe UI', Tahoma, sans-serif;
-    font-size: calc(14px * var(--font-scale));
+    font-size: calc(13px * var(--font-scale));
     letter-spacing: 0;
-    line-height: 1.35;
+    line-height: 1.25;
   }
 
   .win-pattern-values-table th,
   .win-pattern-values-table td {
-    border: 1px solid #404040;
-    padding: 2px 6px;
-    height: 24px;
+    border: 1px solid #808080;
+    padding: 1px 4px;
+    vertical-align: top;
+  }
+
+  .win-pattern-values-table .win-pattern-code-col {
+    width: 72px;
+    min-width: 72px;
+    max-width: 72px;
+    text-align: left;
     vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  .win-pattern-values-table .win-pattern-values-col {
+    text-align: left;
+    word-break: break-all;
+    white-space: normal;
   }
 
   .win-pattern-values-table thead th {
     background: #ece9d8;
-    font-weight: 600;
+    font-weight: 700;
     color: #000000;
+    height: 22px;
+    vertical-align: middle;
   }
 
   .win-pattern-values-table tbody td {
@@ -431,18 +447,59 @@
     color: #000000;
   }
 
+  .win-pattern-values-table tbody tr.win-pattern-row-selected td {
+    background: #000080 !important;
+    color: #ffffff !important;
+  }
+
+  .win-pattern-empty {
+    color: #000000;
+  }
+
+  .win-pattern-row-selected .win-pattern-empty {
+    color: #ffffff;
+  }
+
   .win-pattern-values-panel {
-    border-top: 1px solid #404040;
-    background: #fffff0;
+    border-top: 1px solid #808080;
+    background: #ffffff;
   }
 
   .win-pattern-stats-line {
     @apply shrink-0 px-2 font-mono;
     border-top: 1px solid #404040;
     background: #fffff0;
+    color: #000000;
     font-size: calc(14px * var(--font-scale));
     line-height: 24px;
     letter-spacing: 0;
+  }
+
+  /* Code Value STEP2/3 — 노란색 run 시퀀스 (스크롤·줄바꿈) */
+  .win-pattern-stats-sequence {
+    @apply shrink-0 font-mono;
+    border-top: 1px solid #404040;
+    border-bottom: 1px solid #c0c0c0;
+    background: #fffff0;
+    color: #000000;
+    font-size: calc(16px * var(--font-scale));
+    line-height: 1.55;
+    letter-spacing: 0.02em;
+    padding: 8px 12px;
+    max-height: 160px;
+    min-height: 52px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .win-pattern-stats-meta {
+    @apply shrink-0 px-3;
+    border-bottom: 1px solid #c0c0c0;
+    background: #f0f0f0;
+    color: #404040;
+    font-size: calc(13px * var(--font-scale));
+    line-height: 22px;
   }
 
   .win-point-values-shell {
@@ -460,15 +517,31 @@
   }
 
   .win-link-value {
-    @apply cursor-pointer border-0 bg-transparent p-0 text-[#0000ff] underline;
-    font-family: 'Courier New', Consolas, monospace;
-    font-size: calc(14px * var(--font-scale));
+    @apply cursor-pointer underline;
+    color: #000000;
+    text-decoration-color: #0000ff;
+    text-decoration-style: solid;
+    font-family: 'MS Sans Serif', 'Segoe UI', Tahoma, sans-serif;
+    font-size: calc(13px * var(--font-scale));
     letter-spacing: 0;
-    line-height: 1.35;
+    line-height: 1.25;
+    white-space: normal;
+    word-break: break-all;
+  }
+
+  .win-pattern-row-selected .win-link-value {
+    color: #ffffff !important;
+    text-decoration-color: #ffffff;
   }
 
   .win-link-value:hover {
-    color: #000080;
+    color: #000000;
+    text-decoration-color: #0000ff;
+  }
+
+  .win-pattern-row-selected .win-link-value:hover {
+    color: #ffffff !important;
+    text-decoration-color: #ffffff;
   }
 
   .win-link-popup {
@@ -480,8 +553,13 @@
   }
 
   .win-pattern-row-active {
-    background-color: #ffffe0 !important;
-    outline: 1px solid #000080;
+    background-color: #000080 !important;
+    color: #ffffff !important;
+  }
+
+  .win-pattern-row-active td {
+    background-color: #000080 !important;
+    color: #ffffff !important;
   }
 
   .win-analysis-status-db {
