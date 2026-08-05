@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
+  fullMasterSequence,
   RECENT_DIGIT_SCORE_TAIL,
   sliceRecentDigitScoreTail,
   sliceRecentTail,
-  useFullMasterSequence,
 } from '@/shared/utils/recentCompare';
 
 describe('recentCompare', () => {
-  it('useFullMasterSequence returns entire array without truncation', () => {
+  it('fullMasterSequence returns entire array without truncation', () => {
     const arr = Array.from({ length: 80 }, (_, i) => i);
-    expect(useFullMasterSequence(arr)).toEqual(arr);
-    expect(useFullMasterSequence(arr).length).toBe(80);
+    expect(fullMasterSequence(arr)).toEqual(arr);
+    expect(fullMasterSequence(arr).length).toBe(80);
   });
 
   it('sliceRecentTail alias returns full master sequence', () => {

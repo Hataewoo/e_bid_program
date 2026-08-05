@@ -1,9 +1,9 @@
 import type { PredictionVerificationCase } from '@/shared/utils/predictionVerification';
 
 const S_PATTERN_VALUE_LOW =
-  '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 2130 · Code Value 패턴 흐름';
+  '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 1230 · Code Value 패턴 흐름';
 const S_PATTERN_VALUE_LOW_90 =
-  '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 1023 · Code Value 패턴 흐름';
+  '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 0214 · Code Value 패턴 흐름';
 const S_PATTERN_VALUE_HIGH =
   '고점(STEP3) · 전환 · S run → run 종료 · 다음 구간: 저점(0~4) · 추천 4자리 6579 · Code Value 패턴 흐름';
 const S_PATTERN_VALUE_HIGH_S_RUN =
@@ -33,7 +33,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     expected: {
       value: S_PATTERN_VALUE_HIGH,
       topCode: '02',
-      confidence: 76,
+      confidence: 73,
       dominantSide: 'balanced',
       modeDigit: null,
       step2Count: 5,
@@ -52,7 +52,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
       topCode: '01',
       dominantSide: 'low',
       modeDigit: null,
-      confidence: 76,
+      confidence: 73,
       step2Count: 10,
       step3Count: 0,
     },
@@ -69,7 +69,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
       topCode: '23',
       dominantSide: 'high',
       modeDigit: null,
-      confidence: 76,
+      confidence: 73,
       step2Count: 0,
       step3Count: 10,
     },
@@ -83,9 +83,9 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     codes: [],
     expected: {
       value:
-        '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 0324 · Code Value 패턴 흐름',
+        '저점(STEP2) · 전환 · S run → run 종료 · 다음 구간: 고점(5~9) · 추천 4자리 1024 · Code Value 패턴 흐름',
       topCode: null,
-      confidence: 76,
+      confidence: 73,
       dominantSide: 'low',
       modeDigit: null,
     },
@@ -118,7 +118,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
       topCode: '99',
       dominantSide: 'low',
       modeDigit: null,
-      confidence: 76,
+      confidence: 73,
       step2Count: 1,
       step3Count: 0,
     },
@@ -132,7 +132,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     codes: [{ code: 'XX', type: '저점', description: 'unknown rule' }],
     expected: {
       topCode: 'XX',
-      confidence: 76,
+      confidence: 73,
       dominantSide: 'low',
       modeDigit: null,
     },

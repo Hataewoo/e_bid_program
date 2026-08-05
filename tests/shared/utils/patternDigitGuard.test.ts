@@ -98,8 +98,8 @@ describe('patternDigitGuard — integration', () => {
   it('buildProbabilityProfile does not boost digits from pattern code labels', () => {
     const result = analyzeMasterValue('00', '1212121212');
     const stats = buildCodeValueStats(result, [
-      { code: '1 중복', type: 'pattern', description: '1 dup' },
-      { code: '3 이상', type: 'pattern', description: '3+' },
+      { id: 1, code: '1 중복', type: 'pattern', description: '1 dup' },
+      { id: 2, code: '3 이상', type: 'pattern', description: '3+' },
     ]);
     const withStats = buildProbabilityProfile(result, stats);
     const withoutStats = buildProbabilityProfile(result, []);

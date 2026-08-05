@@ -29,7 +29,7 @@ import {
 import {
   RECENT_DISPLAY_TAIL,
   sliceRecentDigitScoreTail,
-  useFullMasterSequence,
+  fullMasterSequence,
 } from './recentCompare';
 import {
   digitHintsFromMasterSource,
@@ -128,7 +128,7 @@ function resolveRecentValueSources(
 ): Array<{ value: number; sourceDigit: number | null }> {
   const occurrenceFromEnd = new Map<number, number>();
   const resolved: Array<{ value: number; sourceDigit: number | null }> = [];
-  for (const value of useFullMasterSequence(values)) {
+  for (const value of fullMasterSequence(values)) {
     const occ = occurrenceFromEnd.get(value) ?? 0;
     resolved.push({
       value,

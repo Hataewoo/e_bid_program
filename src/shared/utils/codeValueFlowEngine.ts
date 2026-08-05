@@ -14,7 +14,7 @@ import {
 } from './digitSubBand';
 import {
   RUN_SUFFIX_MATCH_MAX,
-  useFullMasterSequence,
+  fullMasterSequence,
 } from './recentCompare';
 import {
   resolveSubBandFromPointValues,
@@ -162,7 +162,7 @@ function sideMainPatternStrength(result: AnalysisResult, side: DigitClass): numb
     if (row.values.length === 0) continue;
     const rule = CODE_VALUE_MAIN_RULES.find((r) => r.code === row.code);
     const weight = rule ? (PATTERN_FIELD_WEIGHTS[rule.field] ?? 0.5) : 0.5;
-    const tail = useFullMasterSequence(row.values);
+    const tail = fullMasterSequence(row.values);
     strength += weight * tail.reduce((a, v) => a + Math.max(v, 1), 0);
   }
   return strength;

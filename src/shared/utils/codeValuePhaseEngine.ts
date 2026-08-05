@@ -66,8 +66,9 @@ export interface PatternTransitionHints {
 
 export function sliceRecentRunLengths(
   runLengths: number[],
-  _lookback = RECENT_PATTERN_LOOKBACK,
+  lookback = RECENT_PATTERN_LOOKBACK,
 ): number[] {
+  void lookback;
   return [...runLengths];
 }
 
@@ -76,8 +77,9 @@ export function recentPatternFieldValues(
   masterS: number[],
   side: DigitClass,
   field: keyof SidePatterns,
-  _lookback = RECENT_PATTERN_LOOKBACK,
+  lookback = RECENT_PATTERN_LOOKBACK,
 ): number[] {
+  void lookback;
   const patterns = extractCodeValuesFromBaseSequence(masterS, side);
   return [...(patterns[field] ?? [])];
 }

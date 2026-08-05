@@ -16,16 +16,21 @@ export function sliceRecentDigitScoreTail<T>(
 export const RUN_SUFFIX_MATCH_MAX = 8;
 
 /** 선택 Master Value 전체 시퀀스 — lookback 잘라내지 않음 */
-export function useFullMasterSequence<T>(arr: readonly T[]): T[] {
+export function fullMasterSequence<T>(arr: readonly T[]): T[] {
   return [...arr];
 }
 
-/** @deprecated useFullMasterSequence — Master 전체 사용 */
-export function sliceRecentTail<T>(arr: readonly T[], _lookback?: number): T[] {
-  return useFullMasterSequence(arr);
+/** @deprecated fullMasterSequence — Master 전체 사용 */
+export function sliceRecentTail<T>(arr: readonly T[], lookback?: number): T[] {
+  void lookback;
+  return fullMasterSequence(arr);
 }
 
 /** @deprecated Master 전체 사용 — tailSize 제한 없음 */
-export function clampRecentLookback(_lookback?: number): number {
+export function clampRecentLookback(lookback?: number): number {
+  void lookback;
   return Number.MAX_SAFE_INTEGER;
 }
+
+/** @deprecated fullMasterSequence */
+export const useFullMasterSequence = fullMasterSequence;
