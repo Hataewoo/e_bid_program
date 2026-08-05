@@ -2,27 +2,28 @@ import type { AnalysisResult, ClassRun, DigitClass } from './analysisEngine';
 import { buildRuns, classifyChar, toClassSequence } from './analysisEngine';
 import {
   analyzeCodeValueMainDetail,
-  analyzeCodeValueSubDetail,
   collectPrimaryRunLengths,
   CODE_VALUE_MAIN_RULES,
-  CODE_VALUE_SUB_DETAIL_RULES,
   extractCodeValuesFromBaseSequence,
-  type CodeValueSubAnalysisRow,
 } from './codeValueSubAnalysis';
 import {
   getDigitsInSubBand,
   getMainBandLabel,
-  getSubBandLabel,
   type DigitBand,
   type DigitSubBand,
 } from './digitSubBand';
+import {
+  resolveSubBandFromPointValues,
+  scoreDigitsFromPointValues,
+} from './pointValuesCodeFlow';
 
 /**
  * 패턴 추천 경로 — 두 층으로 분리 (절대 혼동하지 않음)
  *
- * 【판단층】S + Code/Values + 1중복 세분화
- *   - 저·고 run 지속/전환, 세부 구간(저점의 저점 / 고점의 고점 등) — 흐름·횟수만
- *   - 패턴 값(1, 2, 3+α …)은 추천 숫자가 아님
+ * 【판단층】
+ *   - 1단계: S run + Code/Values → 저·고 (기존 유지)
+ *   - 2단계: Low/High Point Values → S′ + Code/Values → 세부 구간
+ *   - 3단계: Point Values(구간 digit) → S″ + Code/Values → 0/1·2~4·5~7·8/9
  *
  * 【추천층】위 판단으로 후보 풀(5~9, 5~7, 8~9 …)만 좁힌 뒤
  *   - Master Value에 실제로 나온 숫자만 추천
@@ -63,25 +64,8 @@ const PATTERN_FIELD_WEIGHTS: Record<string, number> = {
   alphaPlus_4_3: 0.85,
 };
 
-const SUB_BANDS_FOR_MAIN: Record<DigitBand, readonly DigitSubBand[]> = {
-  low: ['lowLow', 'lowHigh'],
-  high: ['highLow', 'highHigh'],
-};
-
-function bandToSide(band: DigitBand): DigitClass {
-  return band === 'low' ? 'low' : 'high';
-}
-
 function sideToBand(side: DigitClass): DigitBand {
   return side === 'low' ? 'low' : 'high';
-}
-
-/** S/세분화 패턴 값 → 세부 구간 판단용 (추천 digit 아님) */
-function patternValueToSubBandHint(value: number, mainBand: DigitBand): DigitSubBand {
-  if (mainBand === 'low') {
-    return value <= 1 ? 'lowLow' : 'lowHigh';
-  }
-  return value <= 7 ? 'highLow' : 'highHigh';
 }
 
 function trailingRunProgress(contextDigits: string): { side: DigitClass; progress: number } | null {
@@ -222,65 +206,73 @@ function getMainDetailForSide(result: AnalysisResult, side: DigitClass) {
   return analyzeCodeValueMainDetail(s, side);
 }
 
-function getSubDetailRowsForSide(result: AnalysisResult, side: DigitClass): CodeValueSubAnalysisRow[] {
-  const main = getMainDetailForSide(result, side);
-  if (main.patterns.oneDuplicate.length === 0) return [];
-  return analyzeCodeValueSubDetail(main.patterns.oneDuplicate, side).rows;
+function collectMainCodesForSide(result: AnalysisResult, side: DigitClass): string[] {
+  const detail = getMainDetailForSide(result, side);
+  return detail.rows.filter((row) => row.values.length > 0).map((row) => row.code);
 }
 
-function resolveSubBandFromSubDetail(
+function mergeDigitScores(
+  masterScores: Record<number, number>,
+  pointScores: Record<number, number>,
+  pool: readonly number[],
+): Record<number, number> {
+  const merged: Record<number, number> = {};
+  for (const d of pool) {
+    merged[d] = (masterScores[d] ?? 0.1) * 0.55 + (pointScores[d] ?? 0.1) * 0.45;
+  }
+  return merged;
+}
+
+/**
+ * 매 자리: 저·고(S) → Point Values 세부 구간 → Point Values digit → Master 실제 숫자.
+ */
+export function resolvePatternRecommendationPath(
   result: AnalysisResult,
-  mainBand: DigitBand,
-  subDetailRows: CodeValueSubAnalysisRow[],
-): { sub: DigitSubBand; reasons: string[] } {
-  const reasons: string[] = [];
-  const scores = new Map<DigitSubBand, number>();
-  for (const sub of SUB_BANDS_FOR_MAIN[mainBand]) {
-    scores.set(sub, 0);
-  }
+  prefix: string,
+  stage: PatternPickStage | LegacyPatternPickStage = PATTERN_PICK_STAGE_FULL,
+): PatternRecommendationPath {
+  void stage;
+  const { band: targetMainBand, side: activeSide, reasons: mainBandReasons } = resolveMainBand(
+    result,
+    prefix,
+  );
 
-  for (const row of subDetailRows) {
-    if (row.values.length === 0) continue;
-    const rule = CODE_VALUE_SUB_DETAIL_RULES.find((r) => r.code === row.code);
-    const weight = rule ? (PATTERN_FIELD_WEIGHTS[rule.field] ?? 0.5) : 0.5;
-    for (const v of row.values.slice(-2)) {
-      const hint = patternValueToSubBandHint(v, mainBand);
-      if (SUB_BANDS_FOR_MAIN[mainBand].includes(hint)) {
-        scores.set(hint, (scores.get(hint) ?? 0) + weight * (1 + v * 0.1));
-        reasons.push(`세부 ${row.code} ${v} → ${getSubBandLabel(hint)}`);
-      }
-    }
-  }
+  const {
+    sub: targetSubBand,
+    reasons: subBandReasons,
+    rows: pointValueSubRows,
+  } = resolveSubBandFromPointValues(result, prefix, targetMainBand);
 
-  const side = bandToSide(mainBand);
-  const s = side === 'low' ? result.lowRunLengths : result.highRunLengths;
-  if (s.length > 0 && subDetailRows.length === 0) {
-    const tail = s.slice(-2);
-    for (const v of tail) {
-      const hint = patternValueToSubBandHint(v, mainBand);
-      if (SUB_BANDS_FOR_MAIN[mainBand].includes(hint)) {
-        scores.set(hint, (scores.get(hint) ?? 0) + 0.6);
-      }
-    }
-    reasons.push(`S 꼬리 [${tail.join(', ')}] (세분화 없음)`);
-  }
+  const pool = getDigitsInSubBand(targetSubBand);
+  const { scores: pointScores, codes: pointCodes, digitReasons: pointDigitReasons } =
+    scoreDigitsFromPointValues(result, prefix, targetSubBand);
+  const { scores: masterScores, reasons: masterDigitReasons } = scoreDigitsFromMasterFlow(
+    result,
+    prefix,
+    pool,
+    activeSide,
+  );
 
-  let best: DigitSubBand = SUB_BANDS_FOR_MAIN[mainBand][0]!;
-  let bestScore = -1;
-  for (const [sub, score] of scores) {
-    if (score > bestScore) {
-      bestScore = score;
-      best = sub;
-    }
-  }
+  const digitScores = mergeDigitScores(masterScores, pointScores, pool);
+  const digitReasons = [...pointDigitReasons, ...masterDigitReasons];
+  const activeSubDetailCodes = [
+    ...pointValueSubRows.filter((r) => r.values.length > 0).map((r) => `PV ${r.code}`),
+    ...pointCodes,
+  ];
 
-  if (bestScore <= 0) {
-    best = mainBand === 'low' ? 'lowHigh' : 'highLow';
-    reasons.push('세분화 힌트 없음 → 기본 세부 구간');
-  }
-
-  reasons.push(`세부 구간 ${getSubBandLabel(best)}`);
-  return { sub: best, reasons };
+  return {
+    activeSide,
+    targetMainBand,
+    targetSubBand,
+    stage: PATTERN_PICK_STAGE_FULL,
+    candidatePool: pool,
+    digitScores,
+    mainBandReasons,
+    subBandReasons,
+    digitReasons,
+    activeMainCodes: collectMainCodesForSide(result, activeSide),
+    activeSubDetailCodes,
+  };
 }
 
 function initDigitScores(pool: readonly number[]): Map<number, number> {
@@ -388,76 +380,6 @@ function scoreDigitsFromMasterFlow(
   }
 
   return { scores: Object.fromEntries(scores), reasons };
-}
-
-function scoreSubDetailDigits(
-  result: AnalysisResult,
-  prefix: string,
-  side: DigitClass,
-  _mainBand: DigitBand,
-  subBand: DigitSubBand,
-  subDetailRows: CodeValueSubAnalysisRow[],
-): { scores: Record<number, number>; codes: string[]; digitReasons: string[] } {
-  void _mainBand;
-  const pool = getDigitsInSubBand(subBand);
-  const codes: string[] = [];
-
-  for (const row of subDetailRows) {
-    if (row.values.length > 0) codes.push(`세부 ${row.code}`);
-  }
-
-  const { scores, reasons } = scoreDigitsFromMasterFlow(result, prefix, pool, side);
-  return { scores, codes, digitReasons: reasons };
-}
-
-function collectMainCodesForSide(result: AnalysisResult, side: DigitClass): string[] {
-  const detail = getMainDetailForSide(result, side);
-  return detail.rows.filter((row) => row.values.length > 0).map((row) => row.code);
-}
-
-/**
- * 매 자리 동일 경로: 저·고 run → Code/Values → 1중복 세분화(구간 판단) → Master 실제 숫자.
- */
-export function resolvePatternRecommendationPath(
-  result: AnalysisResult,
-  prefix: string,
-  stage: PatternPickStage | LegacyPatternPickStage = PATTERN_PICK_STAGE_FULL,
-): PatternRecommendationPath {
-  void stage;
-  const { band: targetMainBand, side: activeSide, reasons: mainBandReasons } = resolveMainBand(
-    result,
-    prefix,
-  );
-
-  const subDetailRows = getSubDetailRowsForSide(result, activeSide);
-  const { sub: targetSubBand, reasons: subBandReasons } = resolveSubBandFromSubDetail(
-    result,
-    targetMainBand,
-    subDetailRows,
-  );
-
-  const { scores, codes: subCodes, digitReasons } = scoreSubDetailDigits(
-    result,
-    prefix,
-    activeSide,
-    targetMainBand,
-    targetSubBand,
-    subDetailRows,
-  );
-
-  return {
-    activeSide,
-    targetMainBand,
-    targetSubBand,
-    stage: PATTERN_PICK_STAGE_FULL,
-    candidatePool: getDigitsInSubBand(targetSubBand),
-    digitScores: scores,
-    mainBandReasons,
-    subBandReasons,
-    digitReasons,
-    activeMainCodes: collectMainCodesForSide(result, activeSide),
-    activeSubDetailCodes: subCodes,
-  };
 }
 
 /** @deprecated resolvePatternRecommendationPath 사용 */

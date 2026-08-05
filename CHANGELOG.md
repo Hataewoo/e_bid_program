@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.10] — 2026-08-05
+
+Point Values 기반 3단계 세분화 추천 — 4구간 대칭 (0~1 / 2~4 / 5~7 / 8~9).
+
+### Added
+
+- **pointValuesCodeFlow** — Low/High Point Values → S′/S″ + Code/Values 10규칙으로 세부 구간·digit 판단.
+- **3단계 추천** — ① S 저·고 → ② Point Values 세부 구간 → ③ 구간 내 digit(0/1, 2~4, 5~7, 8/9) → Master 추천.
+
+### Changed
+
+- 세분화 판단을 S 1중복 재적용 대신 **STEP2/3 Point Values digit 열** 기준으로 전환.
+- 저점의 저점·고점 / 고점의 저점·고점 4구간 동일 파이프라인 적용.
+
+---
+
 ## [1.1.9] — 2026-08-05
 
 4자리 조합 예측 — 모든 자리에 저·고 + 세분화 패턴 경로 적용.
