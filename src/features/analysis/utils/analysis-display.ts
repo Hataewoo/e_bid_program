@@ -27,6 +27,12 @@ export function formatPatternValues(values: number[]): string {
   return values.join(', ');
 }
 
+/** S 시퀀스(L/H run 길이) 표시 */
+export function formatRunLengthSequence(lengths: number[]): string {
+  if (lengths.length === 0) return '';
+  return lengths.join(', ');
+}
+
 export function formatMasterValueForDisplay(
   digits: string,
   options: { chunkSize?: number; maxChars?: number; showFull?: boolean } = {},

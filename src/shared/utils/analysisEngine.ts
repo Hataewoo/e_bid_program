@@ -3,6 +3,12 @@
  * UI/DB와 무관한 Pure Functions
  */
 
+import {
+  collectPrimaryRunLengths,
+  extractCodeValuesFromBaseSequence,
+  toSidePatternsFromCodeValue,
+} from './codeValueSubAnalysis';
+
 export type DigitClass = 'low' | 'high';
 
 export interface ClassRun {
@@ -13,22 +19,28 @@ export interface ClassRun {
 }
 
 export interface SidePatterns {
-  /** '3 이상' — 연속 길이 ≥ 3 인 primary run 길이 목록 */
+  /** '3 이상' — S 시퀀스에서 3 이상인 값 */
   threeOrMore: number[];
-  /** '5 이상' — 연속 길이 ≥ 5 인 primary run 길이 목록 */
+  /** '5 이상' — S 시퀀스에서 5 이상인 값 */
   fiveOrMore: number[];
-  /** '1 사이' — primary 사이에 opposite 1개만 끼인 위치(인덱스) */
+  /** '1 사이' — 1과 1 사이(및 양 끝) 2 이상 값 개수 */
   oneBetween: number[];
-  /** '1 중복' — primary 연속 길이 = 1 */
+  /** '1 중복' — S에서 value=1 연속 run 길이 */
   oneDuplicate: number[];
-  /** '2' — primary 연속 길이 = 2 */
+  /** 레거시 run 길이=2 (Code Value 10규칙 외 — 비어 있음) */
   exactTwo: number[];
-  /** '3+α, 2' 등 — primary run 시작 인덱스 */
+  /** '3, 4+α' — 4~9 사이 3 개수 */
   plusAlpha_3_2: number[];
+  /** '4, 5+α' — 5~9 사이 4 개수 */
   plusAlpha_4_3: number[];
+  /** '5+α, 4' — 5~9와 4 사이 값 개수 */
   plusAlpha_4_4: number[];
-  /** '2,3+α' 등 — primary run 시작 인덱스 */
+  /** '2, 3+α' — 3~9 사이 2 개수 */
   commaAlpha_2_3: number[];
+  /** '3+α, 2' — 2와 2 사이 3~9 값 개수 */
+  alphaPlus_3_2: number[];
+  /** '4+α, 3' — 3과 3 사이 4~9 값 개수 */
+  alphaPlus_4_3: number[];
 }
 
 export interface AnalysisResult {
@@ -40,6 +52,10 @@ export interface AnalysisResult {
   highRate: number;
   lowPatterns: SidePatterns;
   highPatterns: SidePatterns;
+  /** STEP2 S — Master 저점(L) run 연속 길이 시퀀스 */
+  lowRunLengths: number[];
+  /** STEP3 S — Master 고점(H) run 연속 길이 시퀀스 */
+  highRunLengths: number[];
   /** 내부 검증용 — L/H 클래스 run 시퀀스 */
   runs: ClassRun[];
   /** 정규화된 숫자 문자열 */
@@ -123,6 +139,8 @@ const EMPTY_SIDE_PATTERNS: SidePatterns = {
   plusAlpha_4_3: [],
   plusAlpha_4_4: [],
   commaAlpha_2_3: [],
+  alphaPlus_3_2: [],
+  alphaPlus_4_3: [],
 };
 
 /** I/O — 숫자만 추출 */
@@ -309,7 +327,19 @@ function createEmptySidePatterns(): SidePatterns {
     plusAlpha_4_3: [],
     plusAlpha_4_4: [],
     commaAlpha_2_3: [],
+    alphaPlus_3_2: [],
+    alphaPlus_4_3: [],
   };
+}
+
+function extractCodeValueSidePatterns(runs: ClassRun[], side: DigitClass): SidePatterns {
+  const baseSequence = collectPrimaryRunLengths(runs, side);
+  return toSidePatternsFromCodeValue(extractCodeValuesFromBaseSequence(baseSequence, side));
+}
+
+/** Master L/H run → S 시퀀스 (저·고 반복 길이) */
+export function buildSidePatternSequence(runs: ClassRun[], side: DigitClass): number[] {
+  return collectPrimaryRunLengths(runs, side);
 }
 
 /** primary 관점 패턴 추출 */
@@ -354,29 +384,45 @@ export function extractSidePatterns(
   return result;
 }
 
-/** 교차 검증 디버그 — UI 라벨 (Low/High 각각) */
+/** Code Value 10규칙 UI 라벨 (저·고 동일) */
 export const PATTERN_FIELD_LABELS: Record<keyof SidePatterns, { low: string; high: string }> = {
-  oneDuplicate: { low: '1 중복', high: '5 중복' },
-  exactTwo: { low: '2', high: '6' },
-  commaAlpha_2_3: { low: '2,3+α', high: '6,7+α' },
-  threeOrMore: { low: '3 이상', high: '8 이상' },
-  fiveOrMore: { low: '5 이상', high: '9 이상' },
+  oneDuplicate: { low: '1 중복', high: '1 중복' },
+  exactTwo: { low: '2', high: '2' },
+  commaAlpha_2_3: { low: '2, 3+α', high: '2, 3+α' },
+  plusAlpha_3_2: { low: '3, 4+α', high: '3, 4+α' },
+  plusAlpha_4_3: { low: '4, 5+α', high: '4, 5+α' },
+  plusAlpha_4_4: { low: '5+α, 4', high: '5+α, 4' },
+  threeOrMore: { low: '3 이상', high: '3 이상' },
+  fiveOrMore: { low: '5 이상', high: '5 이상' },
   oneBetween: { low: '1 사이', high: '1 사이' },
-  plusAlpha_3_2: { low: '3+α, 2', high: '5+α, 2' },
-  plusAlpha_4_3: { low: '4+α, 3', high: '9+α, 3' },
-  plusAlpha_4_4: { low: '4+α, 4', high: '9+α, 4' },
+  alphaPlus_3_2: { low: '3+α, 2', high: '3+α, 2' },
+  alphaPlus_4_3: { low: '4+α, 3', high: '4+α, 3' },
+};
+
+/** 레거시 run 기반 라벨 → Code Value 필드 (Code DB 호환) */
+const PATTERN_LABEL_ALIASES: Record<string, { side?: DigitClass; field: keyof SidePatterns }> = {
+  '5 중복': { side: 'high', field: 'oneDuplicate' },
+  '2,3+α': { field: 'commaAlpha_2_3' },
+  '6,7+α': { field: 'commaAlpha_2_3' },
+  '8 이상': { field: 'threeOrMore' },
+  '9 이상': { field: 'fiveOrMore' },
+  '5+α, 2': { field: 'alphaPlus_3_2' },
+  '9+α, 3': { field: 'alphaPlus_4_3' },
+  '9+α, 4': { field: 'plusAlpha_4_4' },
 };
 
 const PATTERN_DEBUG_FIELDS: (keyof SidePatterns)[] = [
   'oneDuplicate',
   'exactTwo',
   'commaAlpha_2_3',
-  'threeOrMore',
-  'fiveOrMore',
-  'oneBetween',
   'plusAlpha_3_2',
   'plusAlpha_4_3',
   'plusAlpha_4_4',
+  'threeOrMore',
+  'fiveOrMore',
+  'oneBetween',
+  'alphaPlus_3_2',
+  'alphaPlus_4_3',
 ];
 
 /**
@@ -435,6 +481,8 @@ export function collectPatternMatchStartIndices(
     case 'plusAlpha_4_3':
     case 'plusAlpha_4_4':
     case 'commaAlpha_2_3':
+    case 'alphaPlus_3_2':
+    case 'alphaPlus_4_3':
       return [...patterns[field]];
     default:
       return [];
@@ -478,6 +526,8 @@ export function createEmptyAnalysisResult(masterNo: string): AnalysisResult {
     highRate: 0,
     lowPatterns: { ...EMPTY_SIDE_PATTERNS },
     highPatterns: { ...EMPTY_SIDE_PATTERNS },
+    lowRunLengths: [],
+    highRunLengths: [],
     runs: [],
     digits: '',
   };
@@ -503,6 +553,8 @@ export function analyzeMasterValue(masterNo: string, rawValue: string): Analysis
   const runs = filterValidRuns(buildRuns(classes), digits.length);
   const { lowCount, highCount } = splitLowHighCounts(digits);
   const totalCount = digits.length;
+  const lowRunLengths = collectPrimaryRunLengths(runs, 'low');
+  const highRunLengths = collectPrimaryRunLengths(runs, 'high');
 
   return {
     masterNo: safeMasterNo,
@@ -511,8 +563,10 @@ export function analyzeMasterValue(masterNo: string, rawValue: string): Analysis
     lowRate: calcRate(lowCount, totalCount),
     highCount,
     highRate: calcRate(highCount, totalCount),
-    lowPatterns: extractSidePatterns(runs, 'low', totalCount),
-    highPatterns: extractSidePatterns(runs, 'high', totalCount),
+    lowPatterns: extractCodeValueSidePatterns(runs, 'low'),
+    highPatterns: extractCodeValueSidePatterns(runs, 'high'),
+    lowRunLengths,
+    highRunLengths,
     runs,
     digits,
   };
@@ -696,6 +750,12 @@ export function resolvePatternFieldFromDescription(
 ): { side: DigitClass; field: keyof SidePatterns } | null {
   const normalized = normalizePatternLabel(description);
   if (!normalized) return null;
+
+  const alias = PATTERN_LABEL_ALIASES[normalized];
+  if (alias) {
+    const side = alias.side ?? resolveCodeTypeSide(codeType) ?? 'low';
+    return { side, field: alias.field };
+  }
 
   const preferredSide = resolveCodeTypeSide(codeType);
 

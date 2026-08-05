@@ -8,7 +8,7 @@ import {
   type PatternHighlightState,
   type PatternModalState,
 } from '../types/pattern-rows';
-import { filterDigitsByClass } from '../utils/analysis-display';
+import { filterDigitsByClass, formatRunLengthSequence } from '../utils/analysis-display';
 import { PatternValuesTable } from './PatternValuesTable';
 
 interface PointValuesPanelProps {
@@ -51,6 +51,8 @@ export const PointValuesPanel = memo(function PointValuesPanel({
 
   const patterns = isLow ? result.lowPatterns : result.highPatterns;
   const rows = isLow ? LOW_PATTERN_ROWS : HIGH_PATTERN_ROWS;
+  const sSequence = isLow ? result.lowRunLengths : result.highRunLengths;
+  const sSequenceText = formatRunLengthSequence(sSequence);
 
   return (
     <div className="win-point-values-shell flex min-h-0 flex-1 flex-col">
@@ -64,6 +66,12 @@ export const PointValuesPanel = memo(function PointValuesPanel({
       <MasterValueTextarea readOnly value={rawText} />
 
       <div className="win-pattern-stats-line">{statsLine}</div>
+
+      {sSequenceText ? (
+        <div className="win-pattern-s-sequence border-b border-border px-2 py-1 font-mono text-xs text-[#0000ff]">
+          {sSequenceText}
+        </div>
+      ) : null}
 
       <div className="win-pattern-values-panel min-h-[200px] flex-1 overflow-auto p-0">
         <PatternValuesTable

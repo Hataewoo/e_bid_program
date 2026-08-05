@@ -1,9 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ResizableVerticalSplitter } from '@/components/layout/ResizableVerticalSplitter';
 import { MasterValueTextarea } from '@/components/ui/MasterValueTextarea';
 import { CodeValueStatsGrid } from '@/features/analysis/components/CodeValueStatsGrid';
+import { PatternDetailModal } from '@/features/analysis/components/PatternDetailModal';
 import { PatternValuesTable } from '@/features/analysis/components/PatternValuesTable';
-import { HIGH_PATTERN_ROWS, LOW_PATTERN_ROWS } from '@/features/analysis/types/pattern-rows';
+import {
+  HIGH_PATTERN_ROWS,
+  LOW_PATTERN_ROWS,
+  type PatternModalState,
+} from '@/features/analysis/types/pattern-rows';
 import { filterDigitsByClass } from '@/features/analysis/utils/analysis-display';
 import { useI18n } from '@/i18n/use-i18n';
 import type { MessageKey } from '@/i18n/messages';
@@ -23,6 +28,7 @@ export function StepSectionContent() {
   const codeValueStats = useCodeValueAnalysisStore((s) => s.codeValueStats);
   const loading = useCodeValueAnalysisStore((s) => s.loading);
   const selectedMasterNo = useCodeValueAnalysisStore((s) => s.selectedMasterNo);
+  const [patternModal, setPatternModal] = useState<PatternModalState | null>(null);
 
   const displayResult = result ?? null;
 
@@ -96,7 +102,7 @@ export function StepSectionContent() {
                 rows={LOW_PATTERN_ROWS}
                 patterns={displayResult.lowPatterns}
                 activeHighlight={null}
-                onOpenModal={() => {}}
+                onOpenModal={setPatternModal}
                 onPatternHighlight={() => {}}
                 onPatternPin={() => {}}
               />
@@ -120,7 +126,7 @@ export function StepSectionContent() {
                 rows={HIGH_PATTERN_ROWS}
                 patterns={displayResult.highPatterns}
                 activeHighlight={null}
-                onOpenModal={() => {}}
+                onOpenModal={setPatternModal}
                 onPatternHighlight={() => {}}
                 onPatternPin={() => {}}
               />
@@ -138,6 +144,12 @@ export function StepSectionContent() {
         <div className="win-panel-header shrink-0">{t(CODE_VALUE_STEP_LABEL_KEYS[activeStep])}</div>
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{renderStepBody(activeStep)}</div>
       </div>
+
+      <PatternDetailModal
+        modal={patternModal}
+        masterNo={selectedMasterNo}
+        onClose={() => setPatternModal(null)}
+      />
     </div>
   );
 }

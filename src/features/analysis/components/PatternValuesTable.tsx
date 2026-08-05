@@ -1,4 +1,5 @@
 import { memo, useCallback, useMemo } from 'react';
+import { useI18n } from '@/i18n/use-i18n';
 import type { SidePatterns } from '@/shared/utils/analysisEngine';
 import {
   getPatternValues,
@@ -28,6 +29,7 @@ export const PatternValuesTable = memo(function PatternValuesTable({
   onPatternHighlight,
   onPatternPin,
 }: PatternValuesTableProps) {
+  const { t } = useI18n();
   const tableRows = useMemo(
     () =>
       rows.map((row) => ({
@@ -37,15 +39,9 @@ export const PatternValuesTable = memo(function PatternValuesTable({
     [rows, patterns],
   );
 
-  const handleClick = useCallback(
+  const handleOpenDetail = useCallback(
     (row: PatternRowDef, values: number[]) => {
       if (values.length === 0) return;
-      const highlight: PatternHighlightState = {
-        side,
-        field: row.field,
-        code: row.code,
-      };
-      onPatternPin(highlight);
       onOpenModal({
         side,
         code: row.code,
@@ -53,7 +49,24 @@ export const PatternValuesTable = memo(function PatternValuesTable({
         valueKind: row.valueKind,
       });
     },
-    [side, onOpenModal, onPatternPin],
+    [side, onOpenModal],
+  );
+
+  const handleCodeDoubleClick = useCallback(
+    (row: PatternRowDef, values: number[]) => {
+      if (values.length === 0) return;
+      onPatternPin({ side, field: row.field, code: row.code });
+      handleOpenDetail(row, values);
+    },
+    [side, handleOpenDetail, onPatternPin],
+  );
+
+  const handleValueClick = useCallback(
+    (row: PatternRowDef, values: number[]) => {
+      if (values.length === 0) return;
+      onPatternPin({ side, field: row.field, code: row.code });
+    },
+    [side, onPatternPin],
   );
 
   const handleMouseEnter = useCallback(
@@ -94,7 +107,17 @@ export const PatternValuesTable = memo(function PatternValuesTable({
               onMouseEnter={() => handleMouseEnter(row, row.values)}
               onMouseLeave={handleMouseLeave}
             >
-              <td>{row.code}</td>
+              <td
+                className={
+                  hasValues
+                    ? 'cursor-pointer select-none font-semibold text-[#0000ff] hover:underline'
+                    : undefined
+                }
+                title={hasValues ? t('analysis.pattern.subDetailDblClickHint') : undefined}
+                onDoubleClick={() => handleCodeDoubleClick(row, row.values)}
+              >
+                {row.code}
+              </td>
               <td>
                 {!hasValues ? (
                   <span className="text-content-muted">-</span>
@@ -102,7 +125,7 @@ export const PatternValuesTable = memo(function PatternValuesTable({
                   <button
                     type="button"
                     className="win-link-value text-left"
-                    onClick={() => handleClick(row, row.values)}
+                    onClick={() => handleValueClick(row, row.values)}
                   >
                     {formatPatternValues(row.values)}
                   </button>

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   analyzeMasterValue,
   buildRuns,
+  buildSidePatternSequence,
   calcRate,
   createEmptyAnalysisResult,
   extractDigits,
@@ -9,6 +10,10 @@ import {
   matchCompositePlus,
   toClassSequence,
 } from '@/shared/utils/analysisEngine';
+import {
+  collectPrimaryRunLengths,
+  extractCodeValuesFromBaseSequence,
+} from '@/shared/utils/codeValueSubAnalysis';
 
 describe('extractDigits', () => {
   it('숫자만 추출한다', () => {
@@ -58,24 +63,36 @@ describe('analyzeMasterValue — Low/High 분리', () => {
   });
 });
 
-describe('연속 패턴 — threeOrMore / fiveOrMore', () => {
-  it('Low 3연속 run 길이 수집', () => {
+describe('S 시퀀스 — L/H run 길이', () => {
+  it('00055 → 저점 S=[3], 고점 S=[2]', () => {
+    const result = analyzeMasterValue('00', '00055');
+    expect(result.lowRunLengths).toEqual([3]);
+    expect(result.highRunLengths).toEqual([2]);
+  });
+
+  it('교차형 1819281938 → 저1·고1 반복 S', () => {
+    const result = analyzeMasterValue('00', '1819281938');
+    expect(result.lowRunLengths).toEqual([1, 1, 1, 1, 1]);
+    expect(result.highRunLengths).toEqual([1, 1, 1, 1, 1]);
+  });
+});
+
+describe('Code Value — threeOrMore / fiveOrMore (S=L/H run 길이)', () => {
+  it('Low 3연속 run → S=[3], threeOrMore=[3]', () => {
     const result = analyzeMasterValue('00', '00055');
     expect(result.lowPatterns.threeOrMore).toEqual([3]);
     expect(result.highPatterns.threeOrMore).toEqual([]);
-    expect(result.highPatterns.exactTwo).toEqual([2]);
   });
 
-  it('5연속 이상 run 길이 수집', () => {
+  it('5연속 run → S=[5], fiveOrMore=[5]', () => {
     const result = analyzeMasterValue('00', '0000055555');
     expect(result.lowPatterns.fiveOrMore).toEqual([5]);
     expect(result.highPatterns.fiveOrMore).toEqual([5]);
   });
 });
 
-describe('1 사이 (oneBetween)', () => {
+describe('run 기반 extractSidePatterns — oneBetween', () => {
   it('primary 사이 opposite 1개 패턴 인덱스', () => {
-    // L L H L L  →  00500 (5=High)
     const digits = '00500';
     const runs = buildRuns(toClassSequence(digits));
     const low = extractSidePatterns(runs, 'low', digits.length);
@@ -88,15 +105,17 @@ describe('1 사이 (oneBetween)', () => {
   });
 });
 
-describe('복합 패턴 n+α, m', () => {
+describe('run 기반 복합 패턴 n+α, m', () => {
   it('3+α, 2 — Low 3연속 후 High 2연속', () => {
-    const result = analyzeMasterValue('00', '00055');
-    expect(result.lowPatterns.plusAlpha_3_2).toEqual([0]);
+    const digits = '00055';
+    const runs = buildRuns(toClassSequence(digits));
+    expect(extractSidePatterns(runs, 'low', digits.length).plusAlpha_3_2).toEqual([0]);
   });
 
   it('4+α, 3 — Low 4연속 후 High 3연속', () => {
-    const result = analyzeMasterValue('00', '0000555');
-    expect(result.lowPatterns.plusAlpha_4_3).toEqual([0]);
+    const digits = '0000555';
+    const runs = buildRuns(toClassSequence(digits));
+    expect(extractSidePatterns(runs, 'low', digits.length).plusAlpha_4_3).toEqual([0]);
   });
 
   it('문자열 끝에서 incomplete 패턴은 매칭 안 함', () => {
@@ -107,36 +126,39 @@ describe('복합 패턴 n+α, m', () => {
   });
 });
 
-describe('복합 패턴 n, m+α', () => {
-  it('2,3+α — Low 2연속 후 High 3연속 이상', () => {
-    const result = analyzeMasterValue('00', '00555');
-    expect(result.lowPatterns.commaAlpha_2_3).toEqual([0]);
+describe('Code Value — between-marker 규칙 (S 기준)', () => {
+  it('2, 3+α — S에서 3~9 사이 2 개수', () => {
+    const patterns = extractCodeValuesFromBaseSequence([3, 2, 2, 4, 2, 5], 'low');
+    expect(patterns.commaAlpha_2_3).toEqual([2, 1]);
   });
 });
 
-describe('1 중복 / exactTwo', () => {
-  it('단일·이중 연속 길이 수집', () => {
-    const result = analyzeMasterValue('00', '05067');
-    expect(result.lowPatterns.oneDuplicate).toContain(1);
-    expect(result.highPatterns.exactTwo).toContain(2);
+describe('Code Value — 1 중복 (S에서 value=1 run)', () => {
+  it('S에서 1 연속 run 길이 수집', () => {
+    const patterns = extractCodeValuesFromBaseSequence([1, 1, 1, 3, 2, 1], 'low');
+    expect(patterns.oneDuplicate).toEqual([3, 1]);
+  });
+
+  it('교차형 Master → S에 1 포함, oneDuplicate 산출', () => {
+    const result = analyzeMasterValue('00', '50505');
+    expect(result.lowRunLengths).toEqual([1, 1]);
+    expect(result.highRunLengths).toEqual([1, 1, 1]);
+    expect(result.highPatterns.oneDuplicate).toEqual([3]);
   });
 });
 
 describe('경계조건 — 복합 패턴 방어', () => {
-  it('끝에서 incomplete opposite — 3+α,2 미매칭', () => {
-    const result = analyzeMasterValue('00', '0005');
-    expect(result.lowPatterns.plusAlpha_3_2).toEqual([]);
-  });
-
-  it('시작 primary + 끝 incomplete — 미매칭', () => {
-    const result = analyzeMasterValue('00', '000');
-    expect(result.lowPatterns.plusAlpha_3_2).toEqual([]);
-    expect(result.lowPatterns.threeOrMore).toEqual([3]);
-  });
-
   it('null/undefined 입력 안전', () => {
     const result = analyzeMasterValue('05', null as unknown as string);
     expect(result).toEqual(createEmptyAnalysisResult('05'));
+  });
+});
+
+describe('buildSidePatternSequence', () => {
+  it('runs에서 side별 S 추출', () => {
+    const runs = buildRuns(toClassSequence('00055'));
+    expect(buildSidePatternSequence(runs, 'low')).toEqual([3]);
+    expect(collectPrimaryRunLengths(runs, 'high')).toEqual([2]);
   });
 });
 
@@ -189,9 +211,9 @@ describe('collectPatternMatchStartIndices / logMatchingDetails', () => {
 describe('buildCodeValueStats — Code 매칭', () => {
   it('패턴 라벨(1 중복) 매칭 카운트', async () => {
     const { buildCodeValueStats } = await import('@/shared/utils/analysisEngine');
-    const result = analyzeMasterValue('00', '015605');
+    const result = analyzeMasterValue('00', '50505');
     const stats = buildCodeValueStats(result, [
-      { id: 1, code: '99', type: '저점', description: '1 중복' },
+      { id: 1, code: '99', type: '고점', description: '1 중복' },
     ]);
     expect(stats).toHaveLength(1);
     expect(stats[0]?.count).toBeGreaterThan(0);

@@ -28,15 +28,17 @@ export interface SerializeOptions {
 }
 
 const PATTERN_FIELDS: (keyof SidePatterns)[] = [
-  'threeOrMore',
-  'fiveOrMore',
-  'oneBetween',
   'oneDuplicate',
-  'exactTwo',
+  'commaAlpha_2_3',
   'plusAlpha_3_2',
   'plusAlpha_4_3',
   'plusAlpha_4_4',
-  'commaAlpha_2_3',
+  'threeOrMore',
+  'fiveOrMore',
+  'oneBetween',
+  'alphaPlus_3_2',
+  'alphaPlus_4_3',
+  'exactTwo',
 ];
 
 export function toVerificationSnapshot(result: AnalysisResult): VerificationSnapshot {

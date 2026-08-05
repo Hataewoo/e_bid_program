@@ -58,7 +58,14 @@ export function buildPrediction(
 
   const topCandidate = chain.nextStep?.candidates[0] ?? null;
   const modeDigit = topCandidate?.digit ?? null;
-  const value = chain.suggestedDisplay || (modeDigit !== null ? `xx.${modeDigit}` : '');
+  const value =
+    chain.recommendedCombo.length > 0
+      ? chain.parsed.integerPart !== null
+        ? `${chain.parsed.integerPart}.${chain.recommendedCombo}`
+        : `xx.${chain.recommendedCombo}`
+      : modeDigit !== null
+        ? `xx.${modeDigit}`
+        : '';
 
   const confidence = topCandidate
     ? Math.min(100, Math.round(topCandidate.probability))
@@ -84,9 +91,9 @@ export function buildPrediction(
           .map((c) => `${c.digit}(${c.probability.toFixed(1)}%)`)
           .join(', ')}`
       : '다음 자리 추천 불가',
-    chain.suggestedDisplay
-      ? `연쇄 예측(4자리): ${chain.suggestedDisplay}`
-      : '연쇄 예측 없음',
+    chain.recommendedCombo
+      ? `4자리 조합: xx.${chain.recommendedCombo} (매 자리 저·고→세분화→Master)`
+      : '4자리 조합 없음',
   ];
 
   return {
