@@ -27,6 +27,20 @@ export function formatPatternValues(values: number[]): string {
   return values.join(',');
 }
 
+/** Values 미리보기 — 건수는 항상 배열 길이, 화면에는 일부만 표시 */
+export function formatPatternValuesPreview(
+  values: readonly number[],
+  maxVisible = 24,
+): { text: string; matchCount: number } {
+  const matchCount = values.length;
+  if (matchCount === 0) return { text: '-', matchCount: 0 };
+  if (matchCount <= maxVisible) {
+    return { text: formatPatternValues([...values]), matchCount };
+  }
+  const head = values.slice(0, maxVisible).join(',');
+  return { text: `${head} … (+${matchCount - maxVisible})`, matchCount };
+}
+
 /** UI에 표시할 run 시퀀스 — 한 줄당 숫자 개수 */
 const RUN_LENGTH_DISPLAY_CHUNK = 36;
 

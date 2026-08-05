@@ -10,6 +10,8 @@ import {
 
   NEXT_DIGIT_TOP_N,
 
+  parseBidRateInput,
+
   predictDigitChain,
 
   type HierarchicalStepInfo,
@@ -21,6 +23,8 @@ import {
 } from '@/shared/utils/nextDigitEngine';
 
 import { useI18n } from '@/i18n/use-i18n';
+
+import { SubBandCountsPanel } from './SubBandCountsPanel';
 
 
 
@@ -326,6 +330,10 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
 
 
   const displayPrefix = prediction.parsed.displayValue || input;
+  const analysisPrefix = useMemo(
+    () => parseBidRateInput(input).decimalPrefix,
+    [input],
+  );
 
   const comboDisplay = prediction.recommendedCombo
 
@@ -464,6 +472,8 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
 
 
           {prediction.pathSummary ? <PathSummary hierarchy={prediction.pathSummary} /> : null}
+
+          <SubBandCountsPanel result={result} prefix={analysisPrefix} />
 
 
 

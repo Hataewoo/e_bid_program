@@ -26,6 +26,7 @@ import {
   type PhaseRecommendation,
   type SingleNextDigitPick,
 } from './codeValuePhaseEngine';
+import { pickBalancedDigitAvoidingPatternValue } from './patternDigitGuard';
 import { pickDigitFromMasterPatterns } from './masterPatternDigitEngine';
 import {
   collectSegmentDigitTransitions,
@@ -456,14 +457,20 @@ function digitFromPhaseRecForClass(
   prefix: string,
   targetClass: DigitClass,
 ): number | null {
-  const pool = rec.nextSValues.filter((v) => v >= 0 && v <= 9 && digitMatchesClass(v, targetClass));
-  for (const sValue of pool) {
-    if (wouldFormRepetitivePattern(prefix, sValue)) continue;
-    if (isDigitOverusedInRecent(prefix, sValue)) continue;
-    const last = prefix.length > 0 ? Number(prefix[prefix.length - 1]) : null;
-    if (sValue === last && countTrailingSameDigit(prefix) >= 1) continue;
-    return sValue;
-  }
+  void rec;
+  const picked = pickBalancedDigitAvoidingPatternValue(
+    -1,
+    slotIndex,
+    prefix,
+    new Set<number>(),
+    classDigitOrder(targetClass, slotIndex),
+    {
+      trailingSame: countTrailingSameDigit,
+      wouldRepeat: wouldFormRepetitivePattern,
+      isOverused: isDigitOverusedInRecent,
+    },
+  );
+  if (picked !== null) return picked;
   for (const d of classDigitOrder(targetClass, slotIndex)) {
     if (wouldFormRepetitivePattern(prefix, d)) continue;
     if (isDigitOverusedInRecent(prefix, d)) continue;

@@ -410,6 +410,11 @@ export function formatSubAnalysisValues(values: number[]): string {
   return values.join(', ');
 }
 
+/** Code/Values 행 — Values 배열에 들어 있는 항목 개수 (합산 아님) */
+export function getPatternValuesMatchCount(values: readonly number[]): number {
+  return values.length;
+}
+
 /** 1단계 Code/Values — S 시퀀스(L/H run 길이)에 10규칙 적용 */
 export function analyzeCodeValueMainDetail(
   baseSequence: number[],

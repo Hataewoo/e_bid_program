@@ -8,7 +8,8 @@ import {
   type PatternRowDef,
   type PatternSide,
 } from '../types/pattern-rows';
-import { formatPatternValues } from '../utils/analysis-display';
+import { getPatternValuesMatchCount } from '@/shared/utils/codeValueSubAnalysis';
+import { formatPatternValuesPreview } from '../utils/analysis-display';
 
 interface PatternValuesTableProps {
   side: PatternSide;
@@ -32,10 +33,14 @@ export const PatternValuesTable = memo(function PatternValuesTable({
   const { t } = useI18n();
   const tableRows = useMemo(
     () =>
-      rows.map((row) => ({
-        ...row,
-        values: getPatternValues(patterns, row.field),
-      })),
+      rows.map((row) => {
+        const values = getPatternValues(patterns, row.field);
+        return {
+          ...row,
+          values,
+          matchCount: getPatternValuesMatchCount(values),
+        };
+      }),
     [rows, patterns],
   );
 
@@ -88,8 +93,9 @@ export const PatternValuesTable = memo(function PatternValuesTable({
     <table className="win-pattern-values-table">
       <thead>
         <tr>
-          <th className="w-[88px] text-left">Code</th>
-          <th className="text-left">Values</th>
+          <th className="win-pattern-code-col text-left">Code</th>
+          <th className="w-10 text-right">{t('analysis.subBandCounts.colMatchCount')}</th>
+          <th className="win-pattern-values-col text-left">Values</th>
         </tr>
       </thead>
       <tbody>
@@ -110,15 +116,21 @@ export const PatternValuesTable = memo(function PatternValuesTable({
               <td
                 className={
                   hasValues
-                    ? 'cursor-pointer select-none font-semibold text-[#0000ff] hover:underline'
-                    : undefined
+                    ? 'win-pattern-code-col cursor-pointer select-none font-semibold text-[#0000ff] hover:underline'
+                    : 'win-pattern-code-col'
                 }
                 title={hasValues ? t('analysis.pattern.subDetailDblClickHint') : undefined}
                 onDoubleClick={() => handleCodeDoubleClick(row, row.values)}
               >
                 {row.code}
               </td>
-              <td>
+              <td
+                className="text-right font-mono tabular-nums"
+                title={hasValues ? t('analysis.subBandCounts.matchCountHint') : undefined}
+              >
+                {hasValues ? row.matchCount : '-'}
+              </td>
+              <td className="win-pattern-values-col">
                 {!hasValues ? (
                   <span className="text-content-muted">-</span>
                 ) : (
@@ -127,7 +139,7 @@ export const PatternValuesTable = memo(function PatternValuesTable({
                     className="win-link-value text-left"
                     onClick={() => handleValueClick(row, row.values)}
                   >
-                    {formatPatternValues(row.values)}
+                    {formatPatternValuesPreview(row.values).text}
                   </button>
                 )}
               </td>

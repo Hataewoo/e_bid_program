@@ -5,6 +5,7 @@ import {
   countBetweenMarkerRule,
   extractCodeValuesFromBaseSequence,
   formatSubAnalysisValues,
+  getPatternValuesMatchCount,
 } from '@/shared/utils/codeValueSubAnalysis';
 
 describe('codeValueSubAnalysis', () => {
@@ -29,6 +30,10 @@ describe('codeValueSubAnalysis', () => {
     const patterns = extractCodeValuesFromBaseSequence([1, 2, 3, 4, 5, 3], 'low');
     expect(patterns.threeOrMore).toEqual([3, 4, 5, 3]);
     expect(patterns.fiveOrMore).toEqual([5]);
+    expect(getPatternValuesMatchCount(patterns.threeOrMore)).toBe(4);
+    expect(getPatternValuesMatchCount(patterns.threeOrMore)).not.toBe(
+      patterns.threeOrMore.reduce((a, b) => a + b, 0),
+    );
   });
 
   it('counts values ≥2 between pairs of 1 (1 사이)', () => {

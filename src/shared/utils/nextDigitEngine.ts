@@ -1,4 +1,5 @@
 import type { AnalysisResult, CodeValueStatRow } from './analysisEngine';
+import { wouldFormRepetitivePattern } from './codeValuePhaseEngine';
 import {
   resolvePatternRecommendationPath,
   PATTERN_PICK_STAGE_FULL,
@@ -263,6 +264,7 @@ export function pickTopCandidates(
   probabilities: Record<number, number>,
   topN: number = NEXT_DIGIT_TOP_N,
   allowedDigits?: readonly number[],
+  prefix?: string,
 ): NextDigitCandidate[] {
   const pool =
     allowedDigits && allowedDigits.length > 0
@@ -275,10 +277,31 @@ export function pickTopCandidates(
     matchCount: 0,
   }));
 
-  return candidates
+  const sorted = candidates
     .filter((c) => c.probability > 0)
-    .sort((a, b) => b.probability - a.probability || a.digit - b.digit)
-    .slice(0, Math.min(topN, pool.length));
+    .sort((a, b) => b.probability - a.probability || a.digit - b.digit);
+
+  if (prefix !== undefined) {
+    const nonRepetitive = sorted.filter(
+      (c) => !wouldFormRepetitivePattern(prefix, c.digit),
+    );
+    if (nonRepetitive.length > 0) {
+      return nonRepetitive.slice(0, Math.min(topN, pool.length));
+    }
+  }
+
+  return sorted.slice(0, Math.min(topN, pool.length));
+}
+
+/** chain greedy — 연속·ABAB·3연속 같은 digit 반복 회피 */
+export function pickChainStepDigit(
+  candidates: NextDigitCandidate[],
+  workingPrefix: string,
+): NextDigitCandidate | null {
+  for (const c of candidates) {
+    if (!wouldFormRepetitivePattern(workingPrefix, c.digit)) return c;
+  }
+  return candidates[0] ?? null;
 }
 
 export function predictNextDigitStep(
@@ -299,7 +322,7 @@ export function predictNextDigitStep(
   return {
     position: prefix.length + 1,
     prefix,
-    candidates: pickTopCandidates(probabilities, topN, hierarchy.allowedDigits),
+    candidates: pickTopCandidates(probabilities, topN, hierarchy.allowedDigits, prefix),
     totalMatches: 0,
     source,
     stage,
@@ -355,7 +378,7 @@ export function predictDigitChain(
     if (!stepResult || stepResult.candidates.length === 0) break;
 
     chainSteps.push(stepResult);
-    const best = stepResult.candidates[0];
+    const best = pickChainStepDigit(stepResult.candidates, workingPrefix);
     if (!best) break;
     workingPrefix += String(best.digit);
   }
@@ -364,16 +387,8 @@ export function predictDigitChain(
   const recommendedCombo = chainSuffix.slice(0, chainDepth);
   const suggestedDisplay = formatDisplayValue(parsed, chainSuffix);
 
-  const pathSummary =
-    chainSteps.length > 0
-      ? {
-          ...chainSteps[0]!.hierarchy,
-          activeSubDetailCodes: [
-            ...new Set(chainSteps.flatMap((s) => s.hierarchy.activeSubDetailCodes)),
-          ],
-          digitReasons: chainSteps[0]!.hierarchy.digitReasons,
-        }
-      : null;
+  // 다음 1자리(nextStep) 기준 — chain 각 step은 CompactStepRow에서 독립 표시
+  const pathSummary = nextStep ? { ...nextStep.hierarchy } : null;
 
   return {
     parsed,

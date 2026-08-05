@@ -43,7 +43,7 @@ export const messages = {
     'analysis.prediction.title': '다음 자리 예측',
     'analysis.prediction.subtitle':
       '4자리 각 자리: 저·고 run → 세분화 판단 → Master 실제 숫자',
-    'analysis.prediction.hierarchyTitle': '패턴 흐름 추천 근거',
+    'analysis.prediction.hierarchyTitle': '다음 1자리 패턴 근거',
     'analysis.prediction.stepMainBand': '① 저·고 run 흐름',
     'analysis.prediction.stepSubBand': '② 세분화 패턴',
     'analysis.prediction.stepDigit': '③ 추천 숫자 (0~9)',
@@ -65,6 +65,12 @@ export const messages = {
     'analysis.prediction.chainStep': '{step}단계',
     'analysis.prediction.extendChain': '+1자리 더 예측',
     'analysis.prediction.clear': '초기화',
+    'analysis.subBandCounts.title': '세분화 카운트 (4구간 Point Values + 10규칙)',
+    'analysis.subBandCounts.comparisonTitle': '세분화 점수',
+    'analysis.subBandCounts.filtered': '필터 {count}자',
+    'analysis.subBandCounts.colMatchCount': '건수',
+    'analysis.subBandCounts.matchCountHint': 'Values 배열 길이 (합산 아님)',
+    'analysis.subBandCounts.noRules': '활성 규칙 없음',
     'analysis.rateRecommend.title': 'AI 투찰율 추천',
     'analysis.rateRecommend.subtitle':
       '저점·고점 통합 분석 · 확률 높은 순 (정수 97~103, 참고용)',
@@ -894,7 +900,7 @@ export const messages = {
     'analysis.prediction.title': 'Next Digit Prediction',
     'analysis.prediction.subtitle':
       'Each digit: L/H run → sub-detail → Master actual digits',
-    'analysis.prediction.hierarchyTitle': 'Pattern flow rationale',
+    'analysis.prediction.hierarchyTitle': 'Next digit rationale',
     'analysis.prediction.stepMainBand': '① L/H run flow',
     'analysis.prediction.stepSubBand': '② Sub-detail patterns',
     'analysis.prediction.stepDigit': '③ Recommended digits (0–9)',
@@ -916,6 +922,12 @@ export const messages = {
     'analysis.prediction.chainStep': 'Step {step}',
     'analysis.prediction.extendChain': 'Predict +1 more digit',
     'analysis.prediction.clear': 'Clear',
+    'analysis.subBandCounts.title': 'Sub-detail counts (4 bands · Point Values + 10 rules)',
+    'analysis.subBandCounts.comparisonTitle': 'sub-band scores',
+    'analysis.subBandCounts.filtered': '{count} digits filtered',
+    'analysis.subBandCounts.colMatchCount': 'Cnt',
+    'analysis.subBandCounts.matchCountHint': 'Values array length (not a sum)',
+    'analysis.subBandCounts.noRules': 'No active rules',
     'analysis.rateRecommend.title': 'AI Bid Rate Recommendations',
     'analysis.rateRecommend.subtitle':
       'Unified low/high analysis · sorted by probability (int 97–103, reference)',

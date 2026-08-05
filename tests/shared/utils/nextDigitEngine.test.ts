@@ -11,6 +11,8 @@ import {
   getDigitBand,
   parseBidRateInput,
   pickModeForComboIndex,
+  pickChainStepDigit,
+  pickTopCandidates,
   predictDigitChain,
   predictNextDigitStep,
   stageForComboIndex,
@@ -73,6 +75,18 @@ describe('nextDigitEngine', () => {
     expect(chain.recommendedCombo.length).toBe(4);
   });
 
+  it('uses run continuation as soft bias, not hard lock', () => {
+    const result = analyzeMasterValue('00', '1616161616');
+    const chain = predictDigitChain(result, [], '');
+
+    expect(chain.chainSteps.length).toBeGreaterThan(1);
+    const mainReasons = chain.chainSteps.map((s) => s.hierarchy.mainBandReasons.join(' '));
+    expect(mainReasons.some((r) => r.includes('run 지속 가중') || r.includes('run suffix'))).toBe(
+      true,
+    );
+    expect(mainReasons.every((r) => r.includes('S 패턴 run 지속'))).toBe(false);
+  });
+
   it('respects custom topN within sub-band pool', () => {
     const result = analyzeMasterValue('00', '0123456789');
     const step = predictNextDigitStep(result, [], '', 8, PATTERN_PICK_STAGE_FULL);
@@ -89,5 +103,29 @@ describe('nextDigitEngine', () => {
 
   it('appendDigitToInput extends decimal input', () => {
     expect(appendDigitToInput('xx.12', 3)).toBe('xx.123');
+  });
+
+  it('pickTopCandidates deprioritizes repetitive digits', () => {
+    const probs = { 5: 40, 6: 38, 7: 22 };
+    const withPrefix = pickTopCandidates(probs, 3, [5, 6, 7], '16');
+    expect(withPrefix[0]!.digit).not.toBe(6);
+  });
+
+  it('pickChainStepDigit avoids consecutive same digit', () => {
+    const candidates = [
+      { digit: 6, probability: 40, matchCount: 0 },
+      { digit: 5, probability: 35, matchCount: 0 },
+      { digit: 7, probability: 25, matchCount: 0 },
+    ];
+    expect(pickChainStepDigit(candidates, '16')!.digit).toBe(5);
+  });
+
+  it('does not build 6666 combo on long master with many high 6 tokens', () => {
+    const master = ('5676565656'.repeat(120)).slice(0, 1000);
+    const result = analyzeMasterValue('00', master);
+    const chain = predictDigitChain(result, [], '1');
+
+    expect(chain.recommendedCombo).not.toBe('6666');
+    expect(/^6{4}$/.test(chain.recommendedCombo)).toBe(false);
   });
 });

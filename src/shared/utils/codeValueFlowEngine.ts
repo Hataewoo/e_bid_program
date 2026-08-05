@@ -13,6 +13,10 @@ import {
   type DigitSubBand,
 } from './digitSubBand';
 import {
+  RUN_SUFFIX_MATCH_MAX,
+  useFullMasterSequence,
+} from './recentCompare';
+import {
   resolveSubBandFromPointValues,
   scoreDigitsFromPointValues,
 } from './pointValuesCodeFlow';
@@ -64,6 +68,9 @@ const PATTERN_FIELD_WEIGHTS: Record<string, number> = {
   alphaPlus_4_3: 0.85,
 };
 
+/** run 진행 중일 때 같은 side에 더해지는 표(1표). 하드 락이 아님 — 매 자리 독립 재판단. */
+const RUN_CONTINUATION_VOTE_BIAS = 1;
+
 function sideToBand(side: DigitClass): DigitBand {
   return side === 'low' ? 'low' : 'high';
 }
@@ -82,14 +89,12 @@ function trailingRunProgress(contextDigits: string): { side: DigitClass; progres
 }
 
 function inferExpectedRunLength(result: AnalysisResult, side: DigitClass): number {
-  const patterns = extractCodeValuesFromBaseSequence(
-    collectPrimaryRunLengths(result.runs, side),
-    side,
-  );
+  const fullS = collectPrimaryRunLengths(result.runs, side);
+  const patterns = extractCodeValuesFromBaseSequence(fullS, side);
   const hints = [
-    ...patterns.oneDuplicate.slice(-2),
-    ...patterns.threeOrMore.slice(-2),
-    ...patterns.fiveOrMore.slice(-1),
+    ...patterns.oneDuplicate,
+    ...patterns.threeOrMore,
+    ...patterns.fiveOrMore,
   ].filter((v) => v > 0);
 
   if (hints.length === 0) {
@@ -111,7 +116,7 @@ function voteNextClassFromRunSuffix(
   let high = 0;
   let matches = 0;
 
-  const suffixLen = Math.min(3, liveRuns.length);
+  const suffixLen = Math.min(RUN_SUFFIX_MATCH_MAX, liveRuns.length);
   if (suffixLen === 0) {
     return { low: 1, high: 1, reason: 'run 이력 없음 → 저·고 중립' };
   }
@@ -140,7 +145,11 @@ function voteNextClassFromRunSuffix(
     return { low: 1, high: 1, reason: 'run suffix 미매칭 → 저·고 중립' };
   }
 
-  return { low, high, reason: `run 흐름 ${liveSuffix} → 다음 run ${matches}건` };
+  return {
+    low,
+    high,
+    reason: `run 흐름 ${liveSuffix} → 다음 run ${matches}건 (Master 전체)`,
+  };
 }
 
 function sideMainPatternStrength(result: AnalysisResult, side: DigitClass): number {
@@ -153,7 +162,7 @@ function sideMainPatternStrength(result: AnalysisResult, side: DigitClass): numb
     if (row.values.length === 0) continue;
     const rule = CODE_VALUE_MAIN_RULES.find((r) => r.code === row.code);
     const weight = rule ? (PATTERN_FIELD_WEIGHTS[rule.field] ?? 0.5) : 0.5;
-    const tail = row.values.slice(-2);
+    const tail = useFullMasterSequence(row.values);
     strength += weight * tail.reduce((a, v) => a + Math.max(v, 1), 0);
   }
   return strength;
@@ -167,27 +176,31 @@ function resolveMainBand(
   const context = prefix.length > 0 ? result.digits + prefix : result.digits;
   const live = trailingRunProgress(context);
 
-  if (live) {
-    const expected = inferExpectedRunLength(result, live.side);
-    if (live.progress < expected) {
-      const band = sideToBand(live.side);
-      reasons.push(
-        `${band === 'low' ? '저점' : '고점'} run 진행 (${live.progress}/${expected}) — S 패턴 run 지속`,
-      );
-      return { band, side: live.side, reasons };
-    }
-    reasons.push(
-      `${live.side === 'low' ? '저점' : '고점'} run ${live.progress}자리 — 기대 ${expected} 도달`,
-    );
-  }
-
   const vote = voteNextClassFromRunSuffix(result, prefix);
   reasons.push(vote.reason);
 
-  if (vote.low !== vote.high) {
-    const side: DigitClass = vote.low > vote.high ? 'low' : 'high';
+  let low = vote.low;
+  let high = vote.high;
+
+  if (live) {
+    const expected = inferExpectedRunLength(result, live.side);
+    if (live.progress < expected) {
+      if (live.side === 'low') low += RUN_CONTINUATION_VOTE_BIAS;
+      else high += RUN_CONTINUATION_VOTE_BIAS;
+      reasons.push(
+        `${live.side === 'low' ? '저점' : '고점'} run 진행 (${live.progress}/${expected}) — run 지속 가중 (+${RUN_CONTINUATION_VOTE_BIAS})`,
+      );
+    } else {
+      reasons.push(
+        `${live.side === 'low' ? '저점' : '고점'} run ${live.progress}자리 — 기대 ${expected} 도달`,
+      );
+    }
+  }
+
+  if (low !== high) {
+    const side: DigitClass = low > high ? 'low' : 'high';
     const band = sideToBand(side);
-    reasons.push(`run suffix → ${getMainBandLabel(band)}`);
+    reasons.push(`run suffix·가중 → ${getMainBandLabel(band)}`);
     return { band, side, reasons };
   }
 
@@ -211,6 +224,9 @@ function collectMainCodesForSide(result: AnalysisResult, side: DigitClass): stri
   return detail.rows.filter((row) => row.values.length > 0).map((row) => row.code);
 }
 
+/** Master 최근 해당 구간 숫자 — Point Values 누적보다 우선 */
+const MASTER_RECENT_DIGIT_BOOST = 3;
+
 function mergeDigitScores(
   masterScores: Record<number, number>,
   pointScores: Record<number, number>,
@@ -218,7 +234,7 @@ function mergeDigitScores(
 ): Record<number, number> {
   const merged: Record<number, number> = {};
   for (const d of pool) {
-    merged[d] = (masterScores[d] ?? 0.1) * 0.55 + (pointScores[d] ?? 0.1) * 0.45;
+    merged[d] = (masterScores[d] ?? 0.1) * 0.6 + (pointScores[d] ?? 0.1) * 0.4;
   }
   return merged;
 }
@@ -310,7 +326,7 @@ function scoreDigitsFromMasterFlow(
   const context = prefix.length > 0 ? master + prefix : master;
   const liveRuns = buildRuns(toClassSequence(context));
   const masterRuns = buildRuns(toClassSequence(master));
-  const suffixLen = Math.min(3, liveRuns.length);
+  const suffixLen = Math.min(RUN_SUFFIX_MATCH_MAX, liveRuns.length);
   const live = trailingRunProgress(context);
 
   if (live) {
@@ -326,9 +342,8 @@ function scoreDigitsFromMasterFlow(
       }
       if ([...scores.values()].some((v) => v > 0.1)) {
         reasons.push(
-          `${live.side === 'low' ? '저' : '고'} run ${live.progress}/${expected} 지속 → Master 동일 run 실제 숫자`,
+          `${live.side === 'low' ? '저' : '고'} run ${live.progress}/${expected} 지속 → Master 동일 run 실제 숫자 (가중)`,
         );
-        return { scores: Object.fromEntries(scores), reasons };
       }
     }
   }
@@ -338,7 +353,7 @@ function scoreDigitsFromMasterFlow(
       const d = Number(master[i]);
       if (!pool.includes(d)) continue;
       if (classifyChar(master[i] ?? '') !== activeSide) continue;
-      scores.set(d, (scores.get(d) ?? 0) + 1);
+      scores.set(d, (scores.get(d) ?? 0) + MASTER_RECENT_DIGIT_BOOST);
       reasons.push(`Master 최근 ${getMainBandLabel(activeSide === 'low' ? 'low' : 'high')} 숫자 ${d}`);
       return { scores: Object.fromEntries(scores), reasons };
     }
@@ -366,7 +381,7 @@ function scoreDigitsFromMasterFlow(
   }
 
   if (matchCount > 0) {
-    reasons.push(`run ${liveSuffix} 흐름 ${matchCount}건 → Master 실제 다음 숫자`);
+    reasons.push(`run ${liveSuffix} 흐름 ${matchCount}건 (Master 전체) → Master 실제 다음 숫자`);
     return { scores: Object.fromEntries(scores), reasons };
   }
 
@@ -374,7 +389,7 @@ function scoreDigitsFromMasterFlow(
     const d = Number(master[i]);
     if (!pool.includes(d)) continue;
     if (classifyChar(master[i] ?? '') !== activeSide) continue;
-    scores.set(d, (scores.get(d) ?? 0) + 1);
+    scores.set(d, (scores.get(d) ?? 0) + MASTER_RECENT_DIGIT_BOOST);
     reasons.push(`run 미매칭 → Master 최근 해당 구간 숫자 ${d}`);
     break;
   }

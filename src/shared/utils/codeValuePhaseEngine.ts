@@ -10,6 +10,7 @@ import {
   type SidePatterns,
 } from './analysisEngine';
 import type { LiveSegmentState } from './runSegmentEngine';
+import { pickBalancedDigitAvoidingPatternValue } from './patternDigitGuard';
 
 const PATTERN_FIELDS = Object.keys(PATTERN_FIELD_LABELS) as (keyof SidePatterns)[];
 const BETWEEN_FIELDS: (keyof SidePatterns)[] = [
@@ -28,10 +29,10 @@ export const ALL_S_DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 /** digit 추천 — 같은 숫자 연속 run 최소화 */
 const MAX_DIGIT_STREAK = 1;
 
-/** Master 참고 — 최근 S 패턴만 (빈도·전체 이력 사용 안 함) */
-export const RECENT_PATTERN_LOOKBACK_MIN = 10;
-export const RECENT_PATTERN_LOOKBACK_MAX = 20;
-export const RECENT_PATTERN_LOOKBACK = 15;
+/** Master 참고 — 선택 Master Value 전체 S 패턴 */
+export const RECENT_PATTERN_LOOKBACK_MIN = 0;
+export const RECENT_PATTERN_LOOKBACK_MAX = Number.MAX_SAFE_INTEGER;
+export const RECENT_PATTERN_LOOKBACK = Number.MAX_SAFE_INTEGER;
 
 export interface PatternSlotRecommendation {
   field: keyof SidePatterns;
@@ -65,26 +66,20 @@ export interface PatternTransitionHints {
 
 export function sliceRecentRunLengths(
   runLengths: number[],
-  lookback = RECENT_PATTERN_LOOKBACK,
+  _lookback = RECENT_PATTERN_LOOKBACK,
 ): number[] {
-  const n = Math.min(
-    RECENT_PATTERN_LOOKBACK_MAX,
-    Math.max(RECENT_PATTERN_LOOKBACK_MIN, lookback),
-  );
-  if (runLengths.length <= n) return runLengths;
-  return runLengths.slice(-n);
+  return [...runLengths];
 }
 
-/** Master S에서 해당 Code Value 필드의 최근 값만 (최대 lookback개) */
+/** Master S 전체에서 해당 Code Value 필드 Values */
 export function recentPatternFieldValues(
   masterS: number[],
   side: DigitClass,
   field: keyof SidePatterns,
-  lookback = RECENT_PATTERN_LOOKBACK,
+  _lookback = RECENT_PATTERN_LOOKBACK,
 ): number[] {
-  const recent = sliceRecentRunLengths(masterS, lookback);
-  const patterns = extractCodeValuesFromBaseSequence(recent, side);
-  return (patterns[field] ?? []).slice(-lookback);
+  const patterns = extractCodeValuesFromBaseSequence(masterS, side);
+  return [...(patterns[field] ?? [])];
 }
 
 function oppositeSide(side: DigitClass): DigitClass {
@@ -875,15 +870,20 @@ function digitForSAndSlot(
   prefix: string,
   used: Set<number>,
 ): number {
-  if (sValue >= 0 && sValue <= 9 && !used.has(sValue)) {
-    const last = prefix.length > 0 ? Number(prefix[prefix.length - 1]) : null;
-    if (sValue !== last || countTrailingSameDigit(prefix) < MAX_DIGIT_STREAK) {
-      return sValue;
-    }
-  }
-  for (const d of balancedDigitOrder(slotIndex)) {
-    if (!used.has(d)) return d;
-  }
+  const picked = pickBalancedDigitAvoidingPatternValue(
+    sValue,
+    slotIndex,
+    prefix,
+    used,
+    balancedDigitOrder(slotIndex),
+    {
+      maxStreak: MAX_DIGIT_STREAK,
+      trailingSame: countTrailingSameDigit,
+      wouldRepeat: wouldFormRepetitivePattern,
+      isOverused: isDigitOverusedInRecent,
+    },
+  );
+  if (picked !== null) return picked;
   return ALL_S_DIGITS.find((d) => !used.has(d)) ?? slotIndex % 10;
 }
 
@@ -934,22 +934,27 @@ function isDigitOverusedInRecent(prefix: string, digit: number, maxCount = 2): b
   return (recentDigitCounts(prefix).get(digit) ?? 0) >= maxCount;
 }
 
-/** 패턴 1건 → digit 후보 (S=0 슬롯 filler 제외, Master S값 풀 순회) */
 function proposedDigitFromPhaseRec(
   rec: PhaseRecommendation,
   slotIndex: number,
   prefix: string,
 ): number | null {
-  const pool = rec.nextSValues.filter((v) => v >= 1 && v <= 9);
+  void rec;
   const used = new Set<number>();
-  for (const sValue of pool) {
-    const digit = digitForSAndSlot(sValue, slotIndex, prefix, used);
-    if (wouldFormRepetitivePattern(prefix, digit)) continue;
-    if (isDigitOverusedInRecent(prefix, digit)) continue;
-    used.add(digit);
-    return digit;
-  }
-  return null;
+  const digit = pickBalancedDigitAvoidingPatternValue(
+    -1,
+    slotIndex,
+    prefix,
+    used,
+    balancedDigitOrder(slotIndex),
+    {
+      maxStreak: MAX_DIGIT_STREAK,
+      trailingSame: countTrailingSameDigit,
+      wouldRepeat: wouldFormRepetitivePattern,
+      isOverused: isDigitOverusedInRecent,
+    },
+  );
+  return digit;
 }
 
 /** 상위 패턴 합의 + 0~9 균형 — 다음 digit 1개만 */
@@ -1064,14 +1069,13 @@ export function phaseRecommendationsToDigitCandidates(
   sorted.forEach((rec, slotIndex) => {
     if (out.length >= maxCount) return;
     const phaseTag = rec.phase === 'repeat' ? '반복' : '전환';
-    const sValue = rec.nextSValues[0] ?? slotIndex % 10;
-    let digit = digitForSAndSlot(sValue, slotIndex, prefix, usedDigits);
+    let digit = digitForSAndSlot(-1, slotIndex, prefix, usedDigits);
     if (usedDigits.has(digit)) {
       digit = pickFromPatternRecent([], slotIndex, usedDigits);
     }
     usedDigits.add(digit);
     const sideTag = rec.nextClass === 'high' ? '고점' : rec.nextClass === 'low' ? '저점' : '';
-    const label = `${phaseTag} · ${rec.patternLabel}${sideTag ? ` · ${sideTag}` : ''} · S${sValue}`;
+    const label = `${phaseTag} · ${rec.patternLabel}${sideTag ? ` · ${sideTag}` : ''}`;
     out.push({ digit, fit: rec.fit, patternLabel: label });
   });
 

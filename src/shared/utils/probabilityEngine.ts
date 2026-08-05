@@ -50,29 +50,11 @@ function toDigitProbability(counts: Map<number, number>, total: number): Record<
 
 function applyCodeBoost(
   probs: Record<number, number>,
-  codeStats: CodeValueStatRow[],
+  _codeStats: CodeValueStatRow[],
 ): Record<number, number> {
-  const boosted = { ...probs };
-  const top = [...codeStats].sort((a, b) => b.count - a.count).slice(0, 3);
-  if (top.length === 0) return boosted;
-
-  for (const row of top) {
-    if (!row.code?.trim() || row.count <= 0) continue;
-    const weight = Math.min(0.35, row.percent / 200);
-    for (const ch of row.code.replace(/\D/g, '')) {
-      const d = Number(ch);
-      if (!Number.isInteger(d) || d < 0 || d > 9) continue;
-      boosted[d] = (boosted[d] ?? 0) + weight;
-    }
-  }
-
-  const sum = Object.values(boosted).reduce((a, b) => a + b, 0);
-  if (sum <= 0) return probs;
-  const out: Record<number, number> = {};
-  for (let d = 0; d <= 9; d += 1) {
-    out[d] = Math.round(((boosted[d] ?? 0) / sum) * 1000) / 10;
-  }
-  return out;
+  // Code 패턴 라벨("1 중복", "3 이상" 등)에서 숫자를 추출해 digit 가중하면 안 됨.
+  void _codeStats;
+  return probs;
 }
 
 function applySideBoost(

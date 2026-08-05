@@ -30,11 +30,12 @@ describe('codeValuePhaseEngine', () => {
     }
   });
 
-  it('sliceRecentRunLengths keeps only the last 10~20 entries', () => {
-    const long = Array.from({ length: 30 }, (_, i) => (i % 5) + 1);
-    const sliced = sliceRecentRunLengths(long, 15);
-    expect(sliced.length).toBe(15);
-    expect(sliced[0]).toBe(long[long.length - 15]);
+  it('sliceRecentRunLengths keeps the full master run sequence', () => {
+    const long = Array.from({ length: 60 }, (_, i) => (i % 5) + 1);
+    const sliced = sliceRecentRunLengths(long, 40);
+    expect(sliced.length).toBe(60);
+    expect(sliced[0]).toBe(long[0]);
+    expect(sliced[sliced.length - 1]).toBe(long[long.length - 1]);
   });
 
   it('assignUniqueNextSPerSlot avoids duplicate primary S across slots', () => {
