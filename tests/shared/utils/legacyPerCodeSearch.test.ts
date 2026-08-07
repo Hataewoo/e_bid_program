@@ -14,13 +14,11 @@ import {
 } from '@/shared/utils/legacyCodeContentEngine';
 import {
   buildPointValueTokens,
-  buildPointValuesSequence,
   filterPointValuesToSubBand,
 } from '@/shared/utils/pointValuesCodeFlow';
 import { getDigitSubBand, type DigitSubBand } from '@/shared/utils/digitSubBand';
 import {
   LEGACY_MASTER_00_CODE_CONTENT,
-  expectedGapCount,
 } from '@/shared/fixtures/legacy-code-content-expected';
 import { LEGACY_MASTER_00_VALUE } from '@/shared/fixtures/legacy-master-00-value';
 import {
@@ -64,7 +62,7 @@ function greedyStarts(all: number[], plen: number): number[] {
 }
 
 function makeGapFns(ctx: Ctx): Record<string, GapFn> {
-  const { tokens, d2t, pv } = ctx;
+  const { tokens, d2t } = ctx;
   const tokenFirst: number[] = [];
   let c = 0;
   for (const tok of tokens) {
@@ -161,7 +159,8 @@ function makeGapFns(ctx: Ctx): Record<string, GapFn> {
       }
       return g;
     },
-    sRunBetween: (starts, plen, c) => {
+    sRunBetween: (starts, plen, _code) => {
+      void _code;
       const g: number[] = [];
       for (let i = 0; i < starts.length - 1; i++) {
         const from = starts[i]! + plen;
@@ -195,7 +194,6 @@ describe('legacy per-code independent search', () => {
 
     const lowLow = filterPointValuesToSubBand(pv, 'lowLow');
     const lowHigh = filterPointValuesToSubBand(pv, 'lowHigh');
-    const sPrime = buildPointValuesSequence(pv);
     const bandDigits = pv.split('').map((ch) => (Number(ch) <= 1 ? 0 : 1));
 
     const runSubBand = (v: number): DigitSubBand => (v <= 2 ? 'lowLow' : 'lowHigh');

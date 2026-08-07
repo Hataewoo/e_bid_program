@@ -282,7 +282,7 @@ describe('pointValuesCodeFlow — pattern value must not become digit', () => {
 
   it('scores count fields on S″ only from run tokens (not singleton digits)', () => {
     const result = analyzeMasterValue('00', '5566775617');
-    const { reasons, rows: _rows } = resolveSubBandFromPointValues(result, '6', 'high');
+    const { reasons } = resolveSubBandFromPointValues(result, '6', 'high');
 
     expect(reasons.some((r) => r.includes('3 이상 5 판단'))).toBe(false);
     expect(reasons.some((r) => r.includes('5 이상 6 판단'))).toBe(false);

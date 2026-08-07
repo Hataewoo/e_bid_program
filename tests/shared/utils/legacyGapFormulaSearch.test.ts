@@ -175,7 +175,7 @@ describe('legacy gap formula exhaustive search', () => {
       let best = { label: '', match: -1, lenE: 0, lenA: 0 };
       const allScores: Array<[string, number]> = [];
 
-      const sStarts = findSubBandStartsOnRunLengths(s, sub);
+      const sStarts = findSubBandStartsOnRunLengths(s, sub as readonly ('lowLow' | 'lowHigh')[]);
       for (const [label, arr] of [
         ['sRunMatch/between', gapsRunIndexBetween(sStarts, sub.length)],
         ['sRunMatch/endToStart', gapsRunIndexEndToStart(sStarts, sub.length)],

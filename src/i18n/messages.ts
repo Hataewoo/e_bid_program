@@ -598,6 +598,7 @@ export const messages = {
     'codeValue.analysis.noMasterData': 'Master {no}: 데이터 없음',
     'codeValue.analysis.resultSummary': 'Master {no} | 자릿수 {digits} | 코드매칭 {matches}건',
     'codeValue.analysis.failed': 'Master {no} 분석 실패',
+    'codeValue.legacy.step1Header': '# Master Value.',
     'codeValue.legacy.step2CodeTableTitle':
       '# STEP2 Code Value (Low Point Values 0~4)',
     'codeValue.legacy.step3CodeTableTitle':
@@ -1482,6 +1483,7 @@ export const messages = {
     'codeValue.analysis.noMasterData': 'Master {no}: no data',
     'codeValue.analysis.resultSummary': 'Master {no} | digits {digits} | code matches {matches}',
     'codeValue.analysis.failed': 'Master {no} analysis failed',
+    'codeValue.legacy.step1Header': '# Master Value.',
     'codeValue.legacy.step2CodeTableTitle':
       '# STEP2 Code Value (Low Point Values 0~4)',
     'codeValue.legacy.step3CodeTableTitle':

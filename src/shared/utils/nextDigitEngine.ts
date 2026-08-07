@@ -15,13 +15,14 @@ import {
   RECOMMEND_TOP_N_MAX,
   RECOMMEND_TOP_N_MIN,
   resolvePatternRecommendPath,
-  type ParsedBidInput,
   type PatternRecommendHierarchy,
   type PatternRecommendPath,
   type RecommendChainResult,
   type RecommendDigitCandidate,
   type RecommendStepResult,
 } from './patternRecommendEngine';
+
+export type { ParsedBidInput } from './patternRecommendEngine';
 
 export type { DigitBand } from './patternRecommendEngine';
 export {
@@ -36,15 +37,23 @@ export const NEXT_DIGIT_TOP_N_MIN = RECOMMEND_TOP_N_MIN;
 export const NEXT_DIGIT_TOP_N_MAX = RECOMMEND_TOP_N_MAX;
 export const NEXT_DIGIT_DEFAULT_CHAIN_DEPTH = RECOMMEND_CHAIN_DEPTH_DEFAULT;
 
-export type ParsedBidInput = ParsedBidInput;
-export type NextDigitCandidate = RecommendDigitCandidate;
-export type HierarchicalStepInfo = PatternRecommendHierarchy;
-export type NextDigitStepResult = RecommendStepResult;
-export type NextDigitChainResult = RecommendChainResult;
-
 export type PatternPickStage = 'full';
 export const PATTERN_PICK_STAGE_FULL: PatternPickStage = 'full';
 export type DigitPickMode = PatternPickStage;
+export type NextDigitSource = 'pattern';
+
+export type NextDigitCandidate = RecommendDigitCandidate;
+export type HierarchicalStepInfo = PatternRecommendHierarchy;
+export type NextDigitStepResult = RecommendStepResult & {
+  totalMatches: number;
+  source: NextDigitSource;
+  stage: PatternPickStage;
+  pickMode: PatternPickStage;
+};
+export type NextDigitChainResult = Omit<RecommendChainResult, 'chainSteps' | 'nextStep'> & {
+  chainSteps: NextDigitStepResult[];
+  nextStep: NextDigitStepResult | null;
+};
 
 export function clampNextDigitTopN(value: number): number {
   return clampRecommendTopN(value);
@@ -58,8 +67,6 @@ export function getDigitBand(digit: number): 'low' | 'high' | null {
 export function isDigitInBand(digit: number, band: 'low' | 'high'): boolean {
   return band === 'low' ? digit <= 4 : digit >= 5;
 }
-
-export type NextDigitSource = 'pattern';
 
 export function countNextDigitsAfterPrefix(
   masterDigits: string,
@@ -90,10 +97,12 @@ export function countNextDigitsAfterPrefix(
 }
 
 export function stageForComboIndex(_index: number): PatternPickStage {
+  void _index;
   return 'full';
 }
 
 export function pickModeForComboIndex(_index: number): PatternPickStage {
+  void _index;
   return 'full';
 }
 

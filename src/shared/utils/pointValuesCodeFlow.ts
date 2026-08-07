@@ -41,7 +41,6 @@ import {
 import {
   applySubBandPhaseToScores,
   type SubBandPhaseResult,
-  virtualMasterDigits,
 } from './subBandRepeatJudgment';
 
 export { virtualMasterDigits } from './subBandRepeatJudgment';
@@ -77,7 +76,6 @@ const SUB_BANDS_FOR_MAIN: Record<DigitBand, readonly DigitSubBand[]> = {
 const LAST_SOURCE_SUB_BAND_BOOST = 2.5;
 /** 저고/고고 — S″ PV 점수가 경쟁력 있을 때 형제 세분 소폭 가점 */
 const SUB_BAND_SIBLING_PATTERN_BOOST = 2;
-const SUB_BAND_SIBLING_PATTERN_LEAD_BOOST = 2.5;
 
 /** Master(+prefix)에서 STEP2 Low / STEP3 High Point Values digit 열 */
 export function getSidePointValues(

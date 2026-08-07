@@ -5,12 +5,9 @@
 import { describe, it } from 'vitest';
 import { analyzeMasterValue, filterDigitsByClass } from '@/shared/utils/analysisEngine';
 import {
-  CODE_VALUE_MAIN_RULES,
-  CODE_VALUE_SUB_DETAIL_RULES,
   extractCodeValuesFromBaseSequence,
   collectValueRunLengths,
   countBetweenMarkerRule,
-  type CodeValueSubPatterns,
 } from '@/shared/utils/codeValueSubAnalysis';
 import {
   buildPointValueTokens,
@@ -109,9 +106,9 @@ describe('legacy pattern-as-content probe (E-Myoung SearchValue hypothesis)', ()
           if (direct > best.match) best = { label: `${sName}/${field}/direct`, match: direct };
 
           const idxGaps = gapsBetweenIndices(
-            arr.map((v, i) => i).length >= 2
+            arr.map((_v, i) => i).length >= 2
               ? seq
-                  .map((v, i) => (arr.includes(v) ? i : -1))
+                  .map((_v, i) => (arr.includes(seq[i]!) ? i : -1))
                   .filter((i) => i >= 0)
               : [],
           );

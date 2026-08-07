@@ -11,7 +11,7 @@ import {
   filterNonOverlappingMatchStarts,
   buildDigitToTokenIndex,
 } from '@/shared/utils/legacyCodeContentEngine';
-import { buildPointValueTokens, filterPointValuesToSubBand } from '@/shared/utils/pointValuesCodeFlow';
+import { buildPointValueTokens } from '@/shared/utils/pointValuesCodeFlow';
 import { getDigitSubBand } from '@/shared/utils/digitSubBand';
 import {
   LEGACY_MASTER_00_CODE_CONTENT,
@@ -68,7 +68,6 @@ function makeGapFns(tokens: Tokens, lowPv: string) {
     digitBetween: (starts: number[], plen: number) => gapLoop(starts, plen, (f, t) => {
       if (f > t) return 1;
       const endD = f > t ? 0 : tokenLast[f + plen - 1] ?? f + plen - 1;
-      const nextD = tokenFirst[t + plen] ?? t;
       void endD;
       return 1;
     }),

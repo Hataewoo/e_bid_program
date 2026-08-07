@@ -8,7 +8,6 @@ import { extractCodeValuesFromBaseSequence } from '@/shared/utils/codeValueSubAn
 import { buildPointValueTokens, filterPointValuesToSubBand } from '@/shared/utils/pointValuesCodeFlow';
 import {
   LEGACY_MASTER_00_CODE_CONTENT,
-  expectedGapCount,
 } from '@/shared/fixtures/legacy-code-content-expected';
 import { LEGACY_MASTER_00_VALUE } from '@/shared/fixtures/legacy-master-00-value';
 import { getLegacyStepCodeDefinition, LEGACY_STEP2_CODE_ORDER } from '@/shared/fixtures/legacy-step-code-catalog';
@@ -26,7 +25,8 @@ const FIELDS = [
   'alphaPlus_4_3',
 ] as const;
 
-function score(code: string, expected: number[], got: number[]) {
+function score(_code: string, expected: number[], got: number[]) {
+  void _code;
   if (expected.length !== got.length) return { match: 0, exact: false };
   let m = 0;
   for (let i = 0; i < expected.length; i++) if (expected[i] === got[i]) m++;

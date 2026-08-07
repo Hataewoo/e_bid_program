@@ -9,7 +9,6 @@ import {
   buildDigitToTokenIndex,
 } from '@/shared/utils/legacyCodeContentEngine';
 import { buildPointValueTokens } from '@/shared/utils/pointValuesCodeFlow';
-import { getDigitSubBand } from '@/shared/utils/digitSubBand';
 import { LEGACY_MASTER_00_CODE_CONTENT } from '@/shared/fixtures/legacy-code-content-expected';
 import { LEGACY_MASTER_00_VALUE } from '@/shared/fixtures/legacy-master-00-value';
 

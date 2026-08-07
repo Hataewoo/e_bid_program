@@ -47,7 +47,7 @@ const gapFns: Record<string, GapFn> = {
   },
   tokIdx: (_t, _d, last, next, plen) => Math.max(1, next - (last + plen - 1)),
   digitSpan: (_t, _d, last, next, plen) => Math.max(1, next - (last + plen - 1)),
-  tokenCount: (tokens, _d, last, next, plen) => {
+  tokenCount: (_tokens, _d, last, next, plen) => {
     const from = last + plen;
     const to = next - 1;
     return from > to ? 1 : Math.max(1, to - from + 1);
