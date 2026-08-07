@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { analyzeMasterValue } from '@/shared/utils/analysisEngine';
-import {
-  PATTERN_PICK_STAGE_FULL,
-  resolvePatternRecommendationPath,
-} from '@/shared/utils/codeValueFlowEngine';
+import { resolvePatternRecommendPath } from '@/shared/utils/patternRecommendEngine';
 import {
   appendDigitToInput,
   clampNextDigitTopN,
@@ -16,6 +13,7 @@ import {
   predictDigitChain,
   predictNextDigitStep,
   stageForComboIndex,
+  PATTERN_PICK_STAGE_FULL,
 } from '@/shared/utils/nextDigitEngine';
 
 describe('nextDigitEngine', () => {
@@ -40,10 +38,9 @@ describe('nextDigitEngine', () => {
 
   it('every step uses full path: main band + sub-band + master digits', () => {
     const result = analyzeMasterValue('00', '1213141516');
-    const path = resolvePatternRecommendationPath(result, '1', PATTERN_PICK_STAGE_FULL);
+    const path = resolvePatternRecommendPath(result, '1');
     const step = predictNextDigitStep(result, [], '1', 4, PATTERN_PICK_STAGE_FULL);
 
-    expect(path.stage).toBe('full');
     expect(path.candidatePool.length).toBeLessThanOrEqual(5);
     expect(step?.stage).toBe('full');
     expect(step!.hierarchy.mainBandReasons.length).toBeGreaterThan(0);
@@ -67,24 +64,20 @@ describe('nextDigitEngine', () => {
     expect(chain.chainSteps.every((s) => s.hierarchy.subBandReasons.length > 0)).toBe(true);
   });
 
-  it('re-evaluates main and sub band when prefix grows', () => {
-    const result = analyzeMasterValue('00', '1616161616');
-    const chain = predictDigitChain(result, [], '1');
+  it('re-evaluates all four sub-bands when prefix grows after a high-low pick', () => {
+    const result = analyzeMasterValue('00', '5616125612');
+    const step2 = resolvePatternRecommendPath(result, '6');
 
-    expect(chain.nextStep?.stage).toBe('full');
-    expect(chain.recommendedCombo.length).toBe(4);
+    expect(step2.subBandReasons.some((r) => r.includes('②') || r.includes('세부'))).toBe(true);
   });
 
-  it('uses run continuation as soft bias, not hard lock', () => {
-    const result = analyzeMasterValue('00', '1616161616');
+  it('uses after-prefix S run for chain steps after the first digit', () => {
+    const result = analyzeMasterValue('00', '5616125612');
     const chain = predictDigitChain(result, [], '');
 
     expect(chain.chainSteps.length).toBeGreaterThan(1);
-    const mainReasons = chain.chainSteps.map((s) => s.hierarchy.mainBandReasons.join(' '));
-    expect(mainReasons.some((r) => r.includes('run 지속 가중') || r.includes('run suffix'))).toBe(
-      true,
-    );
-    expect(mainReasons.every((r) => r.includes('S 패턴 run 지속'))).toBe(false);
+    const secondMain = chain.chainSteps[1]!.hierarchy.mainBandReasons.join(' ');
+    expect(secondMain.includes('run')).toBe(true);
   });
 
   it('respects custom topN within sub-band pool', () => {
@@ -106,18 +99,37 @@ describe('nextDigitEngine', () => {
   });
 
   it('pickTopCandidates deprioritizes repetitive digits', () => {
-    const probs = { 5: 40, 6: 38, 7: 22 };
-    const withPrefix = pickTopCandidates(probs, 3, [5, 6, 7], '16');
+    const scores = { 5: 40, 6: 38, 7: 22 };
+    const withPrefix = pickTopCandidates(scores, 3, [5, 6, 7], '16');
     expect(withPrefix[0]!.digit).not.toBe(6);
+  });
+
+  it('primary candidate exposes repeat or transition pick mode', () => {
+    const result = analyzeMasterValue('00', '5566778899');
+    const step = predictNextDigitStep(result, [], '', 4, PATTERN_PICK_STAGE_FULL);
+    expect(step).not.toBeNull();
+    const top = step!.candidates[0]!;
+    expect(['repeat', 'transition', 'pattern']).toContain(top.pickMode);
+    expect(top.patternScore).toBeGreaterThan(0);
   });
 
   it('pickChainStepDigit avoids consecutive same digit', () => {
     const candidates = [
-      { digit: 6, probability: 40, matchCount: 0 },
-      { digit: 5, probability: 35, matchCount: 0 },
-      { digit: 7, probability: 25, matchCount: 0 },
+      { digit: 6, patternScore: 40, pickMode: 'repeat' as const, pickReason: '' },
+      { digit: 5, patternScore: 35, pickMode: 'transition' as const, pickReason: '' },
+      { digit: 7, patternScore: 25, pickMode: 'pattern' as const, pickReason: '' },
     ];
     expect(pickChainStepDigit(candidates, '16')!.digit).toBe(5);
+  });
+
+  it('chain steps are not all highLow on high-dominant master', () => {
+    const result = analyzeMasterValue('00', '5566778899');
+    const chain = predictDigitChain(result, [], '');
+
+    expect(chain.chainSteps).toHaveLength(4);
+    const subBands = chain.chainSteps.map((s) => s.hierarchy.subBandLabel);
+    const highLowOnly = subBands.every((l) => l.includes('5~7') || l.includes('5-7'));
+    expect(highLowOnly).toBe(false);
   });
 
   it('does not build 6666 combo on long master with many high 6 tokens', () => {

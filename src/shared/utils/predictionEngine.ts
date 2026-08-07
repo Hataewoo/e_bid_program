@@ -1,5 +1,10 @@
 import type { AnalysisResult, CodeValueStatRow } from './analysisEngine';
-import { formatCodeValuePatternTargetLabel, predictFromCodeValuePatterns } from './codeValuePatternPredictor';
+import {
+  getMainBandLabel,
+  getSubBandLabel,
+  resolveFinalDigitPick,
+  resolvePatternRecommendPath,
+} from './patternRecommendEngine';
 
 export type PredictionDominantSide = 'low' | 'high' | 'balanced';
 
@@ -39,10 +44,7 @@ export function createEmptyPrediction(masterNo: string): PredictionResult {
   };
 }
 
-/**
- * 분석 결과 + CodeValue 통계 기반 S 패턴 예측 요약.
- * 소수점 digit(0~9) 추천은 포함하지 않음 — Analysis S 패턴 패널 참고.
- */
+/** 분석 요약 — digit 추천은 Analysis 패턴 추천 패널 사용 */
 export function buildPrediction(
   result: AnalysisResult,
   codeStats: CodeValueStatRow[],
@@ -54,18 +56,13 @@ export function buildPrediction(
   const sortedCodes = [...codeStats].sort((a, b) => b.count - a.count);
   const topCode = sortedCodes[0] ?? null;
   const dominantSide = resolveDominantSide(result);
-  const patternPred = predictFromCodeValuePatterns(result, '');
-  const segmentSummary = formatCodeValuePatternTargetLabel(patternPred);
-  const topSegment = patternPred?.segment.nextSegmentCandidates[0] ?? null;
-  const segmentConfidence = patternPred?.segment.segmentConfidence ?? 0;
+  const path = resolvePatternRecommendPath(result, '');
+  const pick = resolveFinalDigitPick(path, result, '');
+  const topDigit =
+    pick !== null && path.candidatePool.includes(pick.digit) ? pick.digit : null;
 
-  const confidence = topSegment
-    ? Math.min(100, Math.round(topSegment.probability))
-    : segmentConfidence > 0
-      ? Math.min(100, Math.round(segmentConfidence * 100))
-      : topCode && topCode.count > 0
-        ? Math.min(100, Math.round(topCode.percent))
-        : 0;
+  const segmentSummary = `${getMainBandLabel(path.targetMainBand)} → ${getSubBandLabel(path.targetSubBand)}`;
+  const confidence = topDigit !== null ? 70 : 40;
 
   const dominantLabel =
     dominantSide === 'low'
@@ -79,18 +76,18 @@ export function buildPrediction(
       ? `최다 매칭 코드: ${topCode.code} (${topCode.count}건, ${topCode.percent.toFixed(1)}%)`
       : '등록된 코드 매칭 없음',
     `구간 판단: ${dominantLabel}`,
-    segmentSummary ? `S 패턴: ${segmentSummary}` : 'S 패턴 추천 불가',
-    topSegment ? `다음 구간 길이 후보: ${topSegment.value} (${topSegment.probability}%)` : '',
+    `패턴 경로: ${segmentSummary}`,
+    topDigit !== null ? `추천 digit (source): ${topDigit}` : '',
   ].filter(Boolean);
 
   return {
     masterNo: result.masterNo,
-    value: segmentSummary ?? '',
+    value: segmentSummary,
     topCode: topCode?.code ?? null,
     topCodeCount: topCode?.count ?? 0,
     topCodeDescription: topCode?.description ?? '',
     dominantSide,
-    modeDigit: null,
+    modeDigit: topDigit,
     confidence,
     rationale,
     step2Count: result.lowCount,

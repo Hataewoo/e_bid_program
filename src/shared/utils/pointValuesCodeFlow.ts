@@ -9,8 +9,8 @@
  * | 고점 | High Point Values | highLow 5~7 | highHigh 8~9 |
  */
 
-import type { AnalysisResult, DigitClass } from './analysisEngine';
-import { filterDigitsByClass } from './analysisEngine';
+import type { AnalysisResult, DigitClass, SidePatterns } from './analysisEngine';
+import { extractCodeValuesFromBaseSequence, filterDigitsByClass } from './analysisEngine';
 import {
   analyzeCodeValueMainDetail,
   CODE_VALUE_MAIN_RULES,
@@ -34,8 +34,17 @@ import {
 import {
   digitHintsFromMasterSource,
   digitHintsFromPointValueToken,
+  isCodeValuePatternField,
   isPatternCountField,
+  subBandHintsFromSourceDigit,
 } from './patternDigitGuard';
+import {
+  applySubBandPhaseToScores,
+  type SubBandPhaseResult,
+  virtualMasterDigits,
+} from './subBandRepeatJudgment';
+
+export { virtualMasterDigits } from './subBandRepeatJudgment';
 
 /** S′/S″ 한 토큰 — run 길이(value)와 Raw source digit 분리 */
 export interface PointValueToken {
@@ -63,6 +72,12 @@ const SUB_BANDS_FOR_MAIN: Record<DigitBand, readonly DigitSubBand[]> = {
   low: ['lowLow', 'lowHigh'],
   high: ['highLow', 'highHigh'],
 };
+
+/** 세분화 — Side PV 꼬리 마지막 source digit 구간 (현재 run 위치) */
+const LAST_SOURCE_SUB_BAND_BOOST = 2.5;
+/** 저고/고고 — S″ PV 점수가 경쟁력 있을 때 형제 세분 소폭 가점 */
+const SUB_BAND_SIBLING_PATTERN_BOOST = 2;
+const SUB_BAND_SIBLING_PATTERN_LEAD_BOOST = 2.5;
 
 /** Master(+prefix)에서 STEP2 Low / STEP3 High Point Values digit 열 */
 export function getSidePointValues(
@@ -121,18 +136,38 @@ export function resolveSourceDigitForPatternValue(
   return null;
 }
 
+/** 패턴 value → S″ 토큰 (끝에서 n번째 동일 value) */
+function resolveTokenForPatternValue(
+  baseSequence: readonly number[],
+  tokens: readonly PointValueToken[],
+  value: number,
+  occurrenceFromEnd = 0,
+): PointValueToken | null {
+  let seen = 0;
+  for (let i = baseSequence.length - 1; i >= 0; i -= 1) {
+    if (baseSequence[i] !== value) continue;
+    if (seen === occurrenceFromEnd) {
+      return tokens[i] ?? null;
+    }
+    seen += 1;
+  }
+  return null;
+}
+
 function resolveRecentValueSources(
   values: readonly number[],
   baseSequence: readonly number[],
   tokens: readonly PointValueToken[],
-): Array<{ value: number; sourceDigit: number | null }> {
+): Array<{ value: number; sourceDigit: number | null; isRun: boolean }> {
   const occurrenceFromEnd = new Map<number, number>();
-  const resolved: Array<{ value: number; sourceDigit: number | null }> = [];
+  const resolved: Array<{ value: number; sourceDigit: number | null; isRun: boolean }> = [];
   for (const value of fullMasterSequence(values)) {
     const occ = occurrenceFromEnd.get(value) ?? 0;
+    const token = resolveTokenForPatternValue(baseSequence, tokens, value, occ);
     resolved.push({
       value,
-      sourceDigit: resolveSourceDigitForPatternValue(baseSequence, tokens, value, occ),
+      sourceDigit: token?.sourceDigit ?? null,
+      isRun: token?.isRun ?? false,
     });
     occurrenceFromEnd.set(value, occ + 1);
   }
@@ -176,41 +211,28 @@ export function analyzePointValuesPatterns(
   };
 }
 
-/** S′/S″ 값 → 세부 구간 (source digit 우선 — 패턴 value로 digit·구간 직접 매핑 금지) */
+/** S′/S″·Code/Values → 세부 구간 — source digit만 (패턴 Values 직접 매핑 금지) */
 export function pointSequenceValueToSubBandHints(
   value: number,
   mainBand: DigitBand,
   sourceDigit?: number,
+  options?: { isRun?: boolean; patternField?: string },
 ): Array<{ sub: DigitSubBand; weight: number }> {
-  if (sourceDigit !== undefined && Number.isInteger(sourceDigit)) {
-    const sub = getDigitSubBand(sourceDigit);
-    if (sub && getSubBandMainBand(sub) === mainBand) {
-      return [{ sub, weight: 1 }];
-    }
-  }
+  void value;
+  void options;
+  return subBandHintsFromSourceDigit(sourceDigit, mainBand);
+}
 
-  const [lowSub, highSub] = SUB_BANDS_FOR_MAIN[mainBand];
-
-  if (mainBand === 'low') {
-    if (value === 2) {
-      return [
-        { sub: lowSub, weight: 0.5 },
-        { sub: highSub, weight: 0.5 },
-      ];
-    }
-    if (value >= 3) return [{ sub: highSub, weight: 0.55 }];
-    return [];
+function fallbackSubBandFromPointValueTail(
+  tokens: readonly PointValueToken[],
+  mainBand: DigitBand,
+): DigitSubBand | null {
+  for (let i = tokens.length - 1; i >= 0; i -= 1) {
+    const token = tokens[i]!;
+    const sub = getDigitSubBand(token.sourceDigit);
+    if (sub && getSubBandMainBand(sub) === mainBand) return sub;
   }
-
-  if (value === 2) {
-    return [
-      { sub: lowSub, weight: 0.5 },
-      { sub: highSub, weight: 0.5 },
-    ];
-  }
-  if (value >= 3 && value <= 4) return [{ sub: lowSub, weight: 0.55 }];
-  if (value >= 8) return [{ sub: highSub, weight: 0.55 }];
-  return [];
+  return null;
 }
 
 /** S″ 값 → 구간 내 digit — Master source digit만 */
@@ -236,11 +258,12 @@ function applySequenceTailToSubBandScores(
   mainBand: DigitBand,
   scores: Map<DigitSubBand, number>,
 ): void {
-  for (const token of tokens) {
+  for (const token of sliceRecentDigitScoreTail(tokens)) {
     for (const hint of pointSequenceValueToSubBandHints(
       token.value,
       mainBand,
       token.sourceDigit,
+      { isRun: token.isRun },
     )) {
       scores.set(hint.sub, (scores.get(hint.sub) ?? 0) + 0.35 * hint.weight);
     }
@@ -263,20 +286,30 @@ function scoreRowsToSubBand(
     if (row.values.length === 0) continue;
     const rule = CODE_VALUE_MAIN_RULES.find((r) => r.code === row.code);
     const weight = rule ? (PATTERN_FIELD_WEIGHTS[rule.field] ?? 0.5) : 0.5;
-    for (const { value: v, sourceDigit } of resolveRecentValueSources(
+    for (const { value: v, sourceDigit, isRun } of resolveRecentValueSources(
       row.values,
       baseSequence,
       tokens,
     )) {
-      if (rule && isPatternCountField(rule.field) && sourceDigit === null) continue;
-      for (const hint of pointSequenceValueToSubBandHints(
+      if (sourceDigit === null || sourceDigit === undefined) continue;
+      // S″ count 규칙(1중복·3이상·5이상) — run 길이 토큰만 (단독 digit value 제외)
+      if (isPatternCountField(rule?.field) && !isRun) continue;
+
+      const hints = pointSequenceValueToSubBandHints(
         v,
         mainBand,
-        sourceDigit ?? undefined,
-      )) {
+        sourceDigit,
+        { patternField: rule?.field },
+      );
+      if (hints.length === 0) continue;
+      for (const hint of hints) {
         scores.set(hint.sub, (scores.get(hint.sub) ?? 0) + weight * hint.weight);
+        const label = formatPatternValueLabel(v, sourceDigit);
+        const via = isCodeValuePatternField(rule?.field)
+          ? `판단(${row.code}) → source ${sourceDigit}`
+          : `source ${sourceDigit}`;
         reasons.push(
-          `Point Values ${row.code} ${formatPatternValueLabel(v, sourceDigit)} → ${getSubBandLabel(hint.sub)}`,
+          `Point Values ${row.code} ${label} ${via} → ${getSubBandLabel(hint.sub)}`,
         );
       }
     }
@@ -295,42 +328,92 @@ export function resolveSubBandFromPointValues(
   const side: DigitClass = mainBand === 'low' ? 'low' : 'high';
   const pointValues = getSidePointValues(result, prefix, side);
   const pointLabel = mainBand === 'low' ? 'Low Point Values' : 'High Point Values';
+  const candidates = SUB_BANDS_FOR_MAIN[mainBand];
 
   if (pointValues.length === 0) {
-    const fallback = mainBand === 'low' ? 'lowHigh' : 'highLow';
-    reasons.push(`${pointLabel} 없음 → 기본 세부 구간`);
-    return { sub: fallback, reasons, rows: [] };
+    reasons.push(`${pointLabel} 없음 → Master 꼬리 source digit`);
+    if (prefix.length > 0) {
+      const masterTail = Number(result.digits[result.digits.length - 1]);
+      if (Number.isInteger(masterTail)) {
+        const tailSub = getDigitSubBand(masterTail);
+        const tailMain = tailSub ? getSubBandMainBand(tailSub) : null;
+        if (tailMain && tailMain !== mainBand) {
+          const secondary = candidates[1] ?? candidates[0]!;
+          reasons.push(`저·고 전환 append → ${getSubBandLabel(secondary)} 우선`);
+          return { sub: secondary, reasons, rows: [] };
+        }
+      }
+    }
+    return { sub: candidates[0]!, reasons, rows: [] };
   }
 
-  const { baseSequence, tokens, rows } = analyzePointValuesPatterns(pointValues, side);
-  reasons.push(`${pointLabel} S′ [${baseSequence.slice(-RECENT_DISPLAY_TAIL).join(', ')}]`);
+  reasons.push(`${pointLabel} digit ${pointValues.length}자`);
 
-  const scores = scoreRowsToSubBand(rows, mainBand, baseSequence, tokens, reasons);
-  applySequenceTailToSubBandScores(tokens, mainBand, scores);
-  if (tokens.length > 0) {
-    const tailLabels = tokens
-      .slice(-RECENT_DISPLAY_TAIL)
-      .map((t) => formatPatternValueLabel(t.value, t.sourceDigit))
-      .join(', ');
-    reasons.push(`S′ 꼬리 [${tailLabels}]`);
+  const perSubScores: Partial<Record<DigitSubBand, number>> = {};
+  const rawPvScores: Partial<Record<DigitSubBand, number>> = {};
+  let mergedRows: CodeValueSubAnalysisRow[] = [];
+
+  for (const subBand of candidates) {
+    const { score, rows } = scoreFilteredSubBandPointValues(result, prefix, subBand, reasons);
+    perSubScores[subBand] = score;
+    rawPvScores[subBand] = score;
+    if (rows.length > 0) mergedRows = rows;
   }
 
-  let best: DigitSubBand = SUB_BANDS_FOR_MAIN[mainBand][0]!;
-  let bestScore = -1;
-  for (const [sub, score] of scores) {
-    if (score > bestScore) {
-      bestScore = score;
-      best = sub;
+  let phaseInfo: SubBandPhaseResult;
+  if (prefix.length > 0) {
+    reasons.push('② 2자리~ — S″ PV 패턴만 (run-phase 미사용)');
+    phaseInfo = {
+      phase: 'transition',
+      label: '패턴 전용',
+      currentSub: null,
+      siblingSub: null,
+    };
+  } else {
+    phaseInfo = applySubBandPhaseToScores(
+      result,
+      prefix,
+      mainBand,
+      perSubScores,
+      candidates,
+      reasons,
+    );
+  }
+
+  applySubBandSiblingPatternBoost(perSubScores, rawPvScores, candidates, reasons);
+
+  if (prefix.length === 0) {
+    if (phaseInfo.phase === 'repeat' && phaseInfo.currentSub) {
+      applyLastSourceDigitSubBandBoost(pointValues, perSubScores, candidates);
+      const lastToken = buildPointValueTokens(pointValues).at(-1);
+      if (lastToken) {
+        reasons.push(
+          `Side PV 마지막 source ${lastToken.sourceDigit} → ${getSubBandLabel(phaseInfo.currentSub)} run 가중`,
+        );
+      }
+    } else {
+      const lastToken = buildPointValueTokens(pointValues).at(-1);
+      if (lastToken && phaseInfo.siblingSub) {
+        reasons.push(
+          `Side PV 마지막 source ${lastToken.sourceDigit} → ${getSubBandLabel(phaseInfo.siblingSub)} 전환 후보`,
+        );
+      }
     }
   }
 
-  if (bestScore <= 0) {
-    best = mainBand === 'low' ? 'lowHigh' : 'highLow';
-    reasons.push(`${pointLabel} 힌트 없음 → 기본 세부 구간`);
+  const normalizedPickScores: Partial<Record<DigitSubBand, number>> = {};
+  for (const subBand of candidates) {
+    const filtered = filteredPointValuesForSubBand(result, prefix, subBand);
+    normalizedPickScores[subBand] = normalizeSubBandPatternScore(
+      perSubScores[subBand] ?? 0,
+      filtered,
+    );
   }
+  applyNormalizedSiblingTieBreak(normalizedPickScores, candidates, reasons);
 
+  const best = pickBestSubBand(normalizedPickScores, candidates, pointValues);
   reasons.push(`세부 구간 ${getSubBandLabel(best)}`);
-  return { sub: best, reasons, rows };
+  return { sub: best, reasons, rows: mergedRows };
 }
 
 function scoreDigitsFromPointValueTokens(
@@ -430,12 +513,64 @@ export interface SubBandPointValuesCountsReport {
   highComparison: SubBandComparisonDetail;
 }
 
+/** 레거시 STEP2/3 — 세분화 구간 Point Values + S′ + 10규칙 */
+export interface StepSubBandLegacyDetail {
+  subBand: DigitSubBand;
+  side: DigitClass;
+  filteredPointValues: string;
+  sPrimeSequence: number[];
+  patterns: SidePatterns;
+}
+
+export function formatSPrimeCommaList(sequence: readonly number[]): string {
+  if (sequence.length === 0) return '';
+  return sequence.join(', ');
+}
+
+/** STEP2 또는 STEP3에 해당하는 2개 세분화 구간 데이터 */
+export function buildStepSubBandLegacyDetails(
+  result: AnalysisResult,
+  prefix: string,
+  mainBand: DigitBand,
+): StepSubBandLegacyDetail[] {
+  const side: DigitClass = mainBand === 'low' ? 'low' : 'high';
+  return SUB_BANDS_FOR_MAIN[mainBand].map((subBand) => {
+    const filteredPointValues = filterPointValuesToSubBand(
+      getSidePointValues(result, prefix, side),
+      subBand,
+    );
+    const tokens = buildPointValueTokens(filteredPointValues);
+    const sPrimeSequence = tokens.map((token) => token.value);
+    const patterns = extractCodeValuesFromBaseSequence(sPrimeSequence, side);
+    return { subBand, side, filteredPointValues, sPrimeSequence, patterns };
+  });
+}
+
 const ALL_SUB_BANDS: readonly DigitSubBand[] = [
   'lowLow',
   'lowHigh',
   'highLow',
   'highHigh',
 ];
+
+/** 4구간 각각 — 해당 digit만 필터한 Point Values + source digit 기반 패턴 점수 */
+export function scoreEachSubBandFromFilteredPointValues(
+  result: AnalysisResult,
+  prefix: string,
+): Map<DigitSubBand, number> {
+  const merged = new Map<DigitSubBand, number>();
+  for (const sub of ALL_SUB_BANDS) {
+    merged.set(sub, 0);
+  }
+
+  for (const subBand of ALL_SUB_BANDS) {
+    const filtered = filteredPointValuesForSubBand(result, prefix, subBand);
+    const { score } = scoreFilteredSubBandPointValues(result, prefix, subBand, []);
+    merged.set(subBand, normalizeSubBandPatternScore(score, filtered));
+  }
+
+  return merged;
+}
 
 /** 저·고 각 2구간 S′ 10규칙 점수 (세분화 선택용) */
 export function computeSubBandComparisonScores(
@@ -445,40 +580,146 @@ export function computeSubBandComparisonScores(
 ): { scores: Partial<Record<DigitSubBand, number>>; sPrimeTail: number[] } {
   const side: DigitClass = mainBand === 'low' ? 'low' : 'high';
   const pointValues = getSidePointValues(result, prefix, side);
-  const scores = new Map<DigitSubBand, number>();
-  for (const sub of SUB_BANDS_FOR_MAIN[mainBand]) {
-    scores.set(sub, 0);
-  }
+  const scores: Partial<Record<DigitSubBand, number>> = {};
+  let sPrimeTail: number[] = [];
 
   if (pointValues.length === 0) {
-    return { scores: Object.fromEntries(scores), sPrimeTail: [] };
+    for (const sub of SUB_BANDS_FOR_MAIN[mainBand]) scores[sub] = 0;
+    return { scores, sPrimeTail };
   }
 
-  const { baseSequence, tokens, rows } = analyzePointValuesPatterns(pointValues, side);
-  const scoreMap = scoreRowsToSubBand(rows, mainBand, baseSequence, tokens, []);
-  applySequenceTailToSubBandScores(tokens, mainBand, scoreMap);
+  for (const sub of SUB_BANDS_FOR_MAIN[mainBand]) {
+    const filtered = filterPointValuesToSubBand(pointValues, sub);
+    const { score, sPrimeTail: tail } = scoreFilteredSubBandPointValues(result, prefix, sub, []);
+    scores[sub] = normalizeSubBandPatternScore(score, filtered);
+    if (tail.length > 0) sPrimeTail = tail;
+  }
 
-  return {
-    scores: Object.fromEntries(scoreMap),
-    sPrimeTail: baseSequence.slice(-RECENT_DISPLAY_TAIL),
-  };
+  return { scores, sPrimeTail };
+}
+
+/** Side PV 필터 문자열 — 세분 구간별 */
+function filteredPointValuesForSubBand(
+  result: AnalysisResult,
+  prefix: string,
+  subBand: DigitSubBand,
+): string {
+  const mainBand = getSubBandMainBand(subBand);
+  const side: DigitClass = mainBand === 'low' ? 'low' : 'high';
+  return filterPointValuesToSubBand(getSidePointValues(result, prefix, side), subBand);
+}
+
+/** 토큰 수 편향 제거 — 최근 S″ 토큰 밀도로 형제 구간 비교 */
+function normalizeSubBandPatternScore(rawScore: number, filteredPointValues: string): number {
+  const tokens = sliceRecentDigitScoreTail(buildPointValueTokens(filteredPointValues));
+  return rawScore / Math.max(1, tokens.length);
+}
+
+function applyLastSourceDigitSubBandBoost(
+  pointValues: string,
+  scores: Partial<Record<DigitSubBand, number>>,
+  candidates: readonly DigitSubBand[],
+): void {
+  const tokens = buildPointValueTokens(pointValues);
+  const last = tokens[tokens.length - 1];
+  if (!last) return;
+  const sub = getDigitSubBand(last.sourceDigit);
+  if (sub && candidates.includes(sub)) {
+    scores[sub] = (scores[sub] ?? 0) + LAST_SOURCE_SUB_BAND_BOOST;
+  }
+}
+
+/** @deprecated raw 점수 형제 가점 — 정규화 동률 tie-break 로 대체 */
+function applySubBandSiblingPatternBoost(
+  _scores: Partial<Record<DigitSubBand, number>>,
+  _rawPvScores: Partial<Record<DigitSubBand, number>>,
+  _candidates: readonly DigitSubBand[],
+  _reasons: string[],
+): void {
+  void _scores;
+  void _rawPvScores;
+  void _candidates;
+  void _reasons;
+}
+
+/** 정규화 S″ 밀도가 비슷할 때만 형제 구간 tie-break */
+function applyNormalizedSiblingTieBreak(
+  scores: Partial<Record<DigitSubBand, number>>,
+  candidates: readonly DigitSubBand[],
+  reasons: string[],
+): void {
+  if (candidates.length < 2) return;
+
+  const lower = candidates[0]!;
+  const higher = candidates[1]!;
+  const normLower = scores[lower] ?? 0;
+  const normHigher = scores[higher] ?? 0;
+  if (normLower <= 0 && normHigher <= 0) return;
+
+  const diff = Math.abs(normHigher - normLower);
+  if (diff > 0.08) return;
+
+  const leader = normHigher >= normLower ? higher : lower;
+  scores[leader] = (scores[leader] ?? 0) + SUB_BAND_SIBLING_PATTERN_BOOST * 0.5;
+  reasons.push(
+    `② ${getSubBandLabel(leader)} S″ 동률 근접 (+${(SUB_BAND_SIBLING_PATTERN_BOOST * 0.5).toFixed(1)}, ${normHigher.toFixed(2)} vs ${normLower.toFixed(2)})`,
+  );
 }
 
 function pickBestSubBand(
   scores: Partial<Record<DigitSubBand, number>>,
   candidates: readonly DigitSubBand[],
-  fallback: DigitSubBand,
+  sidePointValues: string,
 ): DigitSubBand {
-  let best = fallback;
-  let bestScore = -1;
-  for (const sub of candidates) {
-    const score = scores[sub] ?? 0;
-    if (score > bestScore) {
-      bestScore = score;
-      best = sub;
-    }
+  const ranked = candidates
+    .map((sub) => ({ sub, score: scores[sub] ?? 0 }))
+    .sort((a, b) => b.score - a.score);
+
+  const top = ranked[0];
+  if (!top || top.score <= 0) {
+    const tailSub = fallbackSubBandFromPointValueTail(
+      buildPointValueTokens(sidePointValues),
+      getSubBandMainBand(candidates[0]!),
+    );
+    if (tailSub && candidates.includes(tailSub)) return tailSub;
+    return candidates[0] ?? candidates[candidates.length - 1]!;
   }
-  return bestScore <= 0 ? fallback : best;
+
+  const second = ranked[1];
+  if (second && second.score === top.score) {
+    const tailSub = fallbackSubBandFromPointValueTail(
+      buildPointValueTokens(sidePointValues),
+      getSubBandMainBand(candidates[0]!),
+    );
+    if (tailSub && candidates.includes(tailSub)) return tailSub;
+  }
+
+  return top.sub;
+}
+
+function scoreFilteredSubBandPointValues(
+  result: AnalysisResult,
+  prefix: string,
+  subBand: DigitSubBand,
+  reasons: string[],
+): { score: number; rows: CodeValueSubAnalysisRow[]; sPrimeTail: number[] } {
+  const mainBand = getSubBandMainBand(subBand);
+  const side: DigitClass = mainBand === 'low' ? 'low' : 'high';
+  const filtered = filterPointValuesToSubBand(getSidePointValues(result, prefix, side), subBand);
+  if (filtered.length === 0) {
+    return { score: 0, rows: [], sPrimeTail: [] };
+  }
+
+  const { baseSequence, tokens, rows } = analyzePointValuesPatterns(filtered, side);
+  const scoreMap = scoreRowsToSubBand(rows, mainBand, baseSequence, tokens, reasons);
+  applySequenceTailToSubBandScores(tokens, mainBand, scoreMap);
+  const score = scoreMap.get(subBand) ?? 0;
+  if (score > 0) {
+    reasons.push(
+      `${getSubBandLabel(subBand)} 필터 S′ [${baseSequence.slice(-RECENT_DISPLAY_TAIL).join(', ')}] → ${score.toFixed(1)}`,
+    );
+  }
+  return { score, rows, sPrimeTail: baseSequence.slice(-RECENT_DISPLAY_TAIL) };
 }
 
 /** 4구간 Point Values + 10규칙 카운트 + 저·고 세분화 점수 비교 */
@@ -513,6 +754,9 @@ export function buildSubBandPointValueCounts(
     };
   });
 
+  const sidePointValues = (band: DigitBand) =>
+    getSidePointValues(result, prefix, band === 'low' ? 'low' : 'high');
+
   return {
     details,
     lowComparison: {
@@ -520,14 +764,14 @@ export function buildSubBandPointValueCounts(
       mainBandLabel: getMainBandLabel('low'),
       sPrimeTail: lowScores.sPrimeTail,
       scores: lowScores.scores,
-      selected: pickBestSubBand(lowScores.scores, SUB_BANDS_FOR_MAIN.low, 'lowHigh'),
+      selected: pickBestSubBand(lowScores.scores, SUB_BANDS_FOR_MAIN.low, sidePointValues('low')),
     },
     highComparison: {
       mainBand: 'high',
       mainBandLabel: getMainBandLabel('high'),
       sPrimeTail: highScores.sPrimeTail,
       scores: highScores.scores,
-      selected: pickBestSubBand(highScores.scores, SUB_BANDS_FOR_MAIN.high, 'highLow'),
+      selected: pickBestSubBand(highScores.scores, SUB_BANDS_FOR_MAIN.high, sidePointValues('high')),
     },
   };
 }

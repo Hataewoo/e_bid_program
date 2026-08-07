@@ -68,9 +68,7 @@ export const PointValuesPanel = memo(function PointValuesPanel({
       <div className="win-pattern-stats-line">{statsLine}</div>
 
       {sSequenceText ? (
-        <div className="win-pattern-s-sequence border-b border-border px-2 py-1 font-mono text-xs text-[#0000ff]">
-          {sSequenceText}
-        </div>
+        <div className="win-pattern-stats-sequence">{sSequenceText}</div>
       ) : null}
 
       <div className="win-pattern-values-panel min-h-[200px] flex-1 overflow-auto p-0">

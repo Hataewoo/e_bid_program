@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { AnalysisResult, CodeValueStatRow } from '@/shared/utils/analysisEngine';
 
@@ -129,41 +129,31 @@ function PathSummary({ hierarchy }: { hierarchy: HierarchicalStepInfo }) {
 
 
 function CandidateRow({
-
   candidate,
-
   onPick,
-
 }: {
-
   candidate: NextDigitCandidate;
-
   onPick: (digit: number) => void;
-
 }) {
+  const { t } = useI18n();
+  const modeLabel =
+    candidate.pickMode === 'repeat'
+      ? t('analysis.prediction.candidateRepeat')
+      : candidate.pickMode === 'transition'
+        ? t('analysis.prediction.candidateTransition')
+        : t('analysis.prediction.candidatePattern');
 
   return (
-
     <button
-
       type="button"
-
       className="flex min-w-[4.5rem] flex-col items-center rounded border border-[#808080] bg-white px-2 py-1.5 text-black hover:border-[#000080] hover:bg-[#e8e8ff]"
-
       onClick={() => onPick(candidate.digit)}
-
-      title={`${candidate.digit} (${candidate.probability}%)`}
-
+      title={candidate.pickReason || `${candidate.digit} · ${modeLabel}`}
     >
-
       <span className="font-mono text-2xl font-bold leading-none">{candidate.digit}</span>
-
-      <span className="mt-0.5 text-xs tabular-nums">{candidate.probability.toFixed(1)}%</span>
-
+      <span className="mt-0.5 text-center text-[10px] leading-tight">{modeLabel}</span>
     </button>
-
   );
-
 }
 
 
@@ -271,7 +261,10 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
 
   const hasData = result.totalCount > 0;
 
-
+  useEffect(() => {
+    setInput('');
+    setExtraChainSteps(0);
+  }, [result.masterNo, result.digits]);
 
   const prediction = useMemo(
 

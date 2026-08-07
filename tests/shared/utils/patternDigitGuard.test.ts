@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { analyzeMasterValue } from '@/shared/utils/analysisEngine';
-import { resolvePatternRecommendationPath } from '@/shared/utils/codeValueFlowEngine';
+import { resolvePatternRecommendPath } from '@/shared/utils/patternRecommendEngine';
 import {
   buildPointValueTokens,
   pointSequenceValueToDigitHints,
@@ -8,11 +8,11 @@ import {
 } from '@/shared/utils/pointValuesCodeFlow';
 import {
   digitHintsFromMasterSource,
+  isCodeValuePatternField,
   isPatternCountField,
   pickBalancedDigitAvoidingPatternValue,
+  subBandHintsFromSourceDigit,
 } from '@/shared/utils/patternDigitGuard';
-import { buildProbabilityProfile } from '@/shared/utils/probabilityEngine';
-import { buildCodeValueStats } from '@/shared/utils/analysisEngine';
 
 describe('patternDigitGuard', () => {
   it('rejects pattern values without master source digit', () => {
@@ -59,24 +59,42 @@ describe('patternDigitGuard', () => {
     expect(withUsed).toBe(6);
   });
 
-  it('flags pattern count fields', () => {
+  it('flags all Code/Values pattern fields as non-digit sequence', () => {
     expect(isPatternCountField('oneDuplicate')).toBe(true);
     expect(isPatternCountField('threeOrMore')).toBe(true);
+    expect(isPatternCountField('fiveOrMore')).toBe(true);
+    expect(isCodeValuePatternField('commaAlpha_2_3')).toBe(true);
+    expect(isCodeValuePatternField('plusAlpha_3_2')).toBe(true);
+    expect(isCodeValuePatternField('oneBetween')).toBe(true);
+    expect(isCodeValuePatternField('alphaPlus_4_3')).toBe(true);
+    expect(isCodeValuePatternField('unknown')).toBe(false);
+  });
+
+  it('subBandHintsFromSourceDigit rejects pattern values without source', () => {
+    expect(subBandHintsFromSourceDigit(null, 'high')).toEqual([]);
+    expect(subBandHintsFromSourceDigit(undefined, 'low')).toEqual([]);
+    expect(subBandHintsFromSourceDigit(9, 'high')).toEqual([{ sub: 'highHigh', weight: 1 }]);
+  });
+
+  it('flags pattern count fields', () => {
     expect(isPatternCountField('commaAlpha_2_3')).toBe(false);
   });
 });
 
 describe('patternDigitGuard — integration', () => {
-  it('resolvePatternRecommendationPath has no rule-row digit mapping reasons', () => {
+  it('resolvePatternRecommendPath has no rule-row digit mapping reasons', () => {
     const master =
       '4901755008349411600466845711739664278210457455698714508283704651927' +
       '63359554428422214959275089154370873911038370854604626534097377';
     const result = analyzeMasterValue('00', master);
-    const path = resolvePatternRecommendationPath(result, '');
+    const path = resolvePatternRecommendPath(result, '');
 
     expect(path.digitReasons.some((r) => /3 이상.*→ digit/.test(r))).toBe(false);
     expect(path.digitReasons.some((r) => /5 이상.*→ digit/.test(r))).toBe(false);
     expect(path.digitReasons.some((r) => /1 중복.*→ digit/.test(r))).toBe(false);
+    expect(path.subBandReasons.some((r) => /3 이상 \d+ →/.test(r) && !r.includes('source'))).toBe(
+      false,
+    );
   });
 
   it('scoreDigitsFromPointValues only uses S″ token source digits', () => {
@@ -93,16 +111,5 @@ describe('patternDigitGuard — integration', () => {
     expect(digitReasons.some((r) => r.includes('최근 12토큰'))).toBe(true);
     const maxScore = Math.max(...Object.values(scores));
     expect(maxScore).toBeLessThan(10);
-  });
-
-  it('buildProbabilityProfile does not boost digits from pattern code labels', () => {
-    const result = analyzeMasterValue('00', '1212121212');
-    const stats = buildCodeValueStats(result, [
-      { id: 1, code: '1 중복', type: 'pattern', description: '1 dup' },
-      { id: 2, code: '3 이상', type: 'pattern', description: '3+' },
-    ]);
-    const withStats = buildProbabilityProfile(result, stats);
-    const withoutStats = buildProbabilityProfile(result, []);
-    expect(withStats.digitProbability).toEqual(withoutStats.digitProbability);
   });
 });

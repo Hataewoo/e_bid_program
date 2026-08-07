@@ -20,9 +20,9 @@ describe('predictionEngine', () => {
     const prediction = buildPrediction(result, stats);
 
     expect(prediction.topCode).toBe('12');
-    expect(prediction.modeDigit).toBeNull();
+    expect(prediction.modeDigit).not.toBeNull();
     expect(prediction.confidence).toBeGreaterThan(0);
-    expect(prediction.rationale.some((line) => line.includes('S 패턴'))).toBe(true);
+    expect(prediction.rationale.some((line) => line.includes('패턴 경로'))).toBe(true);
   });
 
   it('createEmptyPrediction uses master number', () => {

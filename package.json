@@ -1,6 +1,6 @@
 {
   "name": "cs-e-bid-program",
-  "version": "1.1.11",
+  "version": "1.2.0",
   "type": "module",
   "description": "Windows 전자입찰 분석 프로그램",
   "homepage": "https://github.com/Hataewoo/e_bid_program",
@@ -12,6 +12,7 @@
   "author": "CS E-Bid Team",
   "scripts": {
     "dev": "vite",
+    "dev:clean": "node -e \"require('fs').rmSync('node_modules/.vite',{recursive:true,force:true})\" && vite",
     "build": "tsc && vite build",
     "build:check": "npm run lint && npm run test && npm run regression:gate && npm run build",
     "build:renderer": "tsc && vite build",

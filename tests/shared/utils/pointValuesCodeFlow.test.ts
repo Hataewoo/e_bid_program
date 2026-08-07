@@ -5,6 +5,7 @@ import {
   buildPointValueTokens,
   buildPointValuesSequence,
   buildSubBandPointValueCounts,
+  buildStepSubBandLegacyDetails,
   filterPointValuesToSubBand,
   getSidePointValues,
   pointSequenceValueToDigitHints,
@@ -15,7 +16,7 @@ import {
   verifyPointValuesSubBandAnalysis,
 } from '@/shared/utils/pointValuesCodeFlow';
 import { getPatternValuesMatchCount } from '@/shared/utils/codeValueSubAnalysis';
-import { resolvePatternRecommendationPath } from '@/shared/utils/codeValueFlowEngine';
+import { resolvePatternRecommendPath } from '@/shared/utils/patternRecommendEngine';
 
 describe('pointValuesCodeFlow — low band', () => {
   it('builds S′ from Low Point Values with singleton digits 0~4', () => {
@@ -44,7 +45,12 @@ describe('pointValuesCodeFlow — low band', () => {
     expect(pointSequenceValueToSubBandHints(0, 'low', 0)).toEqual([{ sub: 'lowLow', weight: 1 }]);
     expect(pointSequenceValueToSubBandHints(1, 'low', 1)).toEqual([{ sub: 'lowLow', weight: 1 }]);
     expect(pointSequenceValueToSubBandHints(3, 'low', 3)).toEqual([{ sub: 'lowHigh', weight: 1 }]);
-    expect(pointSequenceValueToSubBandHints(3, 'low')).toEqual([{ sub: 'lowHigh', weight: 0.55 }]);
+    expect(pointSequenceValueToSubBandHints(0, 'low')).toEqual([]);
+    expect(pointSequenceValueToSubBandHints(1, 'low')).toEqual([]);
+    expect(pointSequenceValueToSubBandHints(3, 'low')).toEqual([]);
+    expect(pointSequenceValueToSubBandHints(3, 'low', 0, { isRun: true })).toEqual([
+      { sub: 'lowLow', weight: 1 },
+    ]);
   });
 
   it('resolves lowLow vs lowHigh from Low Point Values', () => {
@@ -100,6 +106,15 @@ describe('pointValuesCodeFlow — high band (symmetric to low)', () => {
     expect(pointSequenceValueToSubBandHints(8, 'high', 8)).toEqual([{ sub: 'highHigh', weight: 1 }]);
     expect(pointSequenceValueToSubBandHints(9, 'high', 9)).toEqual([{ sub: 'highHigh', weight: 1 }]);
     expect(pointSequenceValueToSubBandHints(6, 'high')).toEqual([]);
+    expect(pointSequenceValueToSubBandHints(8, 'high')).toEqual([]);
+    expect(pointSequenceValueToSubBandHints(9, 'high')).toEqual([]);
+    expect(pointSequenceValueToSubBandHints(3, 'high', 9, { isRun: true })).toEqual([
+      { sub: 'highHigh', weight: 1 },
+    ]);
+    expect(pointSequenceValueToSubBandHints(3, 'high', 9, { patternField: 'threeOrMore' })).toEqual([
+      { sub: 'highHigh', weight: 1 },
+    ]);
+    expect(pointSequenceValueToSubBandHints(3, 'high', undefined, { patternField: 'threeOrMore' })).toEqual([]);
   });
 
   it('resolves highLow vs highHigh from High Point Values', () => {
@@ -107,7 +122,7 @@ describe('pointValuesCodeFlow — high band (symmetric to low)', () => {
     const { sub, reasons } = resolveSubBandFromPointValues(result, '', 'high');
 
     expect(['highLow', 'highHigh']).toContain(sub);
-    expect(reasons.some((r) => r.includes('High Point Values S′'))).toBe(true);
+    expect(reasons.some((r) => r.includes('High Point Values'))).toBe(true);
   });
 
   it('supports highLow (5~7) pipeline', () => {
@@ -187,22 +202,47 @@ describe('pointValuesCodeFlow — integration', () => {
     expect(['highLow', 'highHigh']).toContain(report.highComparison.selected);
   });
 
+  it('buildStepSubBandLegacyDetails splits STEP2 into 0~1 and 2~4 with S′', () => {
+    const result = analyzeMasterValue('00', '0012340123');
+    const details = buildStepSubBandLegacyDetails(result, '', 'low');
+
+    expect(details).toHaveLength(2);
+    expect(details[0]?.subBand).toBe('lowLow');
+    expect(details[1]?.subBand).toBe('lowHigh');
+    expect(details[0]?.filteredPointValues).toMatch(/^[01]+$/);
+    expect(details[1]?.filteredPointValues).toMatch(/^[234]+$/);
+    expect(details[0]?.sPrimeSequence.length).toBeGreaterThan(0);
+    expect(details[1]?.sPrimeSequence.length).toBeGreaterThan(0);
+    expect(details[0]?.patterns.oneDuplicate.length + details[1]?.patterns.threeOrMore.length).toBeGreaterThanOrEqual(0);
+  });
+
+  it('buildStepSubBandLegacyDetails splits STEP3 into 5~7 and 8~9 with S′', () => {
+    const result = analyzeMasterValue('00', '567898765');
+    const details = buildStepSubBandLegacyDetails(result, '', 'high');
+
+    expect(details).toHaveLength(2);
+    expect(details[0]?.subBand).toBe('highLow');
+    expect(details[1]?.subBand).toBe('highHigh');
+    expect(details[0]?.filteredPointValues).toMatch(/^[567]+$/);
+    expect(details[1]?.filteredPointValues).toMatch(/^[89]+$/);
+  });
+
   it('uses Low Point Values when main band is low', () => {
     const result = analyzeMasterValue('00', '001234');
-    const path = resolvePatternRecommendationPath(result, '', 'full');
+    const path = resolvePatternRecommendPath(result, '');
 
-    expect(path.subBandReasons.some((r) => r.includes('Low Point Values'))).toBe(true);
+    expect(path.subBandReasons.some((r) => r.includes('②'))).toBe(true);
     expect(path.candidatePool.every((d) => d >= 0 && d <= 4)).toBe(true);
   });
 
   it('uses High Point Values when main band is high', () => {
     const result = analyzeMasterValue('00', '567898');
-    const path = resolvePatternRecommendationPath(result, '', 'full');
+    const path = resolvePatternRecommendPath(result, '');
 
     if (path.targetMainBand === 'high') {
-      expect(path.subBandReasons.some((r) => r.includes('High Point Values'))).toBe(true);
+      expect(path.subBandReasons.some((r) => r.includes('②'))).toBe(true);
       expect(path.candidatePool.every((d) => d >= 5 && d <= 9)).toBe(true);
-      expect(path.digitReasons.some((r) => r.includes('High Point Values'))).toBe(true);
+      expect(path.digitReasons.some((r) => r.includes('S″'))).toBe(true);
     }
   });
 });
@@ -214,6 +254,22 @@ describe('pointValuesCodeFlow — pattern value must not become digit', () => {
     expect(pointSequenceValueToDigitHints(3, 'highLow')).toEqual([]);
   });
 
+  it('never maps Code/Values pattern values to sub-band without source digit', () => {
+    expect(pointSequenceValueToSubBandHints(3, 'high', undefined, { patternField: 'threeOrMore' })).toEqual([]);
+    expect(pointSequenceValueToSubBandHints(5, 'high', undefined, { patternField: 'fiveOrMore' })).toEqual([]);
+    expect(pointSequenceValueToSubBandHints(2, 'low', undefined, { patternField: 'commaAlpha_2_3' })).toEqual([]);
+    expect(pointSequenceValueToSubBandHints(4, 'high', undefined, { patternField: 'plusAlpha_4_3' })).toEqual([]);
+  });
+
+  it('maps sub-band only via source digit for all pattern fields', () => {
+    expect(pointSequenceValueToSubBandHints(3, 'high', 9, { patternField: 'threeOrMore' })).toEqual([
+      { sub: 'highHigh', weight: 1 },
+    ]);
+    expect(pointSequenceValueToSubBandHints(2, 'low', 3, { patternField: 'commaAlpha_2_3' })).toEqual([
+      { sub: 'lowHigh', weight: 1 },
+    ]);
+  });
+
   it('does not score threeOrMore/fiveOrMore/oneDuplicate values as digits', () => {
     const result = analyzeMasterValue('00', '567656567');
     const { digitReasons } = scoreDigitsFromPointValues(result, '', 'highLow');
@@ -222,6 +278,24 @@ describe('pointValuesCodeFlow — pattern value must not become digit', () => {
     expect(digitReasons.some((r) => r.includes('5 이상 5 → digit 5'))).toBe(false);
     expect(digitReasons.some((r) => r.includes('1 중복') && r.includes('→ digit'))).toBe(false);
     expect(digitReasons.every((r) => r.includes('S″'))).toBe(true);
+  });
+
+  it('scores count fields on S″ only from run tokens (not singleton digits)', () => {
+    const result = analyzeMasterValue('00', '5566775617');
+    const { reasons, rows: _rows } = resolveSubBandFromPointValues(result, '6', 'high');
+
+    expect(reasons.some((r) => r.includes('3 이상 5 판단'))).toBe(false);
+    expect(reasons.some((r) => r.includes('5 이상 6 판단'))).toBe(false);
+    expect(reasons.some((r) => r.includes('필터 S′'))).toBe(true);
+  });
+
+  it('still scores threeOrMore from run-length tokens on S″', () => {
+    const result = analyzeMasterValue('00', '5555666777');
+    const { reasons } = resolveSubBandFromPointValues(result, '', 'high');
+    const report = buildSubBandPointValueCounts(result, '');
+
+    expect(report.highComparison.scores.highLow).toBeGreaterThan(0);
+    expect(reasons.some((r) => r.includes('3 이상') && r.includes('판단'))).toBe(true);
   });
 
   it('resolves duplicate S′ values to distinct source digits by occurrence', () => {

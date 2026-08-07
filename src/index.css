@@ -221,6 +221,39 @@
     font-size: calc(16px * var(--font-scale));
   }
 
+  /* STEP2/3 — DetailGrid 쉼표 내용 (마스터 digit열처럼 칸 끝까지 채운 뒤 다음 줄) */
+  .win-legacy-comma-content {
+    @apply min-h-0 flex-1 overflow-auto font-mono;
+    border: 1px solid #404040;
+    background: #ffffff;
+    color: #000000;
+    font-size: calc(17px * var(--font-scale));
+    line-height: 1.4;
+    letter-spacing: 0;
+    padding: 8px 10px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+  }
+
+  .win-legacy-table-content {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: calc(14px * var(--font-scale));
+    line-height: 1.45;
+    letter-spacing: 0.01em;
+  }
+
+  .win-pattern-values-table.win-legacy-pattern-table .win-pattern-code-col {
+    width: 88px;
+    min-width: 88px;
+    max-width: 88px;
+  }
+
+  .win-pattern-values-table.win-legacy-pattern-table th,
+  .win-pattern-values-table.win-legacy-pattern-table td {
+    padding: 3px 6px;
+  }
+
   .win-textarea-master::selection {
     background: #000080;
     color: #ffffff;

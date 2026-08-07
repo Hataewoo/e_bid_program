@@ -34,12 +34,6 @@ export {
   type SidePatterns,
 } from './utils/analysisEngine';
 export {
-  formatCodeValuePatternTargetLabel,
-  predictFromCodeValuePatterns,
-  scanPatternStructuralMatches,
-  type CodeValuePatternPrediction,
-} from './utils/codeValuePatternPredictor';
-export {
   applySegmentBoostToDigitScores,
   collectSegmentDigitTransitions,
   formatRunSegmentSummary,
@@ -48,3 +42,8 @@ export {
   predictRunSegment,
   type RunSegmentPrediction,
 } from './utils/runSegmentEngine';
+export {
+  recommendDigitChain,
+  resolvePatternRecommendPath,
+  type PatternRecommendPath,
+} from './utils/patternRecommendEngine';

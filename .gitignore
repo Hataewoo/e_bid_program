@@ -10,3 +10,11 @@ coverage/
 .DS_Store
 Thumbs.db
 e_bid_program/
+imports/chk-emyoung-decompiled/
+imports/detailgrid-runner/
+imports/dotnet8/
+imports/emyoung-decompiled/
+imports/ilspy-bin/
+imports/ilspy/
+imports/ilspycmd/
+tmp-diag.mjs

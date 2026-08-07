@@ -1,5 +1,5 @@
 import { analyzeMasterValue, buildRuns, toClassSequence } from '../src/shared/utils/analysisEngine';
-import { resolvePatternRecommendationPath } from '../src/shared/utils/codeValueFlowEngine';
+import { resolvePatternRecommendPath } from '../src/shared/utils/patternRecommendEngine';
 import { predictDigitChain } from '../src/shared/utils/nextDigitEngine';
 
 const tail = process.argv[2] ?? '6534097377';
@@ -19,8 +19,8 @@ console.log(
     .join(' | '),
 );
 
-const mainPath = resolvePatternRecommendationPath(result, '', 'main-band');
-console.log('\n=== 1st digit (main-band) ===');
+const mainPath = resolvePatternRecommendPath(result, '');
+console.log('\n=== 1st digit (3-step pattern) ===');
 console.log('activeSide:', mainPath.activeSide);
 console.log('targetMainBand:', mainPath.targetMainBand);
 console.log('mainBandReasons:');
@@ -40,7 +40,7 @@ console.log('\n=== 4-digit combo:', chain.recommendedCombo);
 for (let i = 0; i < chain.chainSteps.length; i += 1) {
   const s = chain.chainSteps[i]!;
   console.log(
-    `step ${i + 1} [${s.stage}] prefix="${s.prefix}" top=${s.candidates[0]?.digit} (${s.candidates[0]?.probability}%)`,
+    `step ${i + 1} [${s.stage}] prefix="${s.prefix}" top=${s.candidates[0]?.digit} (${s.candidates[0]?.pickMode ?? 'pattern'}) sub=${s.hierarchy.subBandLabel}`,
   );
   console.log('  allowed:', s.hierarchy.allowedDigits.join(' '));
   console.log('  digitReasons:', s.hierarchy.digitReasons.join(' | ') || '(none)');
