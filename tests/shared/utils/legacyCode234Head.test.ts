@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { PrismaClient } from '@prisma/client';
 import { analyzeMasterValue, filterDigitsByClass } from '@/shared/utils/analysisEngine';
 import {
   descriptionToSubBandSequence,
@@ -9,18 +8,11 @@ import {
 import { buildPointValueTokens } from '@/shared/utils/pointValuesCodeFlow';
 import { getLegacyStepCodeDefinition } from '@/shared/fixtures/legacy-step-code-catalog';
 import { LEGACY_MASTER_00_CODE_CONTENT } from '@/shared/fixtures/legacy-code-content-expected';
-
-const USER_DB = 'C:/Users/USER/AppData/Roaming/cs-e-bid-program/database.db';
+import { LEGACY_MASTER_00_VALUE } from '@/shared/fixtures/legacy-master-00-value';
 
 describe('234 head comparison', () => {
-  it('prints gap heads', async () => {
-    process.env.DATABASE_URL = `file:${USER_DB}`;
-    const p = new PrismaClient();
-    const m = await p.master.findFirst({ where: { masterNo: '00' } });
-    await p.$disconnect();
-    if (!m?.masterValue) return;
-
-    const pv = filterDigitsByClass(analyzeMasterValue('00', m.masterValue).digits, 'low');
+  it('prints gap heads from fixture master (no local DB)', () => {
+    const pv = filterDigitsByClass(analyzeMasterValue('00', LEGACY_MASTER_00_VALUE).digits, 'low');
     const def = getLegacyStepCodeDefinition('234', 'low')!;
     const sub = descriptionToSubBandSequence(def.description, 'low')!;
     const starts = findTokenSubBandSequenceStarts(pv, sub);
@@ -28,7 +20,7 @@ describe('234 head comparison', () => {
 
     const tokenBetween = computeLegacyTokenGapSequence(pv, starts, sub.length);
     const tokenIdx: number[] = [];
-    for (let i = 0; i < starts.length - 1; i++) {
+    for (let i = 0; i < starts.length - 1; i += 1) {
       tokenIdx.push(Math.max(1, starts[i + 1]! - (starts[i]! + sub.length - 1)));
     }
 
@@ -43,7 +35,7 @@ describe('234 head comparison', () => {
       (tok, ti) => tokenFirstDigit[ti]! + (tok.isRun ? tok.value : 1) - 1,
     );
     const digitStrict: number[] = [];
-    for (let i = 0; i < starts.length - 1; i++) {
+    for (let i = 0; i < starts.length - 1; i += 1) {
       const endD = tokenLastDigit[starts[i]! + sub.length - 1]!;
       const nextD = tokenFirstDigit[starts[i + 1]!]!;
       digitStrict.push(Math.max(1, nextD - endD - 1));
