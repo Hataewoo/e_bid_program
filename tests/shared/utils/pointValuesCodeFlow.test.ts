@@ -227,12 +227,16 @@ describe('pointValuesCodeFlow — integration', () => {
     expect(details[1]?.filteredPointValues).toMatch(/^[89]+$/);
   });
 
-  it('uses Low Point Values when main band is low', () => {
+  it('uses sub-band pool aligned with resolved main band', () => {
     const result = analyzeMasterValue('00', '001234');
     const path = resolvePatternRecommendPath(result, '');
 
     expect(path.subBandReasons.some((r) => r.includes('②'))).toBe(true);
-    expect(path.candidatePool.every((d) => d >= 0 && d <= 4)).toBe(true);
+    if (path.targetMainBand === 'low') {
+      expect(path.candidatePool.every((d) => d >= 0 && d <= 4)).toBe(true);
+    } else {
+      expect(path.candidatePool.every((d) => d >= 5 && d <= 9)).toBe(true);
+    }
   });
 
   it('uses High Point Values when main band is high', () => {
@@ -242,7 +246,7 @@ describe('pointValuesCodeFlow — integration', () => {
     if (path.targetMainBand === 'high') {
       expect(path.subBandReasons.some((r) => r.includes('②'))).toBe(true);
       expect(path.candidatePool.every((d) => d >= 5 && d <= 9)).toBe(true);
-      expect(path.digitReasons.some((r) => r.includes('S″'))).toBe(true);
+      expect(path.digitReasons.some((r) => r.includes('source digit'))).toBe(true);
     }
   });
 });

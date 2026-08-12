@@ -2,7 +2,7 @@ import type { PredictionVerificationCase } from '@/shared/utils/predictionVerifi
 
 /**
  * Prediction baseline — 3단계 패턴 추천 (SRC-BUILTIN).
- * ① 저·고 → ② 세분화 → ③ 반복/전환 phase 판단 digit 추첨
+ * ① 저·고 → ② 세분화 → ③ source digit (CodeValues Values ≠ digit)
  */
 export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[] = [
   {
@@ -22,11 +22,11 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '0123456789',
     codes: [{ code: '02', type: '저점', description: '저점,고점' }],
     expected: {
-      value: '고점(5~9) → 고점의 저점(5~7)',
+      value: '저점(0~4) → 저점의 고점(2~4)',
       topCode: '02',
       confidence: 70,
       dominantSide: 'balanced',
-      modeDigit: 7,
+      modeDigit: 4,
       step2Count: 5,
       step3Count: 5,
     },
@@ -39,10 +39,10 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '0011223344',
     codes: [{ code: '01', type: '저점', description: '저점,저점' }],
     expected: {
-      value: '저점(0~4) → 저점의 저점(0~1)',
+      value: '고점(5~9) → 고점의 저점(5~7)',
       topCode: '01',
       dominantSide: 'low',
-      modeDigit: 0,
+      modeDigit: 5,
       confidence: 70,
       step2Count: 10,
       step3Count: 0,
@@ -56,10 +56,10 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '5566778899',
     codes: [{ code: '23', type: '고점', description: '고점,고점' }],
     expected: {
-      value: '고점(5~9) → 고점의 저점(5~7)',
+      value: '저점(0~4) → 저점의 저점(0~1)',
       topCode: '23',
       dominantSide: 'high',
-      modeDigit: 6,
+      modeDigit: 0,
       confidence: 70,
       step2Count: 0,
       step3Count: 10,
@@ -73,11 +73,11 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '01234',
     codes: [],
     expected: {
-      value: '저점(0~4) → 저점의 저점(0~1)',
+      value: '고점(5~9) → 고점의 저점(5~7)',
       topCode: null,
       confidence: 70,
       dominantSide: 'low',
-      modeDigit: 0,
+      modeDigit: 5,
     },
   },
   {
@@ -93,7 +93,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     expected: {
       topCode: '01',
       dominantSide: 'low',
-      modeDigit: 6,
+      modeDigit: 1,
     },
   },
   {
@@ -104,10 +104,10 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '3',
     codes: [{ code: '99', type: '저점', description: '1 중복' }],
     expected: {
-      value: '저점(0~4) → 저점의 고점(2~4)',
+      value: '고점(5~9) → 고점의 저점(5~7)',
       topCode: '99',
       dominantSide: 'low',
-      modeDigit: 3,
+      modeDigit: 5,
       confidence: 70,
       step2Count: 1,
       step3Count: 0,
@@ -124,7 +124,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
       topCode: 'XX',
       confidence: 70,
       dominantSide: 'low',
-      modeDigit: 0,
+      modeDigit: 5,
     },
   },
   {
@@ -148,9 +148,9 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '56789',
     codes: [{ code: '20', type: '고점', description: '저점,고점' }],
     expected: {
-      value: '고점(5~9) → 고점의 저점(5~7)',
+      value: '저점(0~4) → 저점의 저점(0~1)',
       dominantSide: 'high',
-      modeDigit: 7,
+      modeDigit: 0,
       step2Count: 0,
       step3Count: 5,
     },
@@ -164,7 +164,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     codes: [{ code: '05', type: '저점', description: '저점,저점,저점' }],
     expected: {
       dominantSide: 'low',
-      modeDigit: 0,
+      modeDigit: 5,
       step2Count: 5,
       step3Count: 0,
     },
@@ -178,9 +178,22 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     codes: [{ code: '14', type: '저점', description: '저점,고점,고점,저점' }],
     expected: {
       dominantSide: 'low',
-      modeDigit: 0,
+      modeDigit: 3,
       step2Count: 6,
       step3Count: 4,
+    },
+  },
+  {
+    catalogId: 'TC-PRED-013',
+    name: 'TC-PRED-013 Pattern flow 32138733 source digit 3',
+    source: 'SRC-BUILTIN',
+    masterNo: '00',
+    masterValue: '32138733',
+    codes: [],
+    expected: {
+      value: '저점(0~4) → 저점의 고점(2~4)',
+      dominantSide: 'low',
+      modeDigit: 3,
     },
   },
 ];
