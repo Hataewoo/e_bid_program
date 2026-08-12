@@ -1,13 +1,10 @@
-import { memo, useMemo, useState } from 'react';
+import { memo, useMemo } from 'react';
 
 import type { AnalysisResult, CodeValueStatRow } from '@/shared/utils/analysisEngine';
 
 import {
-  clampNextDigitTopN,
-  NEXT_DIGIT_TOP_N,
   predictNextDigitStep,
   type HierarchicalStepInfo,
-  type NextDigitCandidate,
 } from '@/shared/utils/nextDigitEngine';
 
 import { useI18n } from '@/i18n/use-i18n';
@@ -65,48 +62,17 @@ function PathSummary({ hierarchy }: { hierarchy: HierarchicalStepInfo }) {
   );
 }
 
-function CandidateRow({
-  candidate,
-  highlighted,
-}: {
-  candidate: NextDigitCandidate;
-  highlighted?: boolean;
-}) {
-  const { t } = useI18n();
-  const modeLabel =
-    candidate.pickMode === 'repeat'
-      ? t('analysis.prediction.candidateRepeat')
-      : candidate.pickMode === 'transition'
-        ? t('analysis.prediction.candidateTransition')
-        : t('analysis.prediction.candidatePattern');
-
-  return (
-    <div
-      className={`flex min-w-[4.5rem] flex-col items-center rounded border px-2 py-1.5 text-black ${
-        highlighted
-          ? 'border-[#000080] bg-[#e8e8ff] ring-1 ring-[#000080]'
-          : 'border-[#808080] bg-white'
-      }`}
-      title={candidate.pickReason || `${candidate.digit} · ${modeLabel}`}
-    >
-      <span className="font-mono text-2xl font-bold leading-none">{candidate.digit}</span>
-      <span className="mt-0.5 text-center text-[10px] leading-tight">{modeLabel}</span>
-    </div>
-  );
-}
-
 export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
   result,
   codeValueStats,
 }: AnalysisPredictionPanelProps) {
   const { t } = useI18n();
-  const [topN, setTopN] = useState(NEXT_DIGIT_TOP_N);
 
   const hasData = result.totalCount > 0;
 
   const nextStep = useMemo(
-    () => predictNextDigitStep(result, codeValueStats, '', topN),
-    [result, codeValueStats, topN],
+    () => predictNextDigitStep(result, codeValueStats, '', 1),
+    [result, codeValueStats],
   );
 
   const topCandidate = nextStep?.candidates[0] ?? null;
@@ -118,20 +84,6 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
           <div className="text-sm font-semibold text-[#000080]">{t('analysis.prediction.title')}</div>
           <div className="mt-0.5 text-xs text-content-muted">{t('analysis.prediction.subtitle')}</div>
         </div>
-
-        {hasData ? (
-          <label className="flex items-center gap-2 text-xs text-black">
-            <span>{t('analysis.prediction.countLabel')}</span>
-            <input
-              type="number"
-              min={1}
-              max={10}
-              value={topN}
-              onChange={(e) => setTopN(clampNextDigitTopN(Number(e.target.value)))}
-              className="win-input w-14 px-1 py-0.5 text-center font-mono text-sm"
-            />
-          </label>
-        ) : null}
       </div>
 
       {!hasData ? (
@@ -143,30 +95,16 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
               <div className="text-xs font-semibold text-[#000080]">
                 {t('analysis.prediction.nextDigitTitle', { position: nextStep!.position })}
               </div>
-              <div className="mt-1 font-mono text-4xl font-bold leading-none text-black" title={topCandidate.pickReason}>
+              <div
+                className="mt-1 font-mono text-4xl font-bold leading-none text-black"
+                title={topCandidate.pickReason}
+              >
                 {topCandidate.digit}
               </div>
             </div>
           ) : null}
 
           {nextStep ? <PathSummary hierarchy={nextStep.hierarchy} /> : null}
-
-          {nextStep && nextStep.candidates.length > 0 ? (
-            <div>
-              <div className="mb-1.5 text-sm font-semibold text-black">
-                {t('analysis.prediction.candidatesTitle')}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {nextStep.candidates.map((c) => (
-                  <CandidateRow
-                    key={`${nextStep.prefix}-${c.digit}`}
-                    candidate={c}
-                    highlighted={c.digit === topCandidate?.digit}
-                  />
-                ))}
-              </div>
-            </div>
-          ) : null}
         </div>
       )}
     </div>
