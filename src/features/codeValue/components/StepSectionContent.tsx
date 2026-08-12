@@ -1,8 +1,12 @@
+import { useMemo } from 'react';
+
 import { ResizableVerticalSplitter } from '@/components/layout/ResizableVerticalSplitter';
 
 import { MasterValueTextarea } from '@/components/ui/MasterValueTextarea';
 
 import { CodeValueStatsGrid } from '@/features/analysis/components/CodeValueStatsGrid';
+
+import { buildLegacyStep2BandBundle } from '@/shared/utils/legacyCodeContentEngine';
 
 import { CodeValueLegacyStepPanel } from './CodeValueLegacyStepPanel';
 
@@ -47,6 +51,12 @@ export function StepSectionContent() {
 
   const displayResult = result ?? null;
 
+  const masterCounts = useMemo(() => {
+    if (!displayResult?.digits) return { low: '', high: '' };
+    const bundle = buildLegacyStep2BandBundle(displayResult.digits);
+    return { low: bundle.masterCountLow, high: bundle.masterCountHigh };
+  }, [displayResult?.digits]);
+
 
 
   const renderStepBody = (step: CodeValueStepId) => {
@@ -90,6 +100,22 @@ export function StepSectionContent() {
                 <span className="font-semibold">{t('codeValue.analysis.totalDigits')} </span>
 
                 {t('codeValue.analysis.unitCount', { count: displayResult.totalCount })}
+
+              </div>
+
+              <div className="mt-1 text-[calc(13px*var(--font-scale))] leading-snug">
+
+                <div>
+
+                  {t('codeValue.legacy.masterCountLow')}: {masterCounts.low || '-'}
+
+                </div>
+
+                <div>
+
+                  {t('codeValue.legacy.masterCountHigh')}: {masterCounts.high || '-'}
+
+                </div>
 
               </div>
 

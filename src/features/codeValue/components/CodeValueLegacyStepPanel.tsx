@@ -116,12 +116,6 @@ export const CodeValueLegacyStepPanel = memo(function CodeValueLegacyStepPanel({
                 {runLengthText ? (
                   <div className="win-pattern-stats-sequence shrink-0">{runLengthText}</div>
                 ) : null}
-                <div className="win-pattern-stats-sequence shrink-0 text-[calc(14px*var(--font-scale))] leading-snug">
-                  {t('codeValue.legacy.masterCountLow')}: {stepBands.masterCountLow || '-'}
-                </div>
-                <div className="win-pattern-stats-sequence shrink-0 text-[calc(14px*var(--font-scale))] leading-snug">
-                  {t('codeValue.legacy.masterCountHigh')}: {stepBands.masterCountHigh || '-'}
-                </div>
               </div>
             }
             right={

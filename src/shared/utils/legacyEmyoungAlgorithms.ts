@@ -361,10 +361,8 @@ export function buildLegacyStep3BandBundle(masterDigits: string): LegacyStep3Ban
   };
 }
 
-/** UI — STEP2/STEP3 하단 2구간 + Master Count */
+/** UI — STEP2/STEP3 하단 2구간 (Master Count는 STEP1) */
 export interface LegacyStepPanelBands {
-  masterCountLow: string;
-  masterCountHigh: string;
   primaryBand: LegacyPointBandContent;
   secondaryBand: LegacyPointBandContent;
 }
@@ -376,16 +374,12 @@ export function buildLegacyStepPanelBands(
   if (side === 'low') {
     const bundle = buildLegacyStep2BandBundle(masterDigits);
     return {
-      masterCountLow: bundle.masterCountLow,
-      masterCountHigh: bundle.masterCountHigh,
       primaryBand: bundle.pointLowLow,
       secondaryBand: bundle.pointLowHigh,
     };
   }
   const bundle = buildLegacyStep3BandBundle(masterDigits);
   return {
-    masterCountLow: bundle.masterCountLow,
-    masterCountHigh: bundle.masterCountHigh,
     primaryBand: bundle.pointHighLow,
     secondaryBand: bundle.pointHighHigh,
   };

@@ -6,11 +6,9 @@
  */
 
 import type { AnalysisResult, CodeValueStatRow, DigitClass } from './analysisEngine';
-import { buildRuns, toClassSequence } from './analysisEngine';
-import { RUN_SUFFIX_MATCH_MAX } from './recentCompare';
+import { toClassSequence } from './analysisEngine';
 import { collectMainCodesForContext } from './mainBandJudgment';
-import { analyzeCodeValueMainDetail, collectPrimaryRunLengths, extractCodeValuesFromBaseSequence } from './codeValueSubAnalysis';
-import { getDigitBand } from './digitSubBand';
+import { analyzeCodeValueMainDetail } from './codeValueSubAnalysis';
 import {
   getDigitsInMainBand,
   getDigitsInSubBand,
@@ -110,10 +108,6 @@ export interface FinalDigitPickResult {
   reason: string;
 }
 
-function sideToBand(side: DigitClass): DigitBand {
-  return side === 'low' ? 'low' : 'high';
-}
-
 function trailingRunProgress(contextDigits: string): { side: DigitClass; progress: number } | null {
   if (!contextDigits) return null;
   const classes = toClassSequence(contextDigits);
@@ -125,119 +119,6 @@ function trailingRunProgress(contextDigits: string): { side: DigitClass; progres
     progress += 1;
   }
   return { side, progress };
-}
-
-function inferExpectedRunLength(result: AnalysisResult, side: DigitClass): number {
-  const fullS = collectPrimaryRunLengths(result.runs, side);
-  const patterns = extractCodeValuesFromBaseSequence(fullS, side);
-  const hints = [
-    ...patterns.oneDuplicate,
-    ...patterns.threeOrMore,
-    ...patterns.fiveOrMore,
-  ].filter((v) => v > 0);
-
-  if (hints.length === 0) {
-    const runs = buildRuns(toClassSequence(result.digits)).filter((r) => r.cls === side);
-    if (runs.length === 0) return 1;
-    return runs[runs.length - 1]!.length;
-  }
-
-  return Math.round(hints.reduce((a, b) => a + b, 0) / hints.length);
-}
-
-function voteNextClassFromRunSuffix(
-  result: AnalysisResult,
-  prefix: string,
-): { low: number; high: number; reason: string } {
-  const context = prefix.length > 0 ? result.digits + prefix : result.digits;
-  const liveRuns = buildRuns(toClassSequence(context));
-  let low = 0;
-  let high = 0;
-  let matches = 0;
-
-  const suffixLen = Math.min(RUN_SUFFIX_MATCH_MAX, liveRuns.length);
-  if (suffixLen === 0) {
-    return { low: 1, high: 1, reason: 'run 이력 없음 → 저·고 중립' };
-  }
-
-  const liveSuffix = liveRuns
-    .slice(-suffixLen)
-    .map((r) => `${r.cls}:${r.length}`)
-    .join('|');
-  const allRuns = buildRuns(toClassSequence(result.digits));
-
-  for (let i = suffixLen; i < allRuns.length; i += 1) {
-    const histSuffix = allRuns
-      .slice(i - suffixLen, i)
-      .map((r) => `${r.cls}:${r.length}`)
-      .join('|');
-    if (histSuffix !== liveSuffix) continue;
-
-    const nextRun = allRuns[i];
-    if (!nextRun) continue;
-    matches += 1;
-    if (nextRun.cls === 'low') low += 1;
-    else high += 1;
-  }
-
-  if (matches === 0) {
-    return { low: 1, high: 1, reason: 'run suffix 미매칭 → 저·고 중립' };
-  }
-
-  return {
-    low,
-    high,
-    reason: `run 흐름 ${liveSuffix} → 다음 run ${matches}건`,
-  };
-}
-
-/** ① 저점·고점 — 1자리: S run 흐름 / 2자리~: run suffix (점수·가점 없음) */
-function resolveMainBand(
-  result: AnalysisResult,
-  prefix: string,
-): { band: DigitBand; side: DigitClass; reasons: string[] } {
-  if (prefix.length > 0) {
-    return resolveMainBandFromPatternFlow(result, prefix);
-  }
-
-  const vote = voteNextClassFromRunSuffix(result, prefix);
-  const reasons: string[] = [vote.reason, '① 패턴 흐름 (run suffix, 점수 합산 없음)'];
-  const context = result.digits;
-  const live = trailingRunProgress(context);
-
-  if (live) {
-    const expected = inferExpectedRunLength(result, live.side);
-    if (live.progress < expected) {
-      reasons.push(
-        `${live.side === 'low' ? '저점' : '고점'} run 지속 (${live.progress}/${expected})`,
-      );
-      const side = live.side;
-      return { band: sideToBand(side), side, reasons: [...reasons, `→ ${getMainBandLabel(sideToBand(side))}`] };
-    }
-    reasons.push(
-      `${live.side === 'low' ? '저점' : '고점'} run 종료 (${live.progress}≥${expected}) → run suffix`,
-    );
-    if (vote.low !== vote.high) {
-      const side: DigitClass = vote.low > vote.high ? 'low' : 'high';
-      return { band: sideToBand(side), side, reasons: [...reasons, `→ ${getMainBandLabel(sideToBand(side))}`] };
-    }
-    const tail = Number(context[context.length - 1]);
-    const band = getDigitBand(tail) ?? sideToBand(live.side);
-    reasons.push(`suffix 동률 → Master 꼬리 digit ${tail}`);
-    const side: DigitClass = band === 'low' ? 'low' : 'high';
-    return { band, side, reasons: [...reasons, `→ ${getMainBandLabel(band)}`] };
-  }
-
-  if (vote.low !== vote.high) {
-    const side: DigitClass = vote.low > vote.high ? 'low' : 'high';
-    return { band: sideToBand(side), side, reasons: [...reasons, `→ ${getMainBandLabel(sideToBand(side))}`] };
-  }
-
-  const tail = Number(context[context.length - 1]);
-  const band = getDigitBand(tail) ?? 'low';
-  reasons.push(`동률 → Master 꼬리 digit ${tail}`);
-  const side: DigitClass = band === 'low' ? 'low' : 'high';
-  return { band, side, reasons: [...reasons, `→ ${getMainBandLabel(band)}`] };
 }
 
 function collectMainCodesForSide(result: AnalysisResult, side: DigitClass, prefix: string = ''): string[] {
@@ -254,25 +135,15 @@ function buildPatternRecommendPath(
   result: AnalysisResult,
   prefix: string,
 ): PatternRecommendPath {
-  const virtualNote =
-    prefix.length > 0
-      ? [`가상 Master: 원본 ${result.digits.length}자 + append [${prefix}]`]
-      : [];
+  const { band: targetMainBand, side: activeSide, reasons: mainBandReasons } =
+    resolveMainBandFromPatternFlow(result, prefix);
 
-  const { band: targetMainBand, side: activeSide, reasons: mainBandReasons } = resolveMainBand(
-    result,
-    prefix,
-  );
-
-  const { sub: targetSubBand, reasons: subBandReasons } = resolveSubBandFromPatternFlow(
-    result,
-    prefix,
-    targetMainBand,
-  );
+  const { sub: targetSubBand, reasons: subBandReasons, rows: subBandRows } =
+    resolveSubBandFromPatternFlow(result, prefix, targetMainBand);
 
   const pool = getDigitsInSubBand(targetSubBand);
   const digitScores = patternFlowRankScores(pool, result, prefix, targetSubBand);
-  const digitReasons = [`③ S″ 토큰 꼬리 순서 (점수 합산 없음)`];
+  const digitReasons = [`③ source digit — CodeValues Values(1,2,3…)는 run 참고만, digit 매핑 금지`];
 
   return {
     activeSide,
@@ -280,11 +151,13 @@ function buildPatternRecommendPath(
     targetSubBand,
     candidatePool: pool,
     digitScores,
-    mainBandReasons: [...virtualNote, ...mainBandReasons],
+    mainBandReasons,
     subBandReasons,
     digitReasons,
     activeMainCodes: collectMainCodesForSide(result, activeSide, prefix),
-    activeSubDetailCodes: [],
+    activeSubDetailCodes: subBandRows
+      .filter((row) => row.values.length > 0)
+      .map((row) => row.code),
   };
 }
 

@@ -42,7 +42,7 @@ export const messages = {
     'nav.settings': 'Settings',
     'analysis.prediction.title': '다음 자리 예측',
     'analysis.prediction.subtitle':
-      '① S/Code/Values → ② S″ 세분화 → ③ digit (append 시 가상 Master 로 재판단, chain 후 원본 복귀)',
+      '① S run CodeValues → ② S″ 세분화 → ③ source digit 1자리 (Values≠digit, 흐름만)',
     'analysis.prediction.hierarchyTitle': '다음 1자리 패턴 근거',
     'analysis.prediction.stepMainBand': '① 저·고 run 흐름',
     'analysis.prediction.stepSubBand': '② 세분화 패턴',
@@ -60,6 +60,7 @@ export const messages = {
     'analysis.prediction.inputLabel': '입력',
     'analysis.prediction.inputPlaceholder': '1 또는 xx.12',
     'analysis.prediction.nextDigitTitle': '{position}번째 소수 자리 추천',
+    'analysis.prediction.candidatesTitle': '대안 후보',
     'analysis.prediction.immediate': '바로 다음',
     'analysis.prediction.chainTitle': '4자리 단계별 근거',
     'analysis.prediction.chainStep': '{step}단계',
@@ -925,7 +926,7 @@ export const messages = {
     'nav.settings': 'Settings',
     'analysis.prediction.title': 'Next Digit Prediction',
     'analysis.prediction.subtitle':
-      '① S/Code/Values L/H hold vs switch → ② S″ sub-band hold vs switch → ③ digit repeat vs transition',
+      '① S run CodeValues → ② S″ sub-band → ③ source digit (Values≠digit, flow only)',
     'analysis.prediction.hierarchyTitle': 'Next digit rationale',
     'analysis.prediction.stepMainBand': '① L/H run flow',
     'analysis.prediction.stepSubBand': '② Sub-detail patterns',
@@ -943,6 +944,7 @@ export const messages = {
     'analysis.prediction.inputLabel': 'Input',
     'analysis.prediction.inputPlaceholder': '1 or xx.12',
     'analysis.prediction.nextDigitTitle': 'Digit position {position}',
+    'analysis.prediction.candidatesTitle': 'Alternative candidates',
     'analysis.prediction.immediate': 'Next',
     'analysis.prediction.chainTitle': '4-digit step breakdown',
     'analysis.prediction.chainStep': 'Step {step}',

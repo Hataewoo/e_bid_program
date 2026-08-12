@@ -15,15 +15,15 @@ describe('subBandRepeatJudgment', () => {
     const result = analyzeMasterValue('00', '5566778899');
     const afterSix = resolvePatternRecommendPath(result, '6');
 
-    expect(afterSix.mainBandReasons.some((r) => r.includes('패턴 흐름'))).toBe(true);
+    expect(afterSix.mainBandReasons.some((r) => r.includes('CodeValues'))).toBe(true);
   });
 
   it('master ending in 7 + append 6 uses pattern flow sub-band (repeat/transition)', () => {
     const result = analyzeMasterValue('00', '5566775617');
     const afterSix = resolvePatternRecommendPath(result, '6');
 
-    expect(afterSix.mainBandReasons.some((r) => r.includes('패턴 흐름'))).toBe(true);
-    expect(afterSix.subBandReasons.some((r) => r.includes('패턴 흐름') || r.includes('run'))).toBe(true);
+    expect(afterSix.mainBandReasons.some((r) => r.includes('CodeValues'))).toBe(true);
+    expect(afterSix.subBandReasons.some((r) => r.includes('CodeValues') || r.includes('run'))).toBe(true);
   });
 
   it('4-digit chain uses repeat/transition pick modes from pattern flow', () => {

@@ -10,24 +10,21 @@ import {
 } from '@/shared/utils/patternRecommendEngine';
 
 describe('patternRecommendEngine', () => {
-  it('uses S pattern for flow only — not digit 1 when S has repeated 1', () => {
+  it('never maps CodeValues run length 1 to digit when source digit differs', () => {
     const result = analyzeMasterValue('00', '0404040404');
     const path = resolvePatternRecommendPath(result, '');
+    const pick = resolveFinalDigitPick(path, result, '');
 
-    const top = Number(
-      Object.entries(path.digitScores).sort((a, b) => b[1] - a[1])[0]?.[0],
-    );
-
-    expect(top).not.toBe(1);
-    expect(path.candidatePool.every((d) => d <= 4)).toBe(true);
-    expect(path.targetMainBand).toBe('low');
+    expect(pick).not.toBeNull();
+    expect(pick!.digit).not.toBe(1);
+    expect(pick!.reason).toMatch(/source digit/);
   });
 
   it('recommends digits from pattern flow pool', () => {
     const result = analyzeMasterValue('00', '000111222');
     const path = resolvePatternRecommendPath(result, '');
 
-    expect(path.digitReasons.some((line) => line.includes('S″'))).toBe(true);
+    expect(path.digitReasons.some((line) => line.includes('source digit') || line.includes('Values'))).toBe(true);
     const top = Number(
       Object.entries(path.digitScores).sort((a, b) => b[1] - a[1])[0]?.[0],
     );
@@ -55,8 +52,8 @@ describe('patternRecommendEngine', () => {
     const result = analyzeMasterValue('00', '5616125612');
     const afterSix = resolvePatternRecommendPath(result, '6');
 
-    expect(afterSix.mainBandReasons.some((r) => r.includes('패턴 흐름'))).toBe(true);
-    expect(afterSix.mainBandReasons.some((r) => r.includes('점수 합산'))).toBe(true);
+    expect(afterSix.mainBandReasons.some((r) => r.includes('CodeValues') || r.includes('S run'))).toBe(true);
+    expect(afterSix.mainBandReasons.some((r) => r.includes('빈도') || r.includes('점수 합산'))).toBe(true);
   });
 
   it('orders top candidate via repeat/transition judgment', () => {
@@ -89,7 +86,7 @@ describe('digitRepeatJudgment', () => {
     expect(pick).not.toBeNull();
     expect(pick!.digit).not.toBe(6);
     expect(['repeat', 'transition', 'pattern']).toContain(pick!.mode);
-    expect(pick!.reason).toContain('패턴 흐름');
+    expect(pick!.reason).toMatch(/source digit|이번 차례|전환|패턴 흐름/);
   });
 
   it('resolveFinalDigitPick returns repeat or transition reason', () => {
