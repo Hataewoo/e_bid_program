@@ -19,7 +19,6 @@ import {
 } from './digitSubBand';
 import {
   patternFlowRankScores,
-  pickDigitByPatternFlow,
   resolveMainBandFromPatternFlow,
   resolveSubBandFromPatternFlow,
   getSubBandCodeValueRows,

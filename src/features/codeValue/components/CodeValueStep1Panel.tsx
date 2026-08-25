@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import type { AnalysisResult, CodeValueStatRow } from '@/shared/utils/analysisEngine';
 import { MasterValueTextarea } from '@/components/ui/MasterValueTextarea';
 import { ResizableSplitter } from '@/components/layout/ResizableSplitter';
