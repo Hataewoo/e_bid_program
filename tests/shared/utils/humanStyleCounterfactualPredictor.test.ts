@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   assessCeilingFutureShape,
-  classifyOneDuplicateRunRelation,
   computePatternNaturalness,
 } from '../../../src/shared/utils/humanStylePatternCore';
 import {
@@ -11,14 +10,7 @@ import {
   TIE_MARGIN_THRESHOLD,
 } from '../../../src/shared/utils/humanStyleCounterfactualPredictor';
 import { analyzeMasterValue } from '../../../src/shared/utils/analysisEngine';
-import {
-  simulateMainBandState,
-  simulateSubBandState,
-} from '../../../src/shared/utils/humanStyleStateSimulation';
-import {
-  computeFutureShapeDelta,
-  resolveStateStepWinner,
-} from '../../../src/shared/utils/humanStyleTieResolution';
+import { simulateMainBandState } from '../../../src/shared/utils/humanStyleStateSimulation';
 
 describe('humanStyleStateSimulation', () => {
   it('simulateMainBandState picks continuation vs switch by candidate band', () => {
@@ -52,7 +44,7 @@ describe('humanStyleCounterfactualPredictor V2 state counterfactual', () => {
     const v2 = runHumanStyleV2(HUMAN_DIAGNOSTIC_FIXTURE_MASTER);
     expect(v2.step1.candidates).toHaveLength(2);
     expect(v2.step1.candidates.every((c) => c.stateKind)).toBe(true);
-    expect(v2.step1.candidates.every((c) => !c.digitVariants)).toBe(true);
+    expect(v2.step1.candidates.every((c) => !('digitVariants' in c))).toBe(true);
   });
 
   it('STEP2 has tieResolution trace', () => {

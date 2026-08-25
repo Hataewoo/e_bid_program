@@ -7,7 +7,7 @@ import path from 'node:path';
 import { analyzeMasterValue, buildCodeValueStats } from '../src/shared/utils/analysisEngine';
 import { predictNextDigitStep } from '../src/shared/utils/nextDigitEngine';
 import { runHumanStyleV2 } from '../src/shared/utils/humanStyleCounterfactualPredictor';
-import { getAnalysisV2DisplayValue } from '../src/features/analysis/components/AnalysisV2PredictionPanel';
+import { getAnalysisV2DisplayValue } from '../src/features/analysis/utils/analysisV2Display';
 
 const MASTERS = `
 6464512350067798989142098591

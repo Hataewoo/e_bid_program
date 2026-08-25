@@ -136,7 +136,6 @@ export function computeFutureShapeDelta(
   const afterLeaf = getPatternLayerLeaf(afterPath);
   const baseRel = baseLeaf.tailFlow?.oneDuplicateRelation?.relation ?? 'none';
   const afterRel = afterLeaf.tailFlow?.oneDuplicateRelation?.relation ?? 'none';
-  const basePhase = baseLeaf.tailFlow?.phase ?? 'transition';
   const afterPhase = afterLeaf.tailFlow?.phase ?? 'transition';
 
   const dCont = afterNat.continuationFit - baselineNat.continuationFit;
@@ -247,10 +246,7 @@ export function buildDeeperDiscriminationPath(
   return { field, deeperPath, deeperNaturalness, childBehavior, parentImplication };
 }
 
-function buildStructuralTrace(
-  c: StateCandidateForTieResolution,
-  evidence: CandidateTieEvidence,
-): StructuralDecisionTrace {
+function buildStructuralTrace(evidence: CandidateTieEvidence): StructuralDecisionTrace {
   return evidence.structural;
 }
 
