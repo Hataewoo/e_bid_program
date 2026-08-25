@@ -28,8 +28,8 @@ const CodeValueIbInfoBox = memo(function CodeValueIbInfoBox({ result }: { result
         {t('analysis.panel.ibInfo')}
       </div>
       <div className="min-h-0 flex-1 overflow-auto p-2">
-        <div className="flex gap-2 border border-[#404040] bg-[#ffffe0] p-3 text-sm text-black">
-          <div className="flex-1 space-y-1">
+        <div className="border border-[#404040] bg-[#ffffe0] p-3 text-sm text-black">
+          <div className="space-y-1">
             <div>
               <span className="font-semibold">{t('analysis.ib.masterNo')} </span>
               {result.masterNo}
@@ -46,9 +46,6 @@ const CodeValueIbInfoBox = memo(function CodeValueIbInfoBox({ result }: { result
               <span className="font-semibold">{t('analysis.ib.highCount')} </span>
               {t('analysis.ib.caseUnit', { count: result.highCount, rate: result.highRate })}
             </div>
-          </div>
-          <div className="flex w-16 shrink-0 items-center justify-center border border-dashed border-[#808080] text-[10px] text-[#404040]">
-            LOGO
           </div>
         </div>
       </div>

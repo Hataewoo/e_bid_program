@@ -38,8 +38,8 @@ const IbInformationBox = memo(function IbInformationBox({ result }: { result: An
   const { t } = useI18n();
 
   return (
-    <div className="flex gap-2 border border-[#404040] bg-[#ffffe0] p-2 text-sm text-black">
-      <div className="flex-1 space-y-0.5">
+    <div className="border border-[#404040] bg-[#ffffe0] p-2 text-sm text-black">
+      <div className="space-y-0.5">
         <div>
           <span className="font-semibold">{t('analysis.ib.masterNo')} </span>
           {result.masterNo}
@@ -56,9 +56,6 @@ const IbInformationBox = memo(function IbInformationBox({ result }: { result: An
           <span className="font-semibold">{t('analysis.ib.highCount')} </span>
           {t('analysis.ib.caseUnit', { count: result.highCount, rate: result.highRate })}
         </div>
-      </div>
-      <div className="flex w-16 shrink-0 items-center justify-center border border-dashed border-[#808080] text-[10px] text-[#404040]">
-        LOGO
       </div>
     </div>
   );
