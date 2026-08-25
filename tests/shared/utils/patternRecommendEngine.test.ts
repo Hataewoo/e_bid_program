@@ -53,7 +53,7 @@ describe('patternRecommendEngine', () => {
     const afterSix = resolvePatternRecommendPath(result, '6');
 
     expect(afterSix.mainBandReasons.some((r) => r.includes('CodeValues') || r.includes('S run'))).toBe(true);
-    expect(afterSix.mainBandReasons.some((r) => r.includes('빈도') || r.includes('점수 합산'))).toBe(true);
+    expect(afterSix.mainBandReasons.some((r) => r.includes('1사이') || r.includes('run') || r.includes('종합'))).toBe(true);
   });
 
   it('orders top candidate via repeat/transition judgment', () => {

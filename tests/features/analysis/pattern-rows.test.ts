@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   parseLegacyPatternContent,
+  patternModalFromLegacyCodeContent,
   patternModalFromLegacyRow,
 } from '@/features/analysis/types/pattern-rows';
 
@@ -18,7 +19,25 @@ describe('pattern-rows legacy helpers', () => {
       code: '2, 3+α',
       values: [1, 2, 1],
       valueKind: 'length',
+      source: 'pattern-row',
     });
+  });
+
+  it('patternModalFromLegacyCodeContent maps STEP2/3 code gaps', () => {
+    const modal = patternModalFromLegacyCodeContent('low', '01', [1, 1, 2, 1]);
+    expect(modal).toEqual({
+      side: 'low',
+      code: '01',
+      values: [1, 1, 2, 1],
+      valueKind: 'length',
+      source: 'legacy-code-content',
+    });
+  });
+
+  it('patternModalFromLegacyCodeContent falls back to content string', () => {
+    const modal = patternModalFromLegacyCodeContent('high', '56', [], '3, 2, 1');
+    expect(modal?.values).toEqual([3, 2, 1]);
+    expect(modal?.source).toBe('legacy-code-content');
   });
 
   it('returns null when content is empty', () => {

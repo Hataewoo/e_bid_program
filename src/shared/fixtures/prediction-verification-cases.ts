@@ -93,7 +93,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     expected: {
       topCode: '01',
       dominantSide: 'low',
-      modeDigit: 1,
+      modeDigit: 0,
     },
   },
   {
@@ -104,10 +104,10 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     masterValue: '3',
     codes: [{ code: '99', type: '저점', description: '1 중복' }],
     expected: {
-      value: '고점(5~9) → 고점의 저점(5~7)',
+      value: '저점(0~4) → 저점의 고점(2~4)',
       topCode: '99',
       dominantSide: 'low',
-      modeDigit: 5,
+      modeDigit: 3,
       confidence: 70,
       step2Count: 1,
       step3Count: 0,

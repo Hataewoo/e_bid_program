@@ -32,6 +32,11 @@ export interface SubBandPhaseResult {
 /** run 유지/전환 — PV 패턴 점수와 경쟁 가능한 소폭 가점 (과도 고정 금지) */
 const SUB_BAND_PHASE_NUDGE = 3.5;
 
+/** 1사이·run·1중복 동점이면 전환 우선 (1사이 형제 세분화 신호 존중) */
+function resolveWeightedPhase(repeatWeight: number, transitionWeight: number): SubBandPhase {
+  return repeatWeight > transitionWeight ? 'repeat' : 'transition';
+}
+
 /** 원본 Master + 사용자/chain append — 패턴 분석용 가상 Master */
 export function virtualMasterDigits(result: AnalysisResult, prefix: string): string {
   return prefix.length > 0 ? result.digits + prefix : result.digits;
@@ -43,6 +48,16 @@ export function findLastDigitInMainBand(context: string, mainBand: DigitBand): n
     if (!Number.isInteger(d) || d < 0 || d > 9) continue;
     const sub = getDigitSubBand(d);
     if (sub && getSubBandMainBand(sub) === mainBand) return d;
+  }
+  return null;
+}
+
+/** Master 꼬리 — 특정 세분화(저저·저고 등)에서 가장 최근 digit */
+export function findLastDigitInSubBand(context: string, subBand: DigitSubBand): number | null {
+  for (let i = context.length - 1; i >= 0; i -= 1) {
+    const d = Number(context[i]);
+    if (!Number.isInteger(d) || d < 0 || d > 9) continue;
+    if (getDigitSubBand(d) === subBand) return d;
   }
   return null;
 }
@@ -102,7 +117,181 @@ export function inferSubBandPhaseFromOneBetween(
   };
 }
 
-/** Side Point Values S″ + Code/Values → 현재 세분화 구간 유지·전환 */
+/** S″/코드 시퀀스 꼬리 — 동일 value 연속 run */
+function trailingValueRun(sequence: readonly number[]): number {
+  if (sequence.length === 0) return 0;
+  const last = sequence.at(-1)!;
+  let run = 1;
+  for (let i = sequence.length - 2; i >= 0; i -= 1) {
+    if (sequence[i] === last) run += 1;
+    else break;
+  }
+  return run;
+}
+
+/** run 기대값 — 꼬리 힌트 최근 3개 평균 (전체 S 평균은 run 종료 신호를 늦게 만듦) */
+function expectedRunFromTailHints(
+  runHints: readonly number[],
+  fallbackRun: number,
+): number {
+  const tailHints = runHints.slice(-3);
+  if (tailHints.length > 0) {
+    return Math.round(tailHints.reduce((a, b) => a + b, 0) / tailHints.length);
+  }
+  return Math.max(fallbackRun, 1);
+}
+
+/**
+ * ① 저·고 S run — 1사이 최우선(×3), 1중복(×2), run(×1) 가중 종합.
+ * liveRunLength = Master 꼬리 실제 run (S 꼬리 run과 별도).
+ */
+export function inferMainBandPhaseFromSequence(
+  sSequence: readonly number[],
+  side: DigitClass,
+  liveRunLength: number,
+  lastDigit: number,
+): { phase: SubBandPhase; label: string } {
+  const bandLabel = side === 'low' ? '저점(0~4)' : '고점(5~9)';
+  const placeholderSub: DigitSubBand = side === 'low' ? 'lowLow' : 'highHigh';
+
+  if (sSequence.length === 0) {
+    return {
+      phase: 'transition',
+      label: `${bandLabel} [digit ${lastDigit}] S 시퀀스 없음 → 전환`,
+    };
+  }
+
+  let repeatWeight = 0;
+  let transitionWeight = 0;
+  const parts: string[] = [];
+
+  const oneBetween = inferSubBandPhaseFromOneBetween(sSequence, side, placeholderSub);
+  if (oneBetween) {
+    const w = 3;
+    if (oneBetween.phase === 'repeat') repeatWeight += w;
+    else transitionWeight += w;
+    const subLabel = getSubBandLabel(placeholderSub);
+    const oneBetweenNote = oneBetween.label.replace(`${subLabel} `, '').replace(subLabel, bandLabel);
+    parts.push(`1사이(×${w}): ${oneBetweenNote}`);
+  }
+
+  const patterns = extractCodeValuesFromBaseSequence([...sSequence], side);
+  const runHints = [
+    ...(patterns.oneDuplicate ?? []),
+    ...(patterns.threeOrMore ?? []),
+    ...(patterns.fiveOrMore ?? []),
+  ].filter((v) => v > 0);
+  const expectedRun = expectedRunFromTailHints(runHints, liveRunLength);
+
+  if (liveRunLength > 0 && liveRunLength < expectedRun) {
+    repeatWeight += 1;
+    parts.push(`run(×1): 지속 ${liveRunLength}/${expectedRun}`);
+  } else if (liveRunLength >= expectedRun && expectedRun > 0) {
+    transitionWeight += 1;
+    parts.push(`run(×1): 종료 ${liveRunLength}≥${expectedRun}`);
+  }
+
+  if ((patterns.oneDuplicate?.length ?? 0) > 0 && liveRunLength <= 1) {
+    repeatWeight += 2;
+    parts.push('1중복(×2): run');
+  }
+
+  if (repeatWeight === 0 && transitionWeight === 0) {
+    transitionWeight = 1;
+    parts.push('종합(×1): 전환');
+  }
+
+  const phase = resolveWeightedPhase(repeatWeight, transitionWeight);
+  return {
+    phase,
+    label: `${bandLabel} [digit ${lastDigit}] ${parts.join(' | ')} → ${phase === 'repeat' ? '유지' : '전환'}`,
+  };
+}
+
+export interface InferPhaseOptions {
+  /** S″에 1사이 없을 때 Side S run 1사이 fallback */
+  sideSRunFallback?: readonly number[];
+}
+
+/**
+ * 세분화 유지/전환 — 1사이 최우선(×3), 1중복(×2), run(×1) 가중 종합.
+ * 마지막 digit 기준으로 판단 (lastDigit는 라벨·근거용).
+ */
+export function inferPhaseFromSequence(
+  sPrime: readonly number[],
+  side: DigitClass,
+  currentSub: DigitSubBand,
+  lastDigit: number,
+  options?: InferPhaseOptions,
+): { phase: SubBandPhase; label: string } {
+  const subLabel = getSubBandLabel(currentSub);
+
+  if (sPrime.length === 0) {
+    return {
+      phase: 'transition',
+      label: `${subLabel} [digit ${lastDigit}] 시퀀스 없음 → 전환`,
+    };
+  }
+
+  let repeatWeight = 0;
+  let transitionWeight = 0;
+  const parts: string[] = [];
+
+  let oneBetween = inferSubBandPhaseFromOneBetween(sPrime, side, currentSub);
+  let oneBetweenSource = 'S″';
+  if (!oneBetween && options?.sideSRunFallback && options.sideSRunFallback.length > 0) {
+    const fallbackOb = inferSubBandPhaseFromOneBetween(options.sideSRunFallback, side, currentSub);
+    if (fallbackOb) {
+      oneBetween = fallbackOb;
+      oneBetweenSource = 'Side S';
+    }
+  }
+  if (oneBetween) {
+    const w = 3;
+    if (oneBetween.phase === 'repeat') repeatWeight += w;
+    else transitionWeight += w;
+    const note = oneBetween.label.replace(`${subLabel} `, '');
+    parts.push(`1사이(×${w})[${oneBetweenSource}]: ${note}`);
+  }
+
+  const patterns = extractCodeValuesFromBaseSequence([...sPrime], side);
+  const trailingRun = trailingValueRun(sPrime);
+  const runHints = [
+    ...(patterns.threeOrMore ?? []),
+    ...(patterns.fiveOrMore ?? []),
+    ...(patterns.oneDuplicate ?? []),
+  ].filter((v) => v > 0);
+  const expectedRun =
+    runHints.length > 0
+      ? Math.round(runHints.reduce((a, b) => a + b, 0) / runHints.length)
+      : Math.max(trailingRun, 1);
+
+  if (trailingRun > 0 && trailingRun < expectedRun) {
+    repeatWeight += 1;
+    parts.push(`run(×1): 지속 ${trailingRun}/${expectedRun}`);
+  } else if (trailingRun >= expectedRun && expectedRun > 0) {
+    transitionWeight += 1;
+    parts.push(`run(×1): 종료 ${trailingRun}≥${expectedRun}`);
+  }
+
+  if ((patterns.oneDuplicate?.length ?? 0) > 0 && trailingRun <= 1) {
+    repeatWeight += 2;
+    parts.push('1중복(×2): run');
+  }
+
+  if (repeatWeight === 0 && transitionWeight === 0) {
+    transitionWeight = 1;
+    parts.push('종합(×1): 전환');
+  }
+
+  const phase = resolveWeightedPhase(repeatWeight, transitionWeight);
+  return {
+    phase,
+    label: `${subLabel} [digit ${lastDigit}] ${parts.join(' | ')} → ${phase === 'repeat' ? '유지' : '전환'}`,
+  };
+}
+
+/** Side Point Values S″ + Code/Values → 현재 세분화 구간 유지·전환 (마지막 digit 기준) */
 export function inferSubBandPhase(
   result: AnalysisResult,
   prefix: string,
@@ -110,57 +299,13 @@ export function inferSubBandPhase(
   currentSub: DigitSubBand,
 ): { phase: SubBandPhase; label: string } {
   const side: DigitClass = mainBand === 'low' ? 'low' : 'high';
+  const context = virtualMasterDigits(result, prefix);
+  const lastDigit = findLastDigitInMainBand(context, mainBand) ?? -1;
   const filtered = filterPointValuesToSubBand(getSidePointValues(result, prefix, side), currentSub);
-  const tokens = buildPointValueTokens(filtered);
-  const sPrime = tokens.map((t) => t.value);
+  const sPrime = buildPointValueTokens(filtered).map((t) => t.value);
+  const sideSRun = mainBand === 'low' ? result.lowRunLengths : result.highRunLengths;
 
-  if (sPrime.length === 0) {
-    return { phase: 'transition', label: `${getSubBandLabel(currentSub)} S″ 없음 → 전환 검토` };
-  }
-
-  const oneBetweenPhase = inferSubBandPhaseFromOneBetween(sPrime, side, currentSub);
-  if (oneBetweenPhase) return oneBetweenPhase;
-
-  const patterns = extractCodeValuesFromBaseSequence(sPrime, side);
-  const runHints = [
-    ...(patterns.threeOrMore ?? []),
-    ...(patterns.fiveOrMore ?? []),
-    ...(patterns.oneDuplicate ?? []),
-  ].filter((v) => v > 0);
-
-  const lastToken = tokens[tokens.length - 1];
-  let trailingRun = 1;
-  if (lastToken) {
-    for (let i = tokens.length - 2; i >= 0; i -= 1) {
-      if (tokens[i]!.sourceDigit === lastToken.sourceDigit) trailingRun += 1;
-      else break;
-    }
-  }
-
-  const expectedRun =
-    runHints.length > 0
-      ? Math.round(runHints.reduce((a, b) => a + b, 0) / runHints.length)
-      : Math.max(trailingRun, 1);
-
-  if (trailingRun > 0 && trailingRun < expectedRun) {
-    return {
-      phase: 'repeat',
-      label: `${getSubBandLabel(currentSub)} run 지속 (${trailingRun}/${expectedRun})`,
-    };
-  }
-
-  if (trailingRun >= expectedRun && expectedRun > 0) {
-    return {
-      phase: 'transition',
-      label: `${getSubBandLabel(currentSub)} run 종료 (${trailingRun}≥${expectedRun}) → 형제 세분화`,
-    };
-  }
-
-  if ((patterns.oneDuplicate?.length ?? 0) > 0 && trailingRun <= 1) {
-    return { phase: 'repeat', label: `${getSubBandLabel(currentSub)} 1중복 run` };
-  }
-
-  return { phase: 'transition', label: `${getSubBandLabel(currentSub)} Code/Values 전환` };
+  return inferPhaseFromSequence(sPrime, side, currentSub, lastDigit, { sideSRunFallback: sideSRun });
 }
 
 /** prefix 없음 — 원본 Master 꼬리 기준 repeat/transition */

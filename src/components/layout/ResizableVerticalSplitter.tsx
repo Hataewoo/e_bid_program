@@ -85,8 +85,8 @@ export function ResizableVerticalSplitter({
   return (
     <div ref={containerRef} className="flex h-full min-h-0 w-full flex-1 flex-col">
       <div
-        className="flex min-h-0 flex-col overflow-hidden"
-        style={{ flex: `${topPercent} 1 0%` }}
+        className="flex h-full min-h-0 flex-col overflow-hidden"
+        style={{ flex: `${topPercent} 1 0%`, minHeight: 0 }}
       >
         {top}
       </div>
@@ -99,8 +99,8 @@ export function ResizableVerticalSplitter({
         title={t('layout.resize')}
       />
       <div
-        className="flex min-h-0 flex-col overflow-hidden"
-        style={{ flex: `${bottomPercent} 1 0%` }}
+        className="flex h-full min-h-0 flex-col overflow-hidden"
+        style={{ flex: `${bottomPercent} 1 0%`, minHeight: 0 }}
       >
         {bottom}
       </div>

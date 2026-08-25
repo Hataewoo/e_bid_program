@@ -108,14 +108,19 @@ export function pickModeForComboIndex(_index: number): PatternPickStage {
 
 export function predictNextDigitStep(
   result: AnalysisResult,
-  _codeStats: CodeValueStatRow[],
+  codeStats: CodeValueStatRow[],
   prefix: string,
   topN: number = NEXT_DIGIT_TOP_N,
   _stage: PatternPickStage = 'full',
 ): NextDigitStepResult | null {
-  void _codeStats;
   void _stage;
-  const step = recommendNextDigitStep(result, prefix, topN);
+  const codes = codeStats.map((row, index) => ({
+    id: index,
+    code: row.code,
+    type: row.type,
+    description: row.description ?? '',
+  }));
+  const step = recommendNextDigitStep(result, prefix, topN, codes);
   if (!step) return null;
   return {
     ...step,

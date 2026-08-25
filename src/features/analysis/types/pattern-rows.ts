@@ -36,6 +36,8 @@ export interface PatternModalState {
   code: string;
   values: number[];
   valueKind: 'length' | 'index';
+  /** pattern-row: Code/Values 행 · legacy-code-content: STEP2/3 코드 내용 */
+  source?: 'pattern-row' | 'legacy-code-content';
 }
 
 export function getPatternValues(patterns: SidePatterns, field: keyof SidePatterns): number[] {
@@ -80,5 +82,24 @@ export function patternModalFromLegacyRow(
     code,
     values,
     valueKind: rowDef?.valueKind ?? 'length',
+    source: 'pattern-row',
+  };
+}
+
+/** STEP2/3 코드 · 내용(gap) — 10규칙 재분석 팝업용 */
+export function patternModalFromLegacyCodeContent(
+  side: PatternSide,
+  code: string,
+  gaps: readonly number[],
+  content?: string,
+): PatternModalState | null {
+  const values = gaps.length > 0 ? [...gaps] : parseLegacyPatternContent(content ?? '');
+  if (values.length === 0) return null;
+  return {
+    side,
+    code,
+    values,
+    valueKind: 'length',
+    source: 'legacy-code-content',
   };
 }

@@ -97,13 +97,15 @@ export const useWorkspaceLayoutStore = create<WorkspaceLayoutState>()(
       resetAllLayouts: () => set({ ...DEFAULTS }),
     }),
     {
-      name: 'csebid-workspace-layout-v2',
+      name: 'csebid-workspace-layout-v3',
       merge: (persisted, current) => {
         const p = persisted as Partial<WorkspaceLayoutState> | undefined;
         return {
           ...current,
           ...p,
           analysisPanelOrder: sanitizeAnalysisPanelOrder(p?.analysisPanelOrder),
+          // 마스터 목록이 숨김 상태로 저장돼 있으면 다시 표시 (Analysis 좌측 00~99)
+          analysisShowMasterList: p?.analysisShowMasterList ?? true,
         };
       },
     },

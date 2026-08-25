@@ -62,7 +62,7 @@ export function CodeValueCountFeature() {
         left={<CodeValueMasterList />}
         right={
           <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-            <div className="shrink-0 p-2">
+            <div className="shrink-0 p-1">
               <CodeValueUnverifiedBanner />
             </div>
             <StepSectionTabs />

@@ -10,11 +10,16 @@ interface ResizableSplitterProps {
   storageKey?: string;
 }
 
-function readStoredWidth(key: string | undefined, fallback: number): number {
+function readStoredWidth(
+  key: string | undefined,
+  fallback: number,
+  minLeftWidth: number,
+): number {
   if (!key) return fallback;
   const raw = localStorage.getItem(key);
   const value = raw ? Number(raw) : fallback;
-  return Number.isFinite(value) ? value : fallback;
+  if (!Number.isFinite(value)) return fallback;
+  return Math.max(minLeftWidth, value);
 }
 
 export function ResizableSplitter({
@@ -27,7 +32,9 @@ export function ResizableSplitter({
 }: ResizableSplitterProps) {
   const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [leftWidth, setLeftWidth] = useState(() => readStoredWidth(storageKey, defaultLeftWidth));
+  const [leftWidth, setLeftWidth] = useState(() =>
+    readStoredWidth(storageKey, defaultLeftWidth, minLeftWidth),
+  );
   const isDragging = useRef(false);
 
   const handleMouseDown = useCallback(() => {
@@ -67,8 +74,11 @@ export function ResizableSplitter({
   }, [handleMouseDown, handleMouseMove, handleMouseUp]);
 
   return (
-    <div ref={containerRef} className="win-split-container flex w-full min-h-0 flex-1 self-stretch">
-      <div className="win-panel flex min-h-0 shrink-0 flex-col overflow-hidden" style={{ width: leftWidth }}>
+    <div ref={containerRef} className="win-split-container flex h-full min-h-0 w-full flex-1 self-stretch">
+      <div
+        className="win-panel flex h-full min-h-0 shrink-0 flex-col overflow-hidden"
+        style={{ width: leftWidth }}
+      >
         {left}
       </div>
       <div
@@ -78,7 +88,7 @@ export function ResizableSplitter({
         aria-orientation="vertical"
         title={t('layout.resize')}
       />
-      <div className="win-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{right}</div>
+      <div className="win-panel flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{right}</div>
     </div>
   );
 }

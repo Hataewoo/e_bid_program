@@ -147,6 +147,8 @@ export const CodeValueLegacyStepPanel = memo(function CodeValueLegacyStepPanel({
                   loading={loading}
                   engineVersion={LEGACY_CODE_CONTENT_ENGINE_VERSION}
                   hintKey={codeTableHintKey}
+                  patternSide={patternSide}
+                  onOpenPatternDetail={handleOpenPatternDetail}
                 />
               </div>
             }

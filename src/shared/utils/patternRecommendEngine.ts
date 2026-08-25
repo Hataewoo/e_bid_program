@@ -5,7 +5,7 @@
  * ③ source digit 치환 → 추첨 digit (패턴값 gap/run 직접 사용 금지)
  */
 
-import type { AnalysisResult, CodeValueStatRow, DigitClass } from './analysisEngine';
+import type { AnalysisResult, CodeMatchInput, CodeValueStatRow, DigitClass } from './analysisEngine';
 import { toClassSequence } from './analysisEngine';
 import { collectMainCodesForContext } from './mainBandJudgment';
 import { analyzeCodeValueMainDetail } from './codeValueSubAnalysis';
@@ -22,7 +22,10 @@ import {
   pickDigitByPatternFlow,
   resolveMainBandFromPatternFlow,
   resolveSubBandFromPatternFlow,
+  getSubBandCodeValueRows,
 } from './patternFlowPick';
+import { pickDigitWithLegacyCodeOrFlow } from './legacyDigitCodePick';
+import { refineSubBandWithSiblingCodeFlow } from './subBandCrossRefinement';
 import { virtualMasterDigits } from './subBandRepeatJudgment';
 import { wouldFormRepetitivePattern } from './patternRepeatGuard';
 
@@ -134,12 +137,22 @@ function collectMainCodesForSide(result: AnalysisResult, side: DigitClass, prefi
 function buildPatternRecommendPath(
   result: AnalysisResult,
   prefix: string,
+  codes: readonly CodeMatchInput[] = [],
 ): PatternRecommendPath {
   const { band: targetMainBand, side: activeSide, reasons: mainBandReasons } =
     resolveMainBandFromPatternFlow(result, prefix);
 
-  const { sub: targetSubBand, reasons: subBandReasons, rows: subBandRows } =
-    resolveSubBandFromPatternFlow(result, prefix, targetMainBand);
+  const initialSub = resolveSubBandFromPatternFlow(result, prefix, targetMainBand);
+  const refined = refineSubBandWithSiblingCodeFlow(
+    result,
+    prefix,
+    targetMainBand,
+    initialSub.sub,
+    codes,
+  );
+  const targetSubBand = refined.sub;
+  const subBandReasons = [...initialSub.reasons, ...refined.reasons];
+  const subBandRows = getSubBandCodeValueRows(result, prefix, targetMainBand, targetSubBand);
 
   const pool = getDigitsInSubBand(targetSubBand);
   const digitScores = patternFlowRankScores(pool, result, prefix, targetSubBand);
@@ -180,8 +193,9 @@ function pathToHierarchy(path: PatternRecommendPath): PatternRecommendHierarchy 
 export function resolvePatternRecommendPath(
   result: AnalysisResult,
   prefix: string,
+  codes: readonly CodeMatchInput[] = [],
 ): PatternRecommendPath {
-  return buildPatternRecommendPath(result, prefix);
+  return buildPatternRecommendPath(result, prefix, codes);
 }
 
 export { pickDigitByPatternFlow } from './patternFlowPick';
@@ -228,11 +242,12 @@ export function resolveFinalDigitPick(
   path: PatternRecommendPath,
   result: AnalysisResult,
   prefix: string = '',
+  codes: readonly CodeMatchInput[] = [],
 ): FinalDigitPickResult | null {
   const eligible = resolveEligibleDigitPool(path, prefix);
   if (eligible.length === 0) return null;
 
-  const pick = pickDigitByPatternFlow(eligible, result, prefix, path.targetSubBand);
+  const pick = pickDigitWithLegacyCodeOrFlow(eligible, result, prefix, path.targetSubBand, codes);
   const reason =
     eligible.length < path.candidatePool.length
       ? `${pick.reason} · pool [${path.candidatePool.join(',')}] − 이미 선택 [${prefix}]`
@@ -276,11 +291,12 @@ export function pickTopRecommendCandidates(
   prefix: string,
   master: string = '',
   result?: AnalysisResult,
+  codes: readonly CodeMatchInput[] = [],
 ): RecommendDigitCandidate[] {
   void master;
 
   const primaryPick = result
-    ? resolveFinalDigitPick(path, result, prefix)
+    ? resolveFinalDigitPick(path, result, prefix, codes)
     : {
         digit: [...poolExcludingPrefixPicks(path.candidatePool, prefix)].sort(
           (a, b) => (path.digitScores[b] ?? 0) - (path.digitScores[a] ?? 0) || a - b,
@@ -342,17 +358,18 @@ export function recommendNextDigitStep(
   result: AnalysisResult,
   prefix: string,
   topN: number = RECOMMEND_TOP_N_DEFAULT,
+  codes: readonly CodeMatchInput[] = [],
 ): RecommendStepResult | null {
   if (result.totalCount <= 0) return null;
 
-  const path = resolvePatternRecommendPath(result, prefix);
-  const pick = resolveFinalDigitPick(path, result, prefix);
+  const path = resolvePatternRecommendPath(result, prefix, codes);
+  const pick = resolveFinalDigitPick(path, result, prefix, codes);
   const hierarchy = pathToHierarchy(path);
   if (pick) {
     hierarchy.digitReasons = [...hierarchy.digitReasons, pick.reason];
   }
 
-  const candidates = pickTopRecommendCandidates(path, topN, prefix, result.digits, result);
+  const candidates = pickTopRecommendCandidates(path, topN, prefix, result.digits, result, codes);
   if (!pick && candidates.length === 0) return null;
 
   return {
@@ -382,13 +399,22 @@ export function pickChainStepDigit(
   return unused[0] ?? null;
 }
 
+function codeStatsToMatchInputs(stats: readonly CodeValueStatRow[]): CodeMatchInput[] {
+  return stats.map((row, index) => ({
+    id: index,
+    code: row.code,
+    type: row.type,
+    description: row.description ?? '',
+  }));
+}
+
 export function recommendDigitChain(
   result: AnalysisResult,
-  _codeStats: CodeValueStatRow[],
+  codeStats: CodeValueStatRow[],
   input: string,
   options: { chainDepth?: number; topN?: number; extraSteps?: number } = {},
 ): RecommendChainResult {
-  void _codeStats;
+  const codes = codeStatsToMatchInputs(codeStats);
   // 각 step: virtualMaster = result.digits + workingPrefix 로 ①②③ 재판단.
   // result.digits 는 변경하지 않음 — chain 종료 후 prefix="" 이면 원본 Master 로 복귀.
   const chainDepth = options.chainDepth ?? RECOMMEND_CHAIN_DEPTH_DEFAULT;
@@ -396,14 +422,14 @@ export function recommendDigitChain(
   const extraSteps = options.extraSteps ?? 0;
   const parsed = parseBidRateInput(input);
 
-  const nextStep = recommendNextDigitStep(result, parsed.decimalPrefix, topN);
+  const nextStep = recommendNextDigitStep(result, parsed.decimalPrefix, topN, codes);
 
   const chainSteps: RecommendStepResult[] = [];
   let workingPrefix = parsed.decimalPrefix;
   const totalSteps = chainDepth + extraSteps;
 
   for (let step = 0; step < totalSteps; step += 1) {
-    const stepResult = recommendNextDigitStep(result, workingPrefix, topN);
+    const stepResult = recommendNextDigitStep(result, workingPrefix, topN, codes);
     if (!stepResult || stepResult.candidates.length === 0) break;
 
     chainSteps.push(stepResult);

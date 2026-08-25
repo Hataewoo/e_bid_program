@@ -32,16 +32,16 @@ export const PatternDetailModal = memo(function PatternDetailModal({
       ? t('analysis.pattern.subDetailLowBand')
       : t('analysis.pattern.subDetailHighBand');
 
+  const title =
+    modal.source === 'legacy-code-content'
+      ? t('analysis.pattern.legacyCodeSubDetailTitle', { band: sideBandLabel, code: modal.code })
+      : t('analysis.pattern.subDetailTitle', { band: sideBandLabel, code: modal.code });
+
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 p-4">
       <div className="win-dialog-window flex max-h-[90vh] w-full max-w-3xl flex-col shadow-lg">
         <div className="win-titlebar flex items-center justify-between">
-          <span>
-            {t('analysis.pattern.subDetailTitle', {
-              band: sideBandLabel,
-              code: modal.code,
-            })}
-          </span>
+          <span>{title}</span>
           <button type="button" className="win-button text-xs" onClick={onClose}>
             {t('common.close')}
           </button>
@@ -92,7 +92,8 @@ export const PatternDetailModal = memo(function PatternDetailModal({
               </thead>
               <tbody>
                 {subDetail.rows.map((row) => {
-                  const isSelected = row.code === modal.code;
+                  const isSelected =
+                    modal.source !== 'legacy-code-content' && row.code === modal.code;
                   return (
                     <tr
                       key={row.code}

@@ -14,6 +14,7 @@ interface CodeValueStatsGridProps {
   loading?: boolean;
   /** embedded: 분할 패널 내부 / page: 페이지 스크롤용 전체 높이 표시 */
   layout?: 'embedded' | 'page';
+  density?: 'default' | 'comfortable';
 }
 
 function formatPercent(params: ValueFormatterParams<CodeValueStatRow>) {
@@ -25,8 +26,10 @@ export const CodeValueStatsGrid = memo(function CodeValueStatsGrid({
   rows,
   loading = false,
   layout = 'embedded',
+  density = 'default',
 }: CodeValueStatsGridProps) {
   const { t } = useI18n();
+  const isComfortable = density === 'comfortable';
   const legacyVerified =
     !shouldShowLegacyUnverifiedUi() || isCodeValueLegacyVerified();
   const columnDefs = useMemo<ColDef<CodeValueStatRow>[]>(
@@ -106,8 +109,8 @@ export const CodeValueStatsGrid = memo(function CodeValueStatsGrid({
               getRowClass={getRowClass}
               getRowId={getRowId}
               suppressCellFocus={true}
-              headerHeight={30}
-              rowHeight={26}
+              headerHeight={isComfortable ? 34 : 30}
+              rowHeight={isComfortable ? 32 : 26}
               domLayout={isPageLayout ? 'autoHeight' : 'normal'}
               defaultColDef={{ resizable: true, sortable: false }}
               {...AG_GRID_PERF_DEFAULTS}

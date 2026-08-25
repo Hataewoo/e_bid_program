@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import {
   DndContext,
   KeyboardSensor,
@@ -10,14 +10,18 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { AnalysisResult } from '@/shared/utils/analysisEngine';
+import { ResizableSplitter } from '@/components/layout/ResizableSplitter';
 import { type AnalysisPanelId, useWorkspaceLayoutStore } from '@/stores/workspace-layout-store';
+import { useAnalysisStore } from '../stores/analysis-store';
 import { useI18n } from '@/i18n/use-i18n';
 import type { MessageKey } from '@/i18n/messages';
 import { SortableDockPanel } from '@/components/layout/SortableDockPanel';
+import { AnalysisMasterList } from './AnalysisMasterList';
 import { MasterValuePanel } from './HighlightedMasterValue';
 
 interface AnalysisMainPanelProps {
   result: AnalysisResult;
+  showMasterList?: boolean;
 }
 
 const PANEL_HEIGHT: Record<AnalysisPanelId, string> = {
@@ -60,10 +64,20 @@ const IbInformationBox = memo(function IbInformationBox({ result }: { result: An
   );
 });
 
-export const AnalysisMainPanel = memo(function AnalysisMainPanel({ result }: AnalysisMainPanelProps) {
+export const AnalysisMainPanel = memo(function AnalysisMainPanel({
+  result,
+  showMasterList = true,
+}: AnalysisMainPanelProps) {
   const { t } = useI18n();
   const panelOrder = useWorkspaceLayoutStore((s) => s.analysisPanelOrder);
   const setPanelOrder = useWorkspaceLayoutStore((s) => s.setAnalysisPanelOrder);
+  const selectedMasterNo = useAnalysisStore((s) => s.selectedMasterNo);
+  const analyzeMaster = useAnalysisStore((s) => s.analyzeMaster);
+
+  const masterOptions = useMemo(
+    () => Array.from({ length: 100 }, (_, i) => String(i).padStart(2, '0')),
+    [],
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -87,7 +101,39 @@ export const AnalysisMainPanel = memo(function AnalysisMainPanel({ result }: Ana
   const renderPanelContent = (panelId: AnalysisPanelId) => {
     switch (panelId) {
       case 'masterValue':
-        return <MasterValuePanel digits={result.digits} highlightIndices={new Set()} />;
+        return showMasterList ? (
+          <ResizableSplitter
+            storageKey="analysis-master-value-list-width"
+            defaultLeftWidth={96}
+            minLeftWidth={72}
+            minRightWidth={240}
+            left={<AnalysisMasterList />}
+            right={<MasterValuePanel digits={result.digits} highlightIndices={new Set()} />}
+          />
+        ) : (
+          <div className="flex h-full min-h-0 flex-col overflow-hidden">
+            <div className="flex shrink-0 items-center gap-2 border-b border-[#c0c0c0] bg-[#ece9d8] px-2 py-1">
+              <label className="text-xs font-semibold text-[#000080]" htmlFor="analysis-master-picker-inline">
+                {t('analysis.masterList.title')}
+              </label>
+              <select
+                id="analysis-master-picker-inline"
+                className="win-combobox min-w-[4rem] text-xs"
+                value={selectedMasterNo}
+                onChange={(e) => void analyzeMaster(e.target.value)}
+              >
+                {masterOptions.map((no) => (
+                  <option key={no} value={no}>
+                    {no}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <MasterValuePanel digits={result.digits} highlightIndices={new Set()} />
+            </div>
+          </div>
+        );
       case 'ibInfo':
         return (
           <div className="min-h-0 flex-1 overflow-auto p-1">

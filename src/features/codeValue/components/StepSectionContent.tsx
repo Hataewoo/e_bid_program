@@ -1,13 +1,4 @@
-import { useMemo } from 'react';
-
-import { ResizableVerticalSplitter } from '@/components/layout/ResizableVerticalSplitter';
-
-import { MasterValueTextarea } from '@/components/ui/MasterValueTextarea';
-
-import { CodeValueStatsGrid } from '@/features/analysis/components/CodeValueStatsGrid';
-
-import { buildLegacyStep2BandBundle } from '@/shared/utils/legacyCodeContentEngine';
-
+import { CodeValueStep1Panel } from './CodeValueStep1Panel';
 import { CodeValueLegacyStepPanel } from './CodeValueLegacyStepPanel';
 
 import { useI18n } from '@/i18n/use-i18n';
@@ -51,14 +42,6 @@ export function StepSectionContent() {
 
   const displayResult = result ?? null;
 
-  const masterCounts = useMemo(() => {
-    if (!displayResult?.digits) return { low: '', high: '' };
-    const bundle = buildLegacyStep2BandBundle(displayResult.digits);
-    return { low: bundle.masterCountLow, high: bundle.masterCountHigh };
-  }, [displayResult?.digits]);
-
-
-
   const renderStepBody = (step: CodeValueStepId) => {
 
     if (!displayResult || displayResult.totalCount === 0) {
@@ -83,81 +66,15 @@ export function StepSectionContent() {
 
         return (
 
-          <div className="flex h-full min-h-0 flex-1 flex-col gap-2 p-2">
+          <CodeValueStep1Panel
 
-            <div className="win-panel shrink-0 border border-[#404040] bg-[#ffffe0] p-2 text-sm text-black">
+            result={displayResult}
 
-              <div>
+            codeValueStats={codeValueStats}
 
-                <span className="font-semibold">{t('codeValue.analysis.masterNo')} </span>
+            loading={loading}
 
-                {displayResult.masterNo}
-
-              </div>
-
-              <div>
-
-                <span className="font-semibold">{t('codeValue.analysis.totalDigits')} </span>
-
-                {t('codeValue.analysis.unitCount', { count: displayResult.totalCount })}
-
-              </div>
-
-              <div className="mt-1 text-[calc(13px*var(--font-scale))] leading-snug">
-
-                <div>
-
-                  {t('codeValue.legacy.masterCountLow')}: {masterCounts.low || '-'}
-
-                </div>
-
-                <div>
-
-                  {t('codeValue.legacy.masterCountHigh')}: {masterCounts.high || '-'}
-
-                </div>
-
-              </div>
-
-            </div>
-
-            <ResizableVerticalSplitter
-
-              storageKey="codevalue-step1-vertical"
-
-              defaultTopPercent={72}
-
-              minTopPercent={20}
-
-              minBottomPercent={12}
-
-              top={
-
-                <MasterValueTextarea
-
-                  readOnly
-
-                  value={displayResult.digits}
-
-                  className="h-full min-h-0"
-
-                />
-
-              }
-
-              bottom={
-
-                <div className="flex h-full min-h-0 flex-col">
-
-                  <CodeValueStatsGrid rows={codeValueStats} loading={loading} />
-
-                </div>
-
-              }
-
-            />
-
-          </div>
+          />
 
         );
 
@@ -229,12 +146,10 @@ export function StepSectionContent() {
 
   return (
 
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f0f0f0] p-2">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#808080]">
 
-      <div className="win-panel flex h-full min-h-0 flex-1 flex-col overflow-hidden border border-border">
-
-        <div className="win-panel-header shrink-0">{t(CODE_VALUE_STEP_LABEL_KEYS[activeStep])}</div>
-
+      <div className="win-panel flex h-full min-h-0 flex-1 flex-col overflow-hidden border-0 bg-transparent">
+        <div className="win-panel-header shrink-0 border border-border">{t(CODE_VALUE_STEP_LABEL_KEYS[activeStep])}</div>
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{renderStepBody(activeStep)}</div>
 
       </div>

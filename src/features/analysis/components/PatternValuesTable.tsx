@@ -19,6 +19,8 @@ interface PatternValuesTableProps {
   onOpenModal: (modal: PatternModalState) => void;
   onPatternHighlight: (highlight: PatternHighlightState | null) => void;
   onPatternPin: (highlight: PatternHighlightState | null) => void;
+  /** STEP1 등 좁은 영역 — 셀·글자 크기 확대 */
+  density?: 'default' | 'comfortable';
 }
 
 export const PatternValuesTable = memo(function PatternValuesTable({
@@ -29,8 +31,11 @@ export const PatternValuesTable = memo(function PatternValuesTable({
   onOpenModal,
   onPatternHighlight,
   onPatternPin,
+  density = 'default',
 }: PatternValuesTableProps) {
   const { t } = useI18n();
+  const isComfortable = density === 'comfortable';
+  const valuesPreviewLimit = isComfortable ? 40 : 24;
   const tableRows = useMemo(
     () =>
       rows.map((row) => {
@@ -90,7 +95,9 @@ export const PatternValuesTable = memo(function PatternValuesTable({
   }, [onPatternHighlight]);
 
   return (
-    <table className="win-pattern-values-table">
+    <table
+      className={`win-pattern-values-table${isComfortable ? ' win-pattern-values-comfortable' : ''}`}
+    >
       <thead>
         <tr>
           <th className="win-pattern-code-col text-left">Code</th>
@@ -139,7 +146,7 @@ export const PatternValuesTable = memo(function PatternValuesTable({
                     className="win-link-value text-left"
                     onClick={() => handleValueClick(row, row.values)}
                   >
-                    {formatPatternValuesPreview(row.values).text}
+                    {formatPatternValuesPreview(row.values, valuesPreviewLimit).text}
                   </button>
                 )}
               </td>

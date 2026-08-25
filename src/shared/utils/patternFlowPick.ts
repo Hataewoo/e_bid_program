@@ -30,6 +30,7 @@ import {
 } from './digitSubBand';
 import {
   findLastDigitInMainBand,
+  inferMainBandPhaseFromSequence,
   inferSubBandPhase,
   virtualMasterDigits,
 } from './subBandRepeatJudgment';
@@ -66,7 +67,7 @@ function expectedRunFromCodeValues(baseSequence: readonly number[], side: DigitC
   return Math.round(runHints.reduce((a, b) => a + b, 0) / runHints.length);
 }
 
-/** ① 저·고 — S run CodeValues 패턴 (빈도 합산 없음) */
+/** ① 저·고 — S run 1사이 최우선·1중복·run 종합 (빈도 합산 없음) */
 function inferMainBandPhase(
   result: AnalysisResult,
   prefix: string,
@@ -83,22 +84,19 @@ function inferMainBandPhase(
 
   const lastRun = liveRuns[liveRuns.length - 1]!;
   const side = lastRun.cls;
+  const mainBand = sideToBand(side);
   const sSequence = side === 'low' ? result.lowRunLengths : result.highRunLengths;
-  const expected = expectedRunFromCodeValues(sSequence, side);
+  const lastDigit =
+    findLastDigitInMainBand(context, mainBand) ?? Number(context[context.length - 1] ?? -1);
 
-  if (lastRun.length < expected) {
-    return {
-      phase: 'repeat',
-      side,
-      label: `S run ${side === 'low' ? '저점' : '고점'} 지속 (${lastRun.length}/${expected}, CodeValues 참고)`,
-    };
-  }
+  const seqPhase = inferMainBandPhaseFromSequence(sSequence, side, lastRun.length, lastDigit);
+  const finalSide: DigitClass =
+    seqPhase.phase === 'repeat' ? side : side === 'low' ? 'high' : 'low';
 
-  const opposite: DigitClass = side === 'low' ? 'high' : 'low';
   return {
-    phase: 'transition',
-    side: opposite,
-    label: `S run 종료 (${lastRun.length}≥${expected}) → ${opposite === 'low' ? '저점' : '고점'} 전환`,
+    phase: seqPhase.phase,
+    side: finalSide,
+    label: seqPhase.label,
   };
 }
 
@@ -118,7 +116,7 @@ export function resolveMainBandFromPatternFlow(
     side: phase.side,
     reasons: [
       ...virtualNote,
-      '① CodeValues S run 패턴 (Values≠digit, 빈도 합산 없음)',
+      '① CodeValues S run — 1사이 최우선·1중복·run 종합 (Values≠digit)',
       phase.label,
       `→ ${getMainBandLabel(band)}`,
     ],
@@ -137,6 +135,8 @@ function subBandCodeValueRows(
   return analyzeCodeValueSubDetail(sPrime, side).rows;
 }
 
+export { subBandCodeValueRows as getSubBandCodeValueRows };
+
 /** ② 세분화 — S″ CodeValues run 지속/전환 (source digit 기준) */
 export function resolveSubBandFromPatternFlow(
   result: AnalysisResult,
@@ -147,7 +147,7 @@ export function resolveSubBandFromPatternFlow(
   const context = virtualMasterDigits(result, prefix);
   const lastDigit = findLastDigitInMainBand(context, mainBand);
   const currentSub = lastDigit !== null ? getDigitSubBand(lastDigit) : null;
-  const reasons: string[] = ['② 세분화 — 1사이 패턴 1순위 (Values≠digit, 반복/종료 판단)'];
+  const reasons: string[] = ['② 세분화 — 1사이 최우선·1중복·run 종합 (마지막 digit 기준, Values≠digit)'];
 
   if (!currentSub || !candidates.includes(currentSub)) {
     const sub = candidates[0]!;

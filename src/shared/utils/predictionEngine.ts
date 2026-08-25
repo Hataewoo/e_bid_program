@@ -57,7 +57,13 @@ export function buildPrediction(
   const topCode = sortedCodes[0] ?? null;
   const dominantSide = resolveDominantSide(result);
   const path = resolvePatternRecommendPath(result, '');
-  const pick = resolveFinalDigitPick(path, result, '');
+  const codeInputs = codeStats.map((row, index) => ({
+    id: index,
+    code: row.code,
+    type: row.type,
+    description: row.description ?? '',
+  }));
+  const pick = resolveFinalDigitPick(path, result, '', codeInputs);
   const topDigit =
     pick !== null && path.candidatePool.includes(pick.digit) ? pick.digit : null;
 

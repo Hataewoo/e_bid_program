@@ -50,7 +50,7 @@ export function AnalysisMasterList() {
   }, [selectedMasterNo, masterSlotRows]);
 
   return (
-    <div className="flex h-full min-h-full flex-col bg-[#ece9d8]">
+    <div className="flex h-full min-h-0 flex-col bg-[#ece9d8]">
       <div className="win-panel-header shrink-0">{t('analysis.masterList.title')}</div>
       <div className="relative min-h-0 flex-1 overflow-hidden">
         {analyzing && (
