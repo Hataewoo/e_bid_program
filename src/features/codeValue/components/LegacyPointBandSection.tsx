@@ -60,7 +60,7 @@ export const LegacyPointBandSection = memo(function LegacyPointBandSection({
 
       {popupOpen ? (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
-          <div className="win-dialog-window flex max-h-[90vh] w-full max-w-4xl flex-col shadow-lg">
+          <div className="win-dialog-window flex max-h-[90vh] w-full max-w-5xl flex-col shadow-lg">
             <div className="win-titlebar flex items-center justify-between">
               <span>{headerLabel}</span>
               <button type="button" className="win-button text-xs" onClick={() => setPopupOpen(false)}>
@@ -68,8 +68,18 @@ export const LegacyPointBandSection = memo(function LegacyPointBandSection({
               </button>
             </div>
             <div className="min-h-0 flex-1 overflow-auto p-3">
-              <div className="mb-1 text-xs text-content-muted">{t('codeValue.legacy.pointBandPopupHint')}</div>
-              <pre className="win-legacy-comma-content max-h-[60vh]">{band.content || t('analysis.pattern.noValues')}</pre>
+              <div className="mb-4">
+                <div className="mb-1 text-xs text-content-muted">{t('codeValue.legacy.pointBandPopupHint')}</div>
+                <pre className="win-legacy-comma-content max-h-[32vh] overflow-auto">
+                  {band.content || t('analysis.pattern.noValues')}
+                </pre>
+              </div>
+              <div>
+                <div className="mb-1 text-xs font-semibold text-[#000080]">
+                  {t('codeValue.legacy.patternAnalysisPopupSection')}
+                </div>
+                <LegacyPatternValueGridTable rows={band.patternGrid} />
+              </div>
             </div>
           </div>
         </div>

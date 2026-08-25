@@ -87,7 +87,7 @@ export const SubBandPatternSection = memo(function SubBandPatternSection({
 
       {popupOpen ? (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
-          <div className="win-dialog-window flex max-h-[90vh] w-full max-w-4xl flex-col shadow-lg">
+          <div className="win-dialog-window flex max-h-[90vh] w-full max-w-5xl flex-col shadow-lg">
             <div className="win-titlebar flex items-center justify-between">
               <span>{headerLabel}</span>
               <button type="button" className="win-button text-xs" onClick={() => setPopupOpen(false)}>
@@ -95,10 +95,26 @@ export const SubBandPatternSection = memo(function SubBandPatternSection({
               </button>
             </div>
             <div className="min-h-0 flex-1 overflow-auto p-3">
-              <div className="mb-1 text-xs text-content-muted">{t('codeValue.legacy.sPrimeFull')}</div>
-              <pre className="win-pattern-stats-sequence max-h-[60vh] whitespace-pre-wrap">
-                {sPrimeText || t('analysis.pattern.noValues')}
-              </pre>
+              <div className="mb-4">
+                <div className="mb-1 text-xs text-content-muted">{t('codeValue.legacy.sPrimeFull')}</div>
+                <pre className="win-pattern-stats-sequence max-h-[32vh] overflow-auto whitespace-pre-wrap">
+                  {sPrimeText || t('analysis.pattern.noValues')}
+                </pre>
+              </div>
+              <div>
+                <div className="mb-1 text-xs font-semibold text-[#000080]">
+                  {t('codeValue.legacy.patternAnalysisPopupSection')}
+                </div>
+                <PatternValuesTable
+                  side={side}
+                  rows={CODE_VALUE_PATTERN_ROWS}
+                  patterns={patterns}
+                  activeHighlight={null}
+                  onOpenModal={onOpenModal}
+                  onPatternHighlight={() => {}}
+                  onPatternPin={() => {}}
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import type { AnalysisResult, CodeMatchInput } from '@/shared/utils/analysisEngine';
 import {
   buildLegacyCodeContentRows,
@@ -10,6 +10,8 @@ import { MasterValueTextarea } from '@/components/ui/MasterValueTextarea';
 import { ResizableSplitter } from '@/components/layout/ResizableSplitter';
 import { ResizableVerticalSplitter } from '@/components/layout/ResizableVerticalSplitter';
 import { filterDigitsByClass, formatRunLengthSequence } from '@/features/analysis/utils/analysis-display';
+import { PatternValuesTable } from '@/features/analysis/components/PatternValuesTable';
+import { CODE_VALUE_PATTERN_ROWS } from '@/features/analysis/types/pattern-rows';
 import type { DigitBand, DigitSubBand } from '@/shared/utils/digitSubBand';
 import { useI18n } from '@/i18n/use-i18n';
 import type { MessageKey } from '@/i18n/messages';
@@ -47,6 +49,7 @@ export const CodeValueLegacyStepPanel = memo(function CodeValueLegacyStepPanel({
   loading = false,
 }: CodeValueLegacyStepPanelProps) {
   const { t } = useI18n();
+  const [sPatternPopupOpen, setSPatternPopupOpen] = useState(false);
 
   const isLow = side === 'low';
   const patternSide = isLow ? 'low' : 'high';
@@ -63,6 +66,7 @@ export const CodeValueLegacyStepPanel = memo(function CodeValueLegacyStepPanel({
 
   const runLengths = isLow ? result.lowRunLengths : result.highRunLengths;
   const runLengthText = formatRunLengthSequence(runLengths);
+  const sPatterns = isLow ? result.lowPatterns : result.highPatterns;
   const lowCount = result.lowCount;
   const highCount = result.highCount;
   const lowRate = result.lowRate;
@@ -102,8 +106,16 @@ export const CodeValueLegacyStepPanel = memo(function CodeValueLegacyStepPanel({
             minRightWidth={260}
             left={
               <div className="flex h-full min-h-0 flex-col bg-white">
-                <div className="win-point-values-header shrink-0 font-semibold text-[#0000ff]">
-                  {t(pointHeaderKey)}
+                <div className="win-point-values-header flex shrink-0 items-center justify-between font-semibold text-[#0000ff]">
+                  <span>{t(pointHeaderKey)}</span>
+                  <button
+                    type="button"
+                    className="win-link-popup font-normal"
+                    disabled={runLengths.length === 0}
+                    onClick={() => setSPatternPopupOpen(true)}
+                  >
+                    {t('analysis.pattern.popup')}
+                  </button>
                 </div>
                 <MasterValueTextarea readOnly value={rawPointText} className="min-h-0 flex-1" />
                 <div className="win-pattern-stats-line shrink-0">
@@ -156,6 +168,52 @@ export const CodeValueLegacyStepPanel = memo(function CodeValueLegacyStepPanel({
           />
         }
       />
+
+      {sPatternPopupOpen ? (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
+          <div className="win-dialog-window flex max-h-[90vh] w-full max-w-5xl flex-col shadow-lg">
+            <div className="win-titlebar flex items-center justify-between">
+              <span>{t(pointHeaderKey)}</span>
+              <button
+                type="button"
+                className="win-button text-xs"
+                onClick={() => setSPatternPopupOpen(false)}
+              >
+                {t('common.close')}
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto p-3">
+              <div className="mb-2 text-xs text-content-muted">
+                {t('analysis.pattern.statsLine', {
+                  side: isLow ? 'Low' : 'High',
+                  count: isLow ? lowCount : highCount,
+                  rate: isLow ? lowRate : highRate,
+                })}
+              </div>
+              <div className="mb-4">
+                <div className="mb-1 text-xs text-content-muted">{t('codeValue.legacy.sPatternPopupHint')}</div>
+                <pre className="win-pattern-stats-sequence max-h-[32vh] overflow-auto whitespace-pre-wrap">
+                  {runLengthText || t('analysis.pattern.noValues')}
+                </pre>
+              </div>
+              <div>
+                <div className="mb-1 text-xs font-semibold text-[#000080]">
+                  {t('codeValue.legacy.patternAnalysisPopupSection')}
+                </div>
+                <PatternValuesTable
+                  side={patternSide}
+                  rows={CODE_VALUE_PATTERN_ROWS}
+                  patterns={sPatterns}
+                  activeHighlight={null}
+                  onOpenModal={() => {}}
+                  onPatternHighlight={() => {}}
+                  onPatternPin={() => {}}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 });
