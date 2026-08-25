@@ -17,18 +17,18 @@ describe('patternRecommendEngine', () => {
 
     expect(pick).not.toBeNull();
     expect(pick!.digit).not.toBe(1);
-    expect(pick!.reason).toMatch(/source digit/);
+    expect(pick!.reason).toMatch(/source|S″|→/);
   });
 
   it('recommends digits from pattern flow pool', () => {
     const result = analyzeMasterValue('00', '000111222');
     const path = resolvePatternRecommendPath(result, '');
 
-    expect(path.digitReasons.some((line) => line.includes('source digit') || line.includes('Values'))).toBe(true);
-    const top = Number(
-      Object.entries(path.digitScores).sort((a, b) => b[1] - a[1])[0]?.[0],
-    );
-    expect(path.candidatePool).toContain(top);
+    expect(path.digitReasons.some((line) => line.includes('source digit') || line.includes('10패턴'))).toBe(true);
+    const pick = resolveFinalDigitPick(path, result, '');
+    expect(pick).not.toBeNull();
+    expect(pick!.digit).toBeGreaterThanOrEqual(0);
+    expect(pick!.digit).toBeLessThanOrEqual(9);
   });
 
   it('never uses pattern gap values as digit candidates', () => {

@@ -1,8 +1,8 @@
 /**
- * 패턴 추천 엔진 — 3단계만 사용
+ * 패턴 추천 엔진 — 3단계 분석 + 통합 digit prediction score
  * ① S/Code/Values → 저점·고점
  * ② Point Values DetailGrid → 세분화(저저·저고·고저·고고)
- * ③ source digit 치환 → 추첨 digit (패턴값 gap/run 직접 사용 금지)
+ * ③ 10패턴 + Legacy + Pattern Flow 통합 점수 → digit
  */
 
 import type { AnalysisResult, CodeMatchInput, CodeValueStatRow, DigitClass } from './analysisEngine';
@@ -10,7 +10,6 @@ import { toClassSequence } from './analysisEngine';
 import { collectMainCodesForContext } from './mainBandJudgment';
 import { analyzeCodeValueMainDetail } from './codeValueSubAnalysis';
 import {
-  getDigitsInMainBand,
   getDigitsInSubBand,
   getMainBandLabel,
   getSubBandLabel,
@@ -23,10 +22,18 @@ import {
   resolveSubBandFromPatternFlow,
   getSubBandCodeValueRows,
 } from './patternFlowPick';
-import { pickDigitWithLegacyCodeOrFlow } from './legacyDigitCodePick';
 import { refineSubBandWithSiblingCodeFlow } from './subBandCrossRefinement';
 import { virtualMasterDigits } from './subBandRepeatJudgment';
 import { wouldFormRepetitivePattern } from './patternRepeatGuard';
+import {
+  computeDigitPredictionScores,
+  formatDigitScoreTrace,
+  type DigitPredictionScore,
+  type DigitScoreBreakdown,
+} from './digitCandidateScoring';
+
+export type { DigitPredictionScore, DigitScoreBreakdown };
+export { formatDigitScoreTrace };
 
 export type { DigitBand, DigitSubBand } from './digitSubBand';
 export {
@@ -47,6 +54,7 @@ export interface PatternRecommendPath {
   activeSide: DigitClass;
   targetMainBand: DigitBand;
   targetSubBand: DigitSubBand;
+  /** Preferred sub-band digits — soft gating only, not hard filter */
   candidatePool: readonly number[];
   digitScores: Record<number, number>;
   mainBandReasons: string[];
@@ -58,12 +66,10 @@ export interface PatternRecommendPath {
 
 export interface RecommendDigitCandidate {
   digit: number;
-  /** Code/Values·S″ 패턴 근거 점수 */
   patternScore: number;
-  /** 반복 / 전환 / 패턴 판단 */
   pickMode: FinalDigitPickMode;
-  /** 판단 근거 한 줄 */
   pickReason: string;
+  scoreBreakdown?: DigitPredictionScore;
 }
 
 export interface RecommendStepResult {
@@ -71,6 +77,7 @@ export interface RecommendStepResult {
   prefix: string;
   candidates: RecommendDigitCandidate[];
   hierarchy: PatternRecommendHierarchy;
+  scoreBreakdown?: DigitScoreBreakdown;
 }
 
 export interface PatternRecommendHierarchy {
@@ -108,6 +115,7 @@ export interface FinalDigitPickResult {
   digit: number;
   mode: FinalDigitPickMode;
   reason: string;
+  breakdown?: DigitScoreBreakdown;
 }
 
 function trailingRunProgress(contextDigits: string): { side: DigitClass; progress: number } | null {
@@ -153,15 +161,17 @@ function buildPatternRecommendPath(
   const subBandReasons = [...initialSub.reasons, ...refined.reasons];
   const subBandRows = getSubBandCodeValueRows(result, prefix, targetMainBand, targetSubBand);
 
-  const pool = getDigitsInSubBand(targetSubBand);
-  const digitScores = patternFlowRankScores(pool, result, prefix, targetSubBand);
-  const digitReasons = [`③ source digit — CodeValues Values(1,2,3…)는 run 참고만, digit 매핑 금지`];
+  const preferredPool = getDigitsInSubBand(targetSubBand);
+  const digitScores = patternFlowRankScores(preferredPool, result, prefix, targetSubBand);
+  const digitReasons = [
+    `③ 통합 prediction score — source digit · 10패턴 + Legacy + Pattern Flow (soft gating)`,
+  ];
 
   return {
     activeSide,
     targetMainBand,
     targetSubBand,
-    candidatePool: pool,
+    candidatePool: preferredPool,
     digitScores,
     mainBandReasons,
     subBandReasons,
@@ -188,7 +198,6 @@ function pathToHierarchy(path: PatternRecommendPath): PatternRecommendHierarchy 
   };
 }
 
-/** ①→②→③ 전체 경로 — prefix 유무와 관계없이 Code/Values S·S″ 패턴 3단계 */
 export function resolvePatternRecommendPath(
   result: AnalysisResult,
   prefix: string,
@@ -197,9 +206,13 @@ export function resolvePatternRecommendPath(
   return buildPatternRecommendPath(result, prefix, codes);
 }
 
-export { pickDigitByPatternFlow } from './patternFlowPick';
+export { pickDigitByPatternFlow, computePatternFlowDigitScores } from './patternFlowPick';
+export {
+  pickDigitByLegacyCodeContent,
+  pickDigitWithLegacyCodeOrFlow,
+  computeLegacyDigitSignals,
+} from './legacyDigitCodePick';
 
-/** prefix(입력+체인)에 이미 등장한 digit 집합 */
 export function usedDigitsFromPrefix(prefix: string): ReadonlySet<number> {
   const used = new Set<number>();
   for (const ch of prefix) {
@@ -209,7 +222,6 @@ export function usedDigitsFromPrefix(prefix: string): ReadonlySet<number> {
   return used;
 }
 
-/** prefix에 이미 뽑은 digit은 pool 후보에서 제외 — pool 소진 시에도 used digit 복원 금지 */
 export function poolExcludingPrefixPicks(
   pool: readonly number[],
   prefix: string,
@@ -219,22 +231,14 @@ export function poolExcludingPrefixPicks(
   return pool.filter((d) => !used.has(d));
 }
 
-/**
- * 세분 pool에서 used digit 제외 → 소진 시 같은 main band 미사용 digit → 그래도 없으면 0~9 미사용
- * (이미 나온 digit은 절대 복원하지 않음)
- */
+/** Soft gating: all 0–9 minus prefix-used digits (no sub-band hard filter). */
 export function resolveEligibleDigitPool(
   path: PatternRecommendPath,
   prefix: string,
 ): readonly number[] {
-  const fromSubBand = poolExcludingPrefixPicks(path.candidatePool, prefix);
-  if (fromSubBand.length > 0) return fromSubBand;
-
-  const used = usedDigitsFromPrefix(prefix);
-  const fromMainBand = getDigitsInMainBand(path.targetMainBand).filter((d) => !used.has(d));
-  if (fromMainBand.length > 0) return fromMainBand;
-
-  return Array.from({ length: 10 }, (_, i) => i).filter((d) => !used.has(d));
+  void path;
+  const all = Array.from({ length: 10 }, (_, i) => i);
+  return poolExcludingPrefixPicks(all, prefix);
 }
 
 export function resolveFinalDigitPick(
@@ -246,42 +250,34 @@ export function resolveFinalDigitPick(
   const eligible = resolveEligibleDigitPool(path, prefix);
   if (eligible.length === 0) return null;
 
-  const pick = pickDigitWithLegacyCodeOrFlow(eligible, result, prefix, path.targetSubBand, codes);
-  const reason =
-    eligible.length < path.candidatePool.length
-      ? `${pick.reason} · pool [${path.candidatePool.join(',')}] − 이미 선택 [${prefix}]`
-      : eligible.length > path.candidatePool.length || !path.candidatePool.every((d) => eligible.includes(d))
-        ? `${pick.reason} · pool [${path.candidatePool.join(',')}] → 확장 [${eligible.join(',')}]`
-        : pick.reason;
+  const breakdown = computeDigitPredictionScores(path, result, prefix, codes, eligible);
+  const winner = breakdown.scores[0];
+  if (!winner) return null;
+
   return {
-    digit: pick.digit,
-    mode: pick.mode,
-    reason,
+    digit: breakdown.winningDigit,
+    mode: breakdown.winningMode,
+    reason: breakdown.summaryReason,
+    breakdown,
   };
 }
 
-/** Code/Values 패턴 근거로 후보 정렬 */
 function rankRecommendCandidates(
-  path: PatternRecommendPath,
+  breakdown: DigitScoreBreakdown,
   prefix: string,
-  primaryPick: FinalDigitPickResult,
 ): RecommendDigitCandidate[] {
-  const eligible = resolveEligibleDigitPool(path, prefix);
-  const rows: RecommendDigitCandidate[] = eligible.map((d) => ({
-    digit: d,
-    patternScore: path.digitScores[d] ?? 0.1,
-    pickMode: d === primaryPick.digit ? primaryPick.mode : 'pattern',
-    pickReason: d === primaryPick.digit ? primaryPick.reason : '',
-  }));
+  const used = usedDigitsFromPrefix(prefix);
 
-  rows.sort((a, b) => {
-    if (a.digit === primaryPick.digit && b.digit !== primaryPick.digit) return -1;
-    if (b.digit === primaryPick.digit && a.digit !== primaryPick.digit) return 1;
-    if (b.patternScore !== a.patternScore) return b.patternScore - a.patternScore;
-    return a.digit - b.digit;
-  });
-
-  return rows;
+  return breakdown.scores
+    .filter((s) => !used.has(s.digit))
+    .filter((s) => !wouldFormRepetitivePattern(prefix, s.digit) || s.digit === breakdown.winningDigit)
+    .map((s) => ({
+      digit: s.digit,
+      patternScore: s.totalScore,
+      pickMode: s.mode,
+      pickReason: s.reasons.join(' · ') || breakdown.summaryReason,
+      scoreBreakdown: s,
+    }));
 }
 
 export function pickTopRecommendCandidates(
@@ -294,33 +290,24 @@ export function pickTopRecommendCandidates(
 ): RecommendDigitCandidate[] {
   void master;
 
-  const primaryPick = result
-    ? resolveFinalDigitPick(path, result, prefix, codes)
-    : {
-        digit: [...poolExcludingPrefixPicks(path.candidatePool, prefix)].sort(
-          (a, b) => (path.digitScores[b] ?? 0) - (path.digitScores[a] ?? 0) || a - b,
-        )[0]!,
-        mode: 'pattern' as const,
-        reason: '패턴 점수 1순위',
-      };
+  if (!result) {
+    const ordered = poolExcludingPrefixPicks(path.candidatePool, prefix)
+      .map((d) => ({
+        digit: d,
+        patternScore: path.digitScores[d] ?? 0.1,
+        pickMode: 'pattern' as const,
+        pickReason: '',
+      }))
+      .sort((a, b) => b.patternScore - a.patternScore);
+    return ordered.slice(0, Math.min(topN, ordered.length));
+  }
 
-  if (!primaryPick) return [];
+  const pick = resolveFinalDigitPick(path, result, prefix, codes);
+  if (!pick?.breakdown) return [];
 
-  const ordered = result
-    ? rankRecommendCandidates(path, prefix, primaryPick)
-    : poolExcludingPrefixPicks(path.candidatePool, prefix)
-        .map((d) => ({
-          digit: d,
-          patternScore: path.digitScores[d] ?? 0.1,
-          pickMode: 'pattern' as const,
-          pickReason: '',
-        }))
-        .sort((a, b) => b.patternScore - a.patternScore || a.digit - b.digit);
-
-  const used = usedDigitsFromPrefix(prefix);
-  const unused = ordered.filter((c) => !used.has(c.digit));
-  const nonRep = unused.filter((c) => !wouldFormRepetitivePattern(prefix, c.digit));
-  const list = nonRep.length > 0 ? nonRep : unused;
+  const ordered = rankRecommendCandidates(pick.breakdown, prefix);
+  const nonRep = ordered.filter((c) => !wouldFormRepetitivePattern(prefix, c.digit));
+  const list = nonRep.length > 0 ? nonRep : ordered;
   return list.slice(0, Math.min(topN, list.length));
 }
 
@@ -376,6 +363,7 @@ export function recommendNextDigitStep(
     prefix,
     candidates,
     hierarchy,
+    scoreBreakdown: pick?.breakdown,
   };
 }
 
@@ -414,8 +402,6 @@ export function recommendDigitChain(
   options: { chainDepth?: number; topN?: number; extraSteps?: number } = {},
 ): RecommendChainResult {
   const codes = codeStatsToMatchInputs(codeStats);
-  // 각 step: virtualMaster = result.digits + workingPrefix 로 ①②③ 재판단.
-  // result.digits 는 변경하지 않음 — chain 종료 후 prefix="" 이면 원본 Master 로 복귀.
   const chainDepth = options.chainDepth ?? RECOMMEND_CHAIN_DEPTH_DEFAULT;
   const topN = clampRecommendTopN(options.topN ?? RECOMMEND_TOP_N_DEFAULT);
   const extraSteps = options.extraSteps ?? 0;
@@ -460,7 +446,6 @@ export function appendDigitToInput(currentInput: string, digit: number): string 
   return nextDecimal;
 }
 
-/** @deprecated resolvePatternRecommendPath */
 export const resolvePatternRecommendationPath = resolvePatternRecommendPath;
 
 export { trailingRunProgress };

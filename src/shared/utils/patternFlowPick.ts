@@ -36,6 +36,11 @@ import {
 } from './subBandRepeatJudgment';
 import { wouldFormRepetitivePattern } from './patternRepeatGuard';
 import { sliceRecentDigitScoreTail } from './recentCompare';
+import { DIGIT_PREDICTION_WEIGHTS } from './digitPredictionWeights';
+import {
+  flowOrderFromMasterSequence,
+  masterDigitsInSubBandSequence,
+} from './masterDigitSequence';
 
 export type PatternFlowPickMode = 'repeat' | 'transition' | 'pattern';
 
@@ -201,40 +206,61 @@ function inferDigitFlowPhase(
   result: AnalysisResult,
   prefix: string,
   subBand: DigitSubBand,
-): { phase: 'repeat' | 'transition'; label: string; sourceDigit: number | null } {
+): { phase: 'repeat' | 'transition'; label: string; tailMasterDigit: number | null } {
   const mainBand = getSubBandMainBand(subBand);
   const side: DigitClass = mainBand === 'low' ? 'low' : 'high';
   const pointValues = getSidePointValues(result, prefix, side);
   const filtered = filterPointValuesToSubBand(pointValues, subBand);
   const tokens = sliceRecentDigitScoreTail(buildPointValueTokens(filtered));
+  const masterSeq = masterDigitsInSubBandSequence(result, prefix, subBand);
+  const tailMasterDigit = masterSeq.at(-1) ?? null;
 
   if (tokens.length === 0) {
-    return { phase: 'transition', label: `${getSubBandLabel(subBand)} S″ 없음`, sourceDigit: null };
+    return {
+      phase: 'transition',
+      label: `${getSubBandLabel(subBand)} S″ 없음`,
+      tailMasterDigit,
+    };
   }
 
-  const lastToken = tokens[tokens.length - 1]!;
-  const sourceDigit = lastToken.sourceDigit;
+  if (tailMasterDigit === null) {
+    return {
+      phase: 'transition',
+      label: `${getSubBandLabel(subBand)} master seq 없음`,
+      tailMasterDigit: null,
+    };
+  }
+
   const currentRun = currentSourceRunLength(tokens);
-  const expected = expectedSourceRunLength(tokens, sourceDigit, side);
+  const expected = expectedSourceRunLength(tokens, tailMasterDigit, side);
 
   if (currentRun <= expected) {
     return {
       phase: 'repeat',
-      label: `source ${sourceDigit} run ${currentRun}/${expected} (S″ Values 참고)`,
-      sourceDigit,
+      label: `master ${tailMasterDigit} run ${currentRun}/${expected} (S″ Values 참고)`,
+      tailMasterDigit,
     };
   }
 
   return {
     phase: 'transition',
-    label: `source ${sourceDigit} run ${currentRun}≥${expected} → digit 전환`,
-    sourceDigit,
+    label: `master ${tailMasterDigit} run ${currentRun}≥${expected} → digit 전환`,
+    tailMasterDigit,
   };
 }
 
+/** Runtime PatternFlow direction — history only (for conditional gating). */
+export function inferPatternFlowPhaseDirection(
+  result: AnalysisResult,
+  prefix: string,
+  subBand: DigitSubBand,
+): 'repeat' | 'transition' {
+  return inferDigitFlowPhase(result, prefix, subBand).phase;
+}
+
 /**
- * CodeValues Values(1,2,3…)가 run 길이일 때 digit으로 오매핑 차단.
- * pool digit이 어떤 token의 value와 같지만 sourceDigit이 다르면 추천 불가.
+ * Legacy guard — NOT used in final digitCandidateScoring.
+ * Prevents confusing Pattern Code Value (run length) with MasterDigit in deprecated pickers.
  */
 export function isBlockedPatternValueDigit(
   digit: number,
@@ -246,49 +272,65 @@ export function isBlockedPatternValueDigit(
   return false;
 }
 
-/** source digit 꼬리 alternation — 전환 시 다음 source */
-function pickTransitionSourceDigit(
-  tokens: readonly PointValueToken[],
-  pool: readonly number[],
-  lastSource: number | null,
-): number {
-  const seq = tokens.map((t) => t.sourceDigit).filter((d) => pool.includes(d));
-  const tail = seq.at(-1) ?? lastSource;
-  const prev = seq.at(-2);
-
-  if (tail !== undefined && prev === tail) {
-    return pool.find((d) => d !== tail && !isBlockedPatternValueDigit(d, tokens)) ?? pool[0]!;
-  }
-  if (tail !== undefined && prev !== undefined && prev !== tail) {
-    const candidate = prev;
-    if (pool.includes(candidate) && !isBlockedPatternValueDigit(candidate, tokens)) return candidate;
-  }
-  if (lastSource !== null) {
-    const alt = pool.find((d) => d !== lastSource && !isBlockedPatternValueDigit(d, tokens));
-    if (alt !== undefined) return alt;
-  }
-  return pool.find((d) => !isBlockedPatternValueDigit(d, tokens)) ?? pool[0]!;
+export interface PatternFlowDigitScore {
+  score: number;
+  mode: PatternFlowPickMode;
+  reason: string;
 }
 
-function pickFirstAllowed(
-  order: readonly number[],
+/** Score all digits 0–9 from S″ source-digit flow (no pool.find order bias). */
+export function computePatternFlowDigitScores(
+  result: AnalysisResult,
   prefix: string,
-  tokens: readonly PointValueToken[],
-  prefer?: number,
-): number | null {
-  if (
-    prefer !== undefined &&
-    order.includes(prefer) &&
-    !wouldFormRepetitivePattern(prefix, prefer) &&
-    !isBlockedPatternValueDigit(prefer, tokens)
-  ) {
-    return prefer;
+  subBand: DigitSubBand,
+): Map<number, PatternFlowDigitScore> {
+  const w = DIGIT_PREDICTION_WEIGHTS;
+  const side: DigitClass = getSubBandMainBand(subBand) === 'low' ? 'low' : 'high';
+  const pointValues = getSidePointValues(result, prefix, side);
+  let filtered = filterPointValuesToSubBand(pointValues, subBand);
+  if (filtered.length === 0) filtered = pointValues;
+  const tokens = sliceRecentDigitScoreTail(buildPointValueTokens(filtered));
+  const phase = inferDigitFlowPhase(result, prefix, subBand);
+  const masterSeq = masterDigitsInSubBandSequence(result, prefix, subBand);
+  const lastSource = phase.tailMasterDigit ?? masterSeq.at(-1) ?? null;
+  const allDigits = Array.from({ length: 10 }, (_, i) => i);
+  const order = flowOrderFromMasterSequence(
+    masterSeq,
+    allDigits,
+    phase.phase === 'repeat' ? lastSource : null,
+  );
+
+  const sPrimeTail = tokens
+    .slice(-4)
+    .map((t) => (t.sourceDigit === t.value ? String(t.sourceDigit) : `${t.value}(→${t.sourceDigit})`))
+    .join(',');
+
+  const out = new Map<number, PatternFlowDigitScore>();
+  const n = order.length;
+
+  for (let i = 0; i < order.length; i += 1) {
+    const digit = order[i]!;
+    const rankScore = (n - i) / Math.max(1, n);
+    let mode: PatternFlowPickMode = 'pattern';
+    if (phase.phase === 'repeat' && digit === lastSource) mode = 'repeat';
+    else if (phase.phase === 'transition' && digit !== lastSource) mode = 'transition';
+
+    const score =
+      rankScore * w.patternFlow * (mode === 'repeat' ? 1.35 : 1) +
+      (digit === lastSource && lastSource !== null ? w.patternFlow * 0.4 : 0);
+    out.set(digit, {
+      score,
+      mode,
+      reason:
+        mode === 'repeat'
+          ? `이번 차례 · ${phase.label} · S″[${sPrimeTail}] → ${digit}`
+          : mode === 'transition'
+            ? `전환 · ${phase.label} · S″[${sPrimeTail}] → ${digit}`
+            : `패턴 흐름 · S″[${sPrimeTail}] → ${digit}`,
+    });
   }
-  for (const d of order) {
-    if (isBlockedPatternValueDigit(d, tokens)) continue;
-    if (!wouldFormRepetitivePattern(prefix, d)) return d;
-  }
-  return order.find((d) => !isBlockedPatternValueDigit(d, tokens)) ?? null;
+
+  return out;
 }
 
 function flowOrderFromSourceDigits(
@@ -321,7 +363,61 @@ function flowOrderFromSourceDigits(
   return order;
 }
 
-/** ③ digit — sourceDigit run 흐름 (CodeValues Values ≠ digit) */
+/** @deprecated internal — kept for legacy transition helper only */
+function pickTransitionSourceDigit(
+  tokens: readonly PointValueToken[],
+  pool: readonly number[],
+  lastSource: number | null,
+): number {
+  const scores = new Map<number, number>();
+  const seq = tokens.map((t) => t.sourceDigit);
+  const tail = seq.at(-1) ?? lastSource;
+  const prev = seq.at(-2);
+
+  if (tail !== undefined && prev !== undefined && prev !== tail && pool.includes(prev)) {
+    scores.set(prev, (scores.get(prev) ?? 0) + 3);
+  }
+  for (let i = tokens.length - 1; i >= 0; i -= 1) {
+    const d = tokens[i]!.sourceDigit;
+    if (!pool.includes(d) || d === lastSource) continue;
+    if (isBlockedPatternValueDigit(d, tokens)) continue;
+    scores.set(d, (scores.get(d) ?? 0) + (tokens.length - i) * 0.5);
+  }
+
+  let best: number | null = null;
+  let bestScore = -Infinity;
+  for (const [d, s] of scores) {
+    if (s > bestScore) {
+      bestScore = s;
+      best = d;
+    }
+  }
+  if (best !== null) return best;
+  return pool.find((d) => !isBlockedPatternValueDigit(d, tokens)) ?? pool[0]!;
+}
+
+function pickFirstAllowed(
+  order: readonly number[],
+  prefix: string,
+  tokens: readonly PointValueToken[],
+  prefer?: number,
+): number | null {
+  if (
+    prefer !== undefined &&
+    order.includes(prefer) &&
+    !wouldFormRepetitivePattern(prefix, prefer) &&
+    !isBlockedPatternValueDigit(prefer, tokens)
+  ) {
+    return prefer;
+  }
+  for (const d of order) {
+    if (isBlockedPatternValueDigit(d, tokens)) continue;
+    if (!wouldFormRepetitivePattern(prefix, d)) return d;
+  }
+  return order.find((d) => !isBlockedPatternValueDigit(d, tokens)) ?? null;
+}
+
+/** ③ digit — sourceDigit run 흐름; pool 내 최고 flow score 선택 */
 export function pickDigitByPatternFlow(
   pool: readonly number[],
   result: AnalysisResult,
@@ -332,76 +428,43 @@ export function pickDigitByPatternFlow(
     return { digit: -1, mode: 'pattern', reason: '후보 pool 없음' };
   }
 
-  const side: DigitClass = getSubBandMainBand(subBand) === 'low' ? 'low' : 'high';
-  const filtered = filterPointValuesToSubBand(getSidePointValues(result, prefix, side), subBand);
-  const tokens = sliceRecentDigitScoreTail(buildPointValueTokens(filtered));
-  const phase = inferDigitFlowPhase(result, prefix, subBand);
-  const lastSource = phase.sourceDigit ?? tokens.at(-1)?.sourceDigit ?? null;
+  const flowScores = computePatternFlowDigitScores(result, prefix, subBand);
+  let best: PatternFlowPickResult | null = null;
 
-  const sPrimeTail = tokens
-    .slice(-4)
-    .map((t) => (t.sourceDigit === t.value ? String(t.sourceDigit) : `${t.value}(→${t.sourceDigit})`))
-    .join(',');
-
-  if (phase.phase === 'repeat' && lastSource !== null && pool.includes(lastSource)) {
-    const digit =
-      pickFirstAllowed([lastSource], prefix, tokens, lastSource) ??
-      (isBlockedPatternValueDigit(lastSource, tokens) ? null : lastSource);
-    if (digit !== null) {
-      return {
-        digit,
-        mode: 'repeat',
-        reason: `이번 차례 · ${phase.label} · S″[${sPrimeTail}] → source digit ${digit}`,
-      };
+  for (const digit of pool) {
+    if (wouldFormRepetitivePattern(prefix, digit)) continue;
+    const fs = flowScores.get(digit);
+    if (!fs) continue;
+    if (!best || fs.score > flowScores.get(best.digit)!.score) {
+      best = { digit, mode: fs.mode, reason: fs.reason };
     }
   }
 
-  const transitionDigit = pickTransitionSourceDigit(tokens, pool, lastSource);
-  if (!isBlockedPatternValueDigit(transitionDigit, tokens) && !wouldFormRepetitivePattern(prefix, transitionDigit)) {
-    return {
-      digit: transitionDigit,
-      mode: 'transition',
-      reason: `전환 · ${phase.label} · S″[${sPrimeTail}] → source digit ${transitionDigit}`,
-    };
-  }
+  if (best) return best;
 
-  const order = flowOrderFromSourceDigits(
-    tokens,
-    pool,
-    phase.phase === 'repeat' ? lastSource : null,
-  );
-  const fallback = pickFirstAllowed(order, prefix, tokens) ?? pool.find((d) => !isBlockedPatternValueDigit(d, tokens)) ?? pool[0]!;
-  return {
-    digit: fallback,
-    mode: 'pattern',
-    reason: `패턴 흐름 · S″[${sPrimeTail}] → source digit ${fallback}`,
-  };
+  const side: DigitClass = getSubBandMainBand(subBand) === 'low' ? 'low' : 'high';
+  const filtered = filterPointValuesToSubBand(getSidePointValues(result, prefix, side), subBand);
+  const tokens = sliceRecentDigitScoreTail(buildPointValueTokens(filtered));
+  const fallback = pool.find((d) => !isBlockedPatternValueDigit(d, tokens)) ?? pool[0]!;
+  return { digit: fallback, mode: 'pattern', reason: `패턴 흐름 fallback → ${fallback}` };
 }
 
-/** UI 정렬 — source digit flow 순서 (가점·빈도 아님) */
+/** UI 정렬 — integrated flow scores for all digits */
 export function patternFlowRankScores(
   pool: readonly number[],
   result: AnalysisResult,
   prefix: string,
   subBand: DigitSubBand,
 ): Record<number, number> {
-  const side: DigitClass = getSubBandMainBand(subBand) === 'low' ? 'low' : 'high';
-  const filtered = filterPointValuesToSubBand(getSidePointValues(result, prefix, side), subBand);
-  const tokens = sliceRecentDigitScoreTail(buildPointValueTokens(filtered));
-  const phase = inferDigitFlowPhase(result, prefix, subBand);
-  const lastSource = phase.sourceDigit ?? tokens.at(-1)?.sourceDigit ?? null;
-  const order = flowOrderFromSourceDigits(
-    tokens,
-    pool,
-    phase.phase === 'repeat' ? lastSource : null,
-  );
+  const flowScores = computePatternFlowDigitScores(result, prefix, subBand);
   const scores: Record<number, number> = {};
-  const n = order.length;
-  for (let i = 0; i < order.length; i += 1) {
-    scores[order[i]!] = n - i;
-  }
   for (const d of pool) {
-    if (scores[d] === undefined) scores[d] = 0.1;
+    scores[d] = flowScores.get(d)?.score ?? 0.1;
+  }
+  for (let d = 0; d <= 9; d += 1) {
+    if (scores[d] === undefined && flowScores.has(d)) {
+      scores[d] = flowScores.get(d)!.score;
+    }
   }
   return scores;
 }

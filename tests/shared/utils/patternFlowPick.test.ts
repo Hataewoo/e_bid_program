@@ -90,7 +90,7 @@ describe('patternFlowPick', () => {
     expect(pick).not.toBeNull();
     expect(pick!.digit).toBe(3);
     expect(pick!.digit).not.toBe(1);
-    expect(pick!.reason).toMatch(/digit 3|코드 23/);
+    expect(pick!.reason).toMatch(/→ 3|digit 3|코드 23|source 3/);
 
     const tokens = buildPointValueTokens(
       filterPointValuesToSubBand(getSidePointValues(result, '', 'low'), path.targetSubBand),

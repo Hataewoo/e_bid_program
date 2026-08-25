@@ -75,7 +75,8 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
     [result, codeValueStats],
   );
 
-  const topCandidate = nextStep?.candidates[0] ?? null;
+  /** Production scoring winner — same as scoreBreakdown.winningDigit from recommendNextDigitStep */
+  const recommendedDigit = nextStep?.scoreBreakdown?.winningDigit ?? null;
 
   return (
     <div className="shrink-0 border-b border-[#404040] bg-[#fffff0] px-3 py-2">
@@ -90,16 +91,13 @@ export const AnalysisPredictionPanel = memo(function AnalysisPredictionPanel({
         <div className="mt-2 text-sm text-content-muted">{t('analysis.prediction.empty')}</div>
       ) : (
         <div className="mt-2 space-y-3">
-          {topCandidate ? (
+          {recommendedDigit != null ? (
             <div className="rounded border border-[#000080] bg-[#e8e8ff] px-3 py-2">
               <div className="text-xs font-semibold text-[#000080]">
-                {t('analysis.prediction.nextDigitTitle', { position: nextStep!.position })}
+                {t('analysis.prediction.recommendedValue')}
               </div>
-              <div
-                className="mt-1 font-mono text-4xl font-bold leading-none text-black"
-                title={topCandidate.pickReason}
-              >
-                {topCandidate.digit}
+              <div className="mt-1 font-mono text-4xl font-bold leading-none text-black">
+                {recommendedDigit}
               </div>
             </div>
           ) : null}

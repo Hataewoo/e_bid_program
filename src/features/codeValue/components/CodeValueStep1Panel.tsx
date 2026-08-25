@@ -47,9 +47,7 @@ const CodeValueIbInfoBox = memo(function CodeValueIbInfoBox({ result }: { result
               {t('analysis.ib.caseUnit', { count: result.highCount, rate: result.highRate })}
             </div>
           </div>
-          <div className="flex w-16 shrink-0 items-center justify-center border border-dashed border-[#808080] text-[10px] text-[#404040]">
-            LOGO
-          </div>
+           
         </div>
       </div>
     </div>
