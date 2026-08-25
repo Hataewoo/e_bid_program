@@ -14,13 +14,13 @@ describe('patternFlowPick', () => {
     const result = analyzeMasterValue('00', '0011223344');
     const { sub, reasons } = resolveSubBandFromPatternFlow(result, '', 'low');
     expect(['lowLow', 'lowHigh']).toContain(sub);
-    expect(reasons.some((r) => r.includes('CodeValues'))).toBe(true);
+    expect(reasons.some((r) => r.includes('1사이'))).toBe(true);
   });
 
   it('resolves sub-band from CodeValues flow', () => {
     const result = analyzeMasterValue('00', '0011223344');
     const path = resolvePatternRecommendPath(result, '');
-    expect(path.subBandReasons.some((r) => r.includes('CodeValues') || r.includes('S″'))).toBe(true);
+    expect(path.subBandReasons.some((r) => r.includes('1사이') || r.includes('세분화'))).toBe(true);
     expect(['lowLow', 'lowHigh', 'highLow', 'highHigh']).toContain(path.targetSubBand);
   });
 

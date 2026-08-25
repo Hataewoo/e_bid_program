@@ -2,9 +2,26 @@ import { describe, expect, it } from 'vitest';
 import { analyzeMasterValue } from '@/shared/utils/analysisEngine';
 import { predictDigitChain } from '@/shared/utils/nextDigitEngine';
 import { resolvePatternRecommendPath } from '@/shared/utils/patternRecommendEngine';
-import { inferSubBandPhase } from '@/shared/utils/subBandRepeatJudgment';
+import { inferSubBandPhase, inferSubBandPhaseFromOneBetween } from '@/shared/utils/subBandRepeatJudgment';
 
 describe('subBandRepeatJudgment', () => {
+  it('1사이 패턴 1순위 — between 진행 중이면 repeat', () => {
+    const phase = inferSubBandPhaseFromOneBetween([1, 3, 2, 1, 3], 'low', 'lowLow');
+    expect(phase?.phase).toBe('repeat');
+    expect(phase?.label).toContain('1사이');
+    expect(phase?.label).toContain('1/2');
+  });
+
+  it('1사이 패턴 1순위 — between 종료면 transition', () => {
+    const phase = inferSubBandPhaseFromOneBetween([1, 3, 2, 1], 'low', 'lowLow');
+    expect(phase?.phase).toBe('transition');
+    expect(phase?.label).toContain('1사이');
+  });
+
+  it('1사이 없으면 null — 다른 패턴으로 fallback', () => {
+    expect(inferSubBandPhaseFromOneBetween([3, 2, 3], 'low', 'lowHigh')).toBeNull();
+  });
+
   it('detects highLow run continuation on repeated 7 in high side PV', () => {
     const result = analyzeMasterValue('00', '5566777788');
     const phase = inferSubBandPhase(result, '77', 'high', 'highLow');

@@ -147,7 +147,7 @@ export function resolveSubBandFromPatternFlow(
   const context = virtualMasterDigits(result, prefix);
   const lastDigit = findLastDigitInMainBand(context, mainBand);
   const currentSub = lastDigit !== null ? getDigitSubBand(lastDigit) : null;
-  const reasons: string[] = ['② CodeValues S″ run 패턴 (Values≠digit, 빈도 합산 없음)'];
+  const reasons: string[] = ['② 세분화 — 1사이 패턴 1순위 (Values≠digit, 반복/종료 판단)'];
 
   if (!currentSub || !candidates.includes(currentSub)) {
     const sub = candidates[0]!;

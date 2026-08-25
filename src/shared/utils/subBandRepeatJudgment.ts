@@ -52,6 +52,56 @@ function subBandOfLastInContext(context: string, mainBand: DigitBand): DigitSubB
   return d !== null ? getDigitSubBand(d) : null;
 }
 
+/** S″ 꼬리 — 마커 1 이후 Values 개수 (1사이 진행도) */
+function trailingCountSinceMarkerOne(sPrime: readonly number[]): number {
+  let count = 0;
+  for (let i = sPrime.length - 1; i >= 0; i -= 1) {
+    if (sPrime[i] === 1) break;
+    count += 1;
+  }
+  return count;
+}
+
+/**
+ * ② 세분화 1순위 — CodeValues 「1 사이」 패턴으로 run 유지/종료 판단.
+ * Values(1,2,3…)는 run·사이 횟수 참고만 — digit 매핑 금지.
+ */
+export function inferSubBandPhaseFromOneBetween(
+  sPrime: readonly number[],
+  side: DigitClass,
+  currentSub: DigitSubBand,
+): { phase: SubBandPhase; label: string } | null {
+  if (sPrime.length === 0) return null;
+
+  const patterns = extractCodeValuesFromBaseSequence([...sPrime], side);
+  const oneBetweenHints = (patterns.oneBetween ?? []).filter((v) => v > 0);
+  if (oneBetweenHints.length === 0) return null;
+
+  const expectedBetween = oneBetweenHints[oneBetweenHints.length - 1]!;
+  const trailingSinceOne = trailingCountSinceMarkerOne(sPrime);
+  const subLabel = getSubBandLabel(currentSub);
+  const hintLabel = oneBetweenHints.join(',');
+
+  if (trailingSinceOne === 0 && sPrime.at(-1) === 1) {
+    return {
+      phase: 'transition',
+      label: `${subLabel} 1사이 [${hintLabel}] — 마커 1 도달 → 형제 세분화`,
+    };
+  }
+
+  if (trailingSinceOne < expectedBetween) {
+    return {
+      phase: 'repeat',
+      label: `${subLabel} 1사이 [${hintLabel}] — 1 사이 지속 (${trailingSinceOne}/${expectedBetween})`,
+    };
+  }
+
+  return {
+    phase: 'transition',
+    label: `${subLabel} 1사이 [${hintLabel}] — 1 사이 종료 (${trailingSinceOne}≥${expectedBetween}) → 형제 세분화`,
+  };
+}
+
 /** Side Point Values S″ + Code/Values → 현재 세분화 구간 유지·전환 */
 export function inferSubBandPhase(
   result: AnalysisResult,
@@ -67,6 +117,9 @@ export function inferSubBandPhase(
   if (sPrime.length === 0) {
     return { phase: 'transition', label: `${getSubBandLabel(currentSub)} S″ 없음 → 전환 검토` };
   }
+
+  const oneBetweenPhase = inferSubBandPhaseFromOneBetween(sPrime, side, currentSub);
+  if (oneBetweenPhase) return oneBetweenPhase;
 
   const patterns = extractCodeValuesFromBaseSequence(sPrime, side);
   const runHints = [
