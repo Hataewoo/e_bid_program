@@ -1,8 +1,8 @@
 import { AppErrorCode } from '@/shared/errors/app-error-codes';
+import { MASTER_VALUE_MAX_LENGTH } from '@/shared/constants/master-value';
 import type { MasterInput, DataValidationResult } from '@/types/electron';
 
-/** 레거시 이명전기 마스터값은 수만~수십만 자리 숫자 시퀀스 */
-export const MASTER_VALUE_MAX_LENGTH = 10_000_000;
+export { MASTER_VALUE_MAX_LENGTH };
 
 export interface ValidationResult {
   valid: boolean;
@@ -23,7 +23,10 @@ export function isValidMasterNo(value: string): boolean {
 
 export function normalizeMasterValue(value: string): string {
   if (!value) return '';
-  return value.replace(/[\s,\r\n\t;|]+/g, '').replace(/\D/g, '');
+  return value
+    .replace(/[\s,\r\n\t;|]+/g, '')
+    .replace(/\D/g, '')
+    .slice(0, MASTER_VALUE_MAX_LENGTH);
 }
 
 export function isNumericMasterValue(value: string): boolean {
