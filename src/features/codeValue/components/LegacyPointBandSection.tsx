@@ -2,6 +2,7 @@ import { memo, useState } from 'react';
 import type { LegacyPointBandContent } from '@/shared/utils/legacyEmyoungAlgorithms';
 import { ResizableSplitter } from '@/components/layout/ResizableSplitter';
 import { useI18n } from '@/i18n/use-i18n';
+import type { PatternModalState, PatternSide } from '@/features/analysis/types/pattern-rows';
 import { LegacyCommaContentTextarea } from './LegacyCommaContentTextarea';
 import { LegacyPatternValueGridTable } from './LegacyPatternValueGridTable';
 
@@ -9,6 +10,8 @@ interface LegacyPointBandSectionProps {
   headerLabel: string;
   band: LegacyPointBandContent;
   storageKey: string;
+  patternSide?: PatternSide;
+  onOpenPatternDetail?: (modal: PatternModalState) => void;
 }
 
 /** E-Myoung txt_LowPoint_Low / grid_Code_Low_Low — DetailGrid + 10패턴 그리드 */
@@ -16,6 +19,8 @@ export const LegacyPointBandSection = memo(function LegacyPointBandSection({
   headerLabel,
   band,
   storageKey,
+  patternSide,
+  onOpenPatternDetail,
 }: LegacyPointBandSectionProps) {
   const { t } = useI18n();
   const [popupOpen, setPopupOpen] = useState(false);
@@ -53,7 +58,11 @@ export const LegacyPointBandSection = memo(function LegacyPointBandSection({
         }
         right={
           <div className="win-pattern-values-panel h-full min-h-0 overflow-auto p-0">
-            <LegacyPatternValueGridTable rows={band.patternGrid} />
+            <LegacyPatternValueGridTable
+              rows={band.patternGrid}
+              side={patternSide}
+              onOpenPatternDetail={onOpenPatternDetail}
+            />
           </div>
         }
       />
@@ -78,7 +87,11 @@ export const LegacyPointBandSection = memo(function LegacyPointBandSection({
                 <div className="mb-1 text-xs font-semibold text-[#000080]">
                   {t('codeValue.legacy.patternAnalysisPopupSection')}
                 </div>
-                <LegacyPatternValueGridTable rows={band.patternGrid} />
+                <LegacyPatternValueGridTable
+              rows={band.patternGrid}
+              side={patternSide}
+              onOpenPatternDetail={onOpenPatternDetail}
+            />
               </div>
             </div>
           </div>

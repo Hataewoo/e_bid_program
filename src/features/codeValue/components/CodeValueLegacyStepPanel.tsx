@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import type { AnalysisResult, CodeMatchInput } from '@/shared/utils/analysisEngine';
 import {
   buildLegacyCodeContentRows,
@@ -11,7 +11,8 @@ import { ResizableSplitter } from '@/components/layout/ResizableSplitter';
 import { ResizableVerticalSplitter } from '@/components/layout/ResizableVerticalSplitter';
 import { filterDigitsByClass, formatRunLengthSequence } from '@/features/analysis/utils/analysis-display';
 import { PatternValuesTable } from '@/features/analysis/components/PatternValuesTable';
-import { CODE_VALUE_PATTERN_ROWS } from '@/features/analysis/types/pattern-rows';
+import { PatternDetailModal } from '@/features/analysis/components/PatternDetailModal';
+import { CODE_VALUE_PATTERN_ROWS, type PatternModalState } from '@/features/analysis/types/pattern-rows';
 import type { DigitBand, DigitSubBand } from '@/shared/utils/digitSubBand';
 import { useI18n } from '@/i18n/use-i18n';
 import type { MessageKey } from '@/i18n/messages';
@@ -50,6 +51,12 @@ export const CodeValueLegacyStepPanel = memo(function CodeValueLegacyStepPanel({
 }: CodeValueLegacyStepPanelProps) {
   const { t } = useI18n();
   const [sPatternPopupOpen, setSPatternPopupOpen] = useState(false);
+  const [patternModal, setPatternModal] = useState<PatternModalState | null>(null);
+
+  const handleOpenPatternDetail = useCallback(
+    (modal: PatternModalState) => setPatternModal(modal),
+    [],
+  );
 
   const isLow = side === 'low';
   const patternSide = isLow ? 'low' : 'high';
@@ -156,6 +163,8 @@ export const CodeValueLegacyStepPanel = memo(function CodeValueLegacyStepPanel({
                 headerLabel={primaryHeader}
                 band={stepBands.primaryBand}
                 storageKey={`codevalue-legacy-${side}-${PRIMARY_SUB_BAND[side]}`}
+                patternSide={patternSide}
+                onOpenPatternDetail={handleOpenPatternDetail}
               />
             }
             bottom={
@@ -163,6 +172,8 @@ export const CodeValueLegacyStepPanel = memo(function CodeValueLegacyStepPanel({
                 headerLabel={secondaryHeader}
                 band={stepBands.secondaryBand}
                 storageKey={`codevalue-legacy-${side}-${SECONDARY_SUB_BAND[side]}`}
+                patternSide={patternSide}
+                onOpenPatternDetail={handleOpenPatternDetail}
               />
             }
           />
@@ -205,7 +216,7 @@ export const CodeValueLegacyStepPanel = memo(function CodeValueLegacyStepPanel({
                   rows={CODE_VALUE_PATTERN_ROWS}
                   patterns={sPatterns}
                   activeHighlight={null}
-                  onOpenModal={() => {}}
+                  onOpenModal={handleOpenPatternDetail}
                   onPatternHighlight={() => {}}
                   onPatternPin={() => {}}
                 />
@@ -214,6 +225,12 @@ export const CodeValueLegacyStepPanel = memo(function CodeValueLegacyStepPanel({
           </div>
         </div>
       ) : null}
+
+      <PatternDetailModal
+        modal={patternModal}
+        masterNo={result.masterNo}
+        onClose={() => setPatternModal(null)}
+      />
     </div>
   );
 });

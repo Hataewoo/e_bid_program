@@ -33,7 +33,7 @@ export const PatternDetailModal = memo(function PatternDetailModal({
       : t('analysis.pattern.subDetailHighBand');
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 p-4">
       <div className="win-dialog-window flex max-h-[90vh] w-full max-w-3xl flex-col shadow-lg">
         <div className="win-titlebar flex items-center justify-between">
           <span>

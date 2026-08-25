@@ -41,3 +41,44 @@ export interface PatternModalState {
 export function getPatternValues(patterns: SidePatterns, field: keyof SidePatterns): number[] {
   return patterns[field] ?? [];
 }
+
+/** 레거시 grid 라벨 → PatternValuesTable code (공백 차이 정규화) */
+const LEGACY_LABEL_TO_CODE: Record<string, string> = {
+  '1 중복': '1 중복',
+  '2,3+α': '2, 3+α',
+  '3,4+α': '3, 4+α',
+  '4,5+α': '4, 5+α',
+  '5+α,4': '5+α, 4',
+  '3 이상': '3 이상',
+  '5 이상': '5 이상',
+  '1 사이': '1 사이',
+  '3+α,2': '3+α, 2',
+  '4+α,3': '4+α, 3',
+};
+
+export function parseLegacyPatternContent(content: string): number[] {
+  if (!content || content === '-') return [];
+  return content
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => Number(part))
+    .filter((n) => Number.isFinite(n));
+}
+
+export function patternModalFromLegacyRow(
+  side: PatternSide,
+  label: string,
+  content: string,
+): PatternModalState | null {
+  const values = parseLegacyPatternContent(content);
+  if (values.length === 0) return null;
+  const code = LEGACY_LABEL_TO_CODE[label] ?? label;
+  const rowDef = CODE_VALUE_PATTERN_ROWS.find((row) => row.code === code);
+  return {
+    side,
+    code,
+    values,
+    valueKind: rowDef?.valueKind ?? 'length',
+  };
+}
