@@ -1,0 +1,3465 @@
+{
+  "perMaster": [
+    {
+      "master": "64645123…",
+      "tail": 1,
+      "tailSide": "low",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "1",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "5",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneBetween",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "1",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.7333333333333334,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.223333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "0",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "finalDigit": 0
+    },
+    {
+      "master": "51427160…",
+      "tail": 8,
+      "tailSide": "high",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneBetween",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "8",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "1",
+        "firstDisc": "threeOrMore",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.5499999999999999,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 1.9049999999999998
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "finalDigit": 1
+    },
+    {
+      "master": "19491669…",
+      "tail": 3,
+      "tailSide": "low",
+      "step1": {
+        "winner": "HIGH",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "3",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.08
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "5",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "HIGH_HIGH",
+        "firstDisc": "commaAlpha_2_3",
+        "candidates": [
+          {
+            "id": "HIGH_LOW",
+            "virtualAppend": "5",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.7000000000000001,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.01
+            }
+          },
+          {
+            "id": "HIGH_HIGH",
+            "virtualAppend": "8",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.75,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.045
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "8",
+        "firstDisc": null,
+        "candidates": [
+          {
+            "id": "8",
+            "virtualAppend": "8",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0,
+              "nestedPatternAgreement": 0,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 0.96
+            }
+          },
+          {
+            "id": "9",
+            "virtualAppend": "9",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0,
+              "nestedPatternAgreement": 0,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 0.96
+            }
+          }
+        ]
+      },
+      "finalDigit": 8
+    },
+    {
+      "master": "19140599…",
+      "tail": 9,
+      "tailSide": "high",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "9",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.7333333333333334,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.223333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "0",
+        "firstDisc": "plusAlpha_4_3",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "finalDigit": 0
+    },
+    {
+      "master": "70164689…",
+      "tail": 6,
+      "tailSide": "high",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneBetween",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "6",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.7333333333333334,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.223333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "0",
+        "firstDisc": "plusAlpha_3_2",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "finalDigit": 0
+    },
+    {
+      "master": "46911783…",
+      "tail": 0,
+      "tailSide": "low",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "5",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "0",
+        "firstDisc": "threeOrMore",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.5499999999999999,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 1.9049999999999998
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.5499999999999999,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 1.9049999999999998
+            }
+          }
+        ]
+      },
+      "finalDigit": 0
+    },
+    {
+      "master": "32479509…",
+      "tail": 0,
+      "tailSide": "low",
+      "step1": {
+        "winner": "HIGH",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.08
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "5",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "HIGH_LOW",
+        "firstDisc": "commaAlpha_2_3",
+        "candidates": [
+          {
+            "id": "HIGH_LOW",
+            "virtualAppend": "5",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.7333333333333334,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.223333333333333
+            }
+          },
+          {
+            "id": "HIGH_HIGH",
+            "virtualAppend": "8",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "5",
+        "firstDisc": null,
+        "candidates": [
+          {
+            "id": "5",
+            "virtualAppend": "5",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0,
+              "nestedPatternAgreement": 0,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 0.96
+            }
+          },
+          {
+            "id": "6",
+            "virtualAppend": "6",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0,
+              "nestedPatternAgreement": 0,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 0.96
+            }
+          },
+          {
+            "id": "7",
+            "virtualAppend": "7",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0,
+              "nestedPatternAgreement": 0,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 0.96
+            }
+          }
+        ]
+      },
+      "finalDigit": 5
+    },
+    {
+      "master": "56542469…",
+      "tail": 8,
+      "tailSide": "high",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneBetween",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "8",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneBetween",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.7333333333333334,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.223333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "0",
+        "firstDisc": "plusAlpha_3_2",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "finalDigit": 0
+    },
+    {
+      "master": "70453601…",
+      "tail": 6,
+      "tailSide": "high",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneBetween",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "6",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_HIGH",
+        "firstDisc": "commaAlpha_2_3",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.7333333333333334,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.223333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "2",
+        "firstDisc": "plusAlpha_3_2",
+        "candidates": [
+          {
+            "id": "2",
+            "virtualAppend": "2",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "3",
+            "virtualAppend": "3",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "4",
+            "virtualAppend": "4",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "finalDigit": 2
+    },
+    {
+      "master": "88586209…",
+      "tail": 2,
+      "tailSide": "low",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "2",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "5",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "0",
+        "firstDisc": "plusAlpha_4_3",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "finalDigit": 0
+    },
+    {
+      "master": "06750398…",
+      "tail": 3,
+      "tailSide": "low",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "3",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "5",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "3",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.7333333333333334,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.223333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "1",
+        "firstDisc": "commaAlpha_2_3",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "finalDigit": 1
+    },
+    {
+      "master": "31276993…",
+      "tail": 8,
+      "tailSide": "high",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneBetween",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.7666666666666666,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.2466666666666666
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "8",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneBetween",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.75,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.045
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "0",
+        "firstDisc": "plusAlpha_3_2",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "finalDigit": 0
+    },
+    {
+      "master": "51280722…",
+      "tail": 6,
+      "tailSide": "high",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneBetween",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "6",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.7833333333333333,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.2583333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "0",
+        "firstDisc": "threeOrMore",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.5499999999999999,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 1.9049999999999998
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.5499999999999999,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 1.9049999999999998
+            }
+          }
+        ]
+      },
+      "finalDigit": 0
+    },
+    {
+      "master": "44325605…",
+      "tail": 6,
+      "tailSide": "high",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneBetween",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "6",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneBetween",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "0",
+        "firstDisc": "plusAlpha_3_2",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "finalDigit": 0
+    },
+    {
+      "master": "12407345…",
+      "tail": 3,
+      "tailSide": "low",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "3",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "5",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "3",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.7333333333333334,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.223333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "0",
+        "firstDisc": "threeOrMore",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.5499999999999999,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 1.9049999999999998
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.5499999999999999,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 1.9049999999999998
+            }
+          }
+        ]
+      },
+      "finalDigit": 0
+    },
+    {
+      "master": "88478699…",
+      "tail": 2,
+      "tailSide": "low",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "2",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "5",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_HIGH",
+        "firstDisc": "threeOrMore",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.5499999999999999,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 1.9049999999999998
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.7833333333333333,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.2583333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "2",
+        "firstDisc": "plusAlpha_3_2",
+        "candidates": [
+          {
+            "id": "2",
+            "virtualAppend": "2",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "3",
+            "virtualAppend": "3",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "4",
+            "virtualAppend": "4",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "finalDigit": 2
+    },
+    {
+      "master": "31211420…",
+      "tail": 6,
+      "tailSide": "high",
+      "step1": {
+        "winner": "HIGH",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.08
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "6",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "HIGH_HIGH",
+        "firstDisc": "threeOrMore",
+        "candidates": [
+          {
+            "id": "HIGH_LOW",
+            "virtualAppend": "6",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.65,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 1.975
+            }
+          },
+          {
+            "id": "HIGH_HIGH",
+            "virtualAppend": "8",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "8",
+        "firstDisc": null,
+        "candidates": [
+          {
+            "id": "8",
+            "virtualAppend": "8",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0,
+              "nestedPatternAgreement": 0,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 0.96
+            }
+          },
+          {
+            "id": "9",
+            "virtualAppend": "9",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0,
+              "nestedPatternAgreement": 0,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 0.96
+            }
+          }
+        ]
+      },
+      "finalDigit": 8
+    },
+    {
+      "master": "46017543…",
+      "tail": 4,
+      "tailSide": "low",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "4",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "5",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "4",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.7833333333333333,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.2583333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "0",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "finalDigit": 0
+    },
+    {
+      "master": "19493286…",
+      "tail": 2,
+      "tailSide": "low",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "2",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "5",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.75,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.045
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "1",
+        "firstDisc": "commaAlpha_2_3",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "finalDigit": 1
+    },
+    {
+      "master": "49393815…",
+      "tail": 0,
+      "tailSide": "low",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "5",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneBetween",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.75,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.045
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "0",
+        "firstDisc": "plusAlpha_4_3",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "finalDigit": 0
+    },
+    {
+      "master": "58554163…",
+      "tail": 1,
+      "tailSide": "low",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "1",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "5",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "1",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.75,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.045
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "0",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.18333333333333335,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 1.8383333333333334
+            }
+          }
+        ]
+      },
+      "finalDigit": 0
+    },
+    {
+      "master": "79649873…",
+      "tail": 9,
+      "tailSide": "high",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneBetween",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "9",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.7833333333333333,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.2583333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "0",
+        "firstDisc": "threeOrMore",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.5499999999999999,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 1.9049999999999998
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.5499999999999999,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 1.9049999999999998
+            }
+          }
+        ]
+      },
+      "finalDigit": 0
+    },
+    {
+      "master": "74660534…",
+      "tail": 2,
+      "tailSide": "low",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "2",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "5",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneBetween",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "0",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "finalDigit": 0
+    },
+    {
+      "master": "03437533…",
+      "tail": 8,
+      "tailSide": "high",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "8",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "plusAlpha_3_2",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.75,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.045
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "0",
+        "firstDisc": "plusAlpha_4_3",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "finalDigit": 0
+    },
+    {
+      "master": "24627267…",
+      "tail": 5,
+      "tailSide": "high",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "5",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_HIGH",
+        "firstDisc": "commaAlpha_2_3",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.7833333333333333,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.2583333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "3",
+        "firstDisc": "commaAlpha_2_3",
+        "candidates": [
+          {
+            "id": "2",
+            "virtualAppend": "2",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "3",
+            "virtualAppend": "3",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "4",
+            "virtualAppend": "4",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "finalDigit": 3
+    },
+    {
+      "master": "05652302…",
+      "tail": 9,
+      "tailSide": "high",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "9",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_HIGH",
+        "firstDisc": "plusAlpha_4_3",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.7333333333333334,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.223333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "2",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "2",
+            "virtualAppend": "2",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "3",
+            "virtualAppend": "3",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "4",
+            "virtualAppend": "4",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "finalDigit": 2
+    },
+    {
+      "master": "11953617…",
+      "tail": 7,
+      "tailSide": "high",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneBetween",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "7",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "plusAlpha_4_3",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "1",
+        "firstDisc": "threeOrMore",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": null,
+            "naturalness": {
+              "continuationFit": 0.3,
+              "terminationFit": 0.6,
+              "markerProgressFit": 0,
+              "alternationFit": 0.5499999999999999,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 1.9049999999999998
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "finalDigit": 1
+    },
+    {
+      "master": "71379171…",
+      "tail": 8,
+      "tailSide": "high",
+      "step1": {
+        "winner": "LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW",
+            "virtualAppend": "0",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "HIGH",
+            "virtualAppend": "8",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          }
+        ]
+      },
+      "step2": {
+        "winner": "LOW_LOW",
+        "firstDisc": "oneDuplicate",
+        "candidates": [
+          {
+            "id": "LOW_LOW",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.8,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.27
+            }
+          },
+          {
+            "id": "LOW_HIGH",
+            "virtualAppend": "2",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "step3": {
+        "winner": "0",
+        "firstDisc": "plusAlpha_3_2",
+        "candidates": [
+          {
+            "id": "0",
+            "virtualAppend": "0",
+            "parentImplication": "keep",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          },
+          {
+            "id": "1",
+            "virtualAppend": "1",
+            "parentImplication": "neutral",
+            "oneDuplicateRelation": "at_hint_ceiling",
+            "naturalness": {
+              "continuationFit": 0.25,
+              "terminationFit": 0.85,
+              "markerProgressFit": 0,
+              "alternationFit": 0.6833333333333332,
+              "nestedPatternAgreement": 0.7,
+              "contradictionPenalty": 0,
+              "structuralChangePenalty": 0,
+              "total": 2.188333333333333
+            }
+          }
+        ]
+      },
+      "finalDigit": 0
+    }
+  ],
+  "winners": {
+    "step1": {
+      "LOW": 25,
+      "HIGH": 3
+    },
+    "step2": {
+      "LOW_LOW": 21,
+      "HIGH_HIGH": 2,
+      "HIGH_LOW": 1,
+      "LOW_HIGH": 4
+    },
+    "step3": {
+      "0": 17,
+      "1": 4,
+      "2": 3,
+      "3": 1,
+      "5": 1,
+      "8": 2
+    }
+  },
+  "fixtureOk": true
+}

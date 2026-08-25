@@ -5,6 +5,7 @@ import { useWorkspaceLayoutStore } from '@/stores/workspace-layout-store';
 import { useAnalysisStore } from '../stores/analysis-store';
 import { useI18n } from '@/i18n/use-i18n';
 import { AnalysisPredictionPanel } from './AnalysisPredictionPanel';
+import { AnalysisV2PredictionPanel } from './AnalysisV2PredictionPanel';
 import { AnalysisDebugConsole } from './AnalysisDebugConsole';
 import { AnalysisMainPanel } from './AnalysisMainPanel';
 import { CodeValueStatsGrid } from './CodeValueStatsGrid';
@@ -78,6 +79,7 @@ export function AnalysisMain() {
       <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto">
         <AnalysisLoadingOverlay visible={analyzing} />
         <AnalysisPredictionPanel result={displayResult} codeValueStats={codeValueStats} />
+        <AnalysisV2PredictionPanel result={displayResult} />
         <AnalysisMainPanel result={displayResult} showMasterList={showMasterList} />
 
         {showCodeValue ? (
