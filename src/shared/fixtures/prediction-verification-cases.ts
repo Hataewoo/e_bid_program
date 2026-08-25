@@ -178,7 +178,7 @@ export const BUILTIN_PREDICTION_VERIFICATION_CASES: PredictionVerificationCase[]
     codes: [{ code: '14', type: '저점', description: '저점,고점,고점,저점' }],
     expected: {
       dominantSide: 'low',
-      modeDigit: 3,
+      modeDigit: 2,
       step2Count: 6,
       step3Count: 4,
     },

@@ -19,7 +19,7 @@ import {
   getSidePointValues,
   type PointValueToken,
 } from './pointValuesCodeFlow';
-import { getDigitSubBand, getSubBandMainBand, type DigitSubBand } from './digitSubBand';
+import { getSubBandMainBand, type DigitSubBand } from './digitSubBand';
 import { inferSubBandPhaseFromOneBetween, type SubBandPhase } from './subBandRepeatJudgment';
 import { sliceRecentDigitScoreTail } from './recentCompare';
 import {
@@ -35,10 +35,7 @@ import {
   type PatternCodeValue,
   masterDigitsZeroToNine,
 } from './digitTypes';
-import {
-  masterDigitEvidenceInSubBand,
-  masterDigitsInSubBandSequence,
-} from './masterDigitSequence';
+import { masterDigitEvidenceInSubBand } from './masterDigitSequence';
 
 export { masterDigitsInSubBandSequence, masterDigitCandidatesForPhase } from './masterDigitSequence';
 

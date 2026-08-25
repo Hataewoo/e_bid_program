@@ -58,7 +58,7 @@ describe('digit signal conditional gating', () => {
     const score = computeAnchorConfirmationScore(
       2,
       2,
-      { preferredDigit: 2, score: 10, mode: 'repeat', confidence: 0.7 },
+      { preferredDigit: 2, score: 10, mode: 'repeat', confidence: 0.7, reason: 'repeat' },
       { phase: 'repeat', confidence: 0.65 },
       'repeat',
       'repeat',
@@ -70,7 +70,7 @@ describe('digit signal conditional gating', () => {
     const conflict = computeAnchorConfirmationScore(
       2,
       2,
-      { preferredDigit: 3, score: 10, mode: 'transition', confidence: 0.7 },
+      { preferredDigit: 3, score: 10, mode: 'transition', confidence: 0.7, reason: 'transition' },
       { phase: 'repeat', confidence: 0.65 },
       'transition',
       'transition',

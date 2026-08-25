@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.6] — 2026-08-25
+
+Production 추천 엔진 안정화 및 Analysis 화면 추천값 연결.
+
+### Added
+
+- **Analysis 추천값** — PASS 확정 Production `winningDigit`를 화면에 단일 Master digit(0~9)로 표시.
+
+### Changed
+
+- **1차 Production 추천 엔진** — 과치중 제거·조건부 gating(PatternFlow Agreement·Anchor confirmation) 반영.
+- **패턴 신뢰도·Legacy cap** — walk-forward 검증 기준 가중치 조정.
+
+---
+
 ## [1.2.5] — 2026-08-25
 
 패턴 추천·세분화 교차 검증 및 CodeValue 패턴 상세 팝업.

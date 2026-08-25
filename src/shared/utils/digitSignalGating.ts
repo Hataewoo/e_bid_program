@@ -77,7 +77,7 @@ export function patternFlowGatingMultiplier(
   const g = CONDITIONAL_GATING;
   const consensus = patternStateConsensus(signals);
 
-  let mult = g.patternFlowMultAgree;
+  let mult: number = g.patternFlowMultAgree;
 
   if (consensus.phase === null || consensus.confidence < g.patternStateUncertainThreshold) {
     mult = g.patternFlowMultUncertain;
@@ -103,7 +103,9 @@ export function dominantLegacyPhase(
   for (const sig of legacySignals.values()) {
     if (!best || sig.score > best.score) best = sig;
   }
-  return best?.mode ?? null;
+  if (!best) return null;
+  const mode = best.mode;
+  return mode === 'repeat' || mode === 'transition' ? mode : null;
 }
 
 /**
