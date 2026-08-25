@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.5] — 2026-08-25
+
+패턴 추천·세분화 교차 검증 및 CodeValue 패턴 상세 팝업.
+
+### Added
+
+- **②′ 세분화 교차 검증** — 저저↔저고(고저↔고고) 형제 sub-band를 코드·내용(01·23·34·324 등) 다중 집계로 비교 후 pool 확정.
+- **CodeValue 패턴 상세** — STEP2/3 코드·내용 행 더블클릭 시 10규칙 재분석 팝업.
+
+### Changed
+
+- **1사이 패턴 최우선** — 동점 시 전환 우선; 고고 S″에 1사이 없을 때 Side S run fallback.
+- **digit 추천** — anchor digit 기준 관련 코드 전체(예: 324+34+32+23) 흐름 참고.
+
+### Fixed
+
+- 고고 유지 오판(1사이 형제 세분화 vs 1중복 동점), 저·고 전환 후 세분화 pool skew.
+
+---
+
 ## [1.1.10] — 2026-08-05
 
 Point Values 기반 3단계 세분화 추천 — 4구간 대칭 (0~1 / 2~4 / 5~7 / 8~9).
