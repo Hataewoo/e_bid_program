@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.7] — 2026-08-25
+
+Human-style V2 진단·Analysis 병렬 표시.
+
+### Added
+
+- **Human-style V2 counterfactual predictor** — STEP1 MainBand → STEP2 SubBand → STEP3 MasterDigit state counterfactual (Production V1과 분리).
+- **Analysis 사람식 V2 추천값** — V1 추천값 아래 STEP1/STEP2/최종 digit 병렬 표시 (`runHumanStyleV2` 직접 호출).
+- **Structural decision hierarchy** — tie-like margin에서 deeper `parentImplication` 우선 (score bonus 없음).
+
+### Changed
+
+- V2 tie-resolution: `structural_decision` → `deeper_discrimination` → `uncertain_fallback` 계층.
+
+---
+
 ## [1.2.6] — 2026-08-25
 
 Production 추천 엔진 안정화 및 Analysis 화면 추천값 연결.
