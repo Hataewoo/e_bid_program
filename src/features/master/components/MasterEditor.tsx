@@ -26,6 +26,8 @@ export function MasterEditor() {
 
   const masterValue = watch('masterValue');
   const valueLength = normalizeMasterValue(masterValue ?? '').length;
+  const maxLengthLabel = MASTER_VALUE_MAX_LENGTH.toLocaleString();
+  const currentLengthLabel = valueLength.toLocaleString();
 
   return (
     <div className="flex h-full flex-col">
@@ -78,7 +80,7 @@ export function MasterEditor() {
         />
         <div className="mt-1 flex justify-between text-sm text-content-muted">
           <span>
-            {t('master.digitCount', { current: valueLength, max: MASTER_VALUE_MAX_LENGTH })}
+            {t('master.digitCount', { current: currentLengthLabel, max: maxLengthLabel })}
           </span>
           <span>{t('master.displayLayout')}</span>
         </div>

@@ -53,6 +53,8 @@ export function MasterInputPanel() {
   }, []);
 
   const valueLength = normalizeMasterValue(formValues.masterValue).length;
+  const maxLengthLabel = MASTER_VALUE_MAX_LENGTH.toLocaleString();
+  const currentLengthLabel = valueLength.toLocaleString();
 
   return (
     <div className="flex h-full flex-col bg-surface-elevated">
@@ -71,7 +73,7 @@ export function MasterInputPanel() {
           onChange={(normalized) => setFormValues({ masterValue: normalized })}
         />
         <div className="mt-0.5 text-right text-sm text-content-muted">
-          {t('master.digitCount', { current: valueLength, max: MASTER_VALUE_MAX_LENGTH })}
+          {t('master.digitCount', { current: currentLengthLabel, max: maxLengthLabel })}
         </div>
       </div>
 
