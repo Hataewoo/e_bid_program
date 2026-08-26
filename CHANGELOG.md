@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.9] — 2026-08-26
+
+Human-style V2 STEP1/2 Run Progression layer 및 Analysis UI 정리.
+
+### Added
+
+- **Run Progression / Termination Zone** — STEP1/2 recursive state 판단에 historical run shape + continuation/termination future shape 비교 evidence 추가 (`humanStyleRunProgression`).
+- **Run progression diagnostic trace** — activeRun, typicalCenter, phase, structuralPreference 등 STEP1/2 trace 출력.
+
+### Changed
+
+- Analysis UI — V1/V2 추천 패널 digit-only 표시, 마스터 목록 좌측 컬럼 복원, IB 정보 레이아웃 정리.
+
+---
+
 ## [1.2.8] — 2026-08-26
 
 Human-style V2 STEP3 sequential selection 및 child/parent namespace 분리.
