@@ -104,7 +104,7 @@ export const MasterValuePanel = memo(function MasterValuePanel({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-white">
       {showExpand ? (
         <div className="flex shrink-0 justify-end border-b border-border bg-[#fffff0] px-2 py-0.5">
           <button type="button" className="win-link-popup text-xs" onClick={() => setShowFull((v) => !v)}>
@@ -112,9 +112,9 @@ export const MasterValuePanel = memo(function MasterValuePanel({
           </button>
         </div>
       ) : null}
-      <MasterValueTextarea readOnly value={displayDigits} />
+      <MasterValueTextarea readOnly value={displayDigits} className="h-full min-h-0 flex-1" />
       {truncated ? (
-        <div className="shrink-0 px-2 py-0.5 text-sm text-content-muted">
+        <div className="shrink-0 border-t border-border bg-[#fffff0] px-2 py-0.5 text-sm text-content-muted">
           {t('analysis.highlight.totalCharsHint', { count: digits.length.toLocaleString() })}
         </div>
       ) : null}

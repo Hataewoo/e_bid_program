@@ -77,14 +77,14 @@ export function MasterValueTextarea({
   };
 
   return (
-    <div className={`flex min-h-0 flex-1 flex-col ${className}`}>
+    <div className={`flex h-full min-h-0 flex-1 flex-col ${className}`}>
       <textarea
         ref={textareaRef}
         id={id}
         readOnly={readOnly}
         spellCheck={spellCheck}
         placeholder={placeholder}
-        className="win-textarea-master win-textarea-master-readable min-h-0 w-full flex-1"
+        className="win-textarea-master win-textarea-master-readable h-full min-h-0 w-full flex-1"
         value={displayText}
         onChange={readOnly ? undefined : handleChange}
         onKeyDown={readOnly ? undefined : handleKeyDown}

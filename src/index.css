@@ -201,13 +201,14 @@
   }
 
   .win-textarea-master {
-    @apply resize-none border border-[#404040] p-2 text-sm;
+    @apply box-border resize-none border border-[#404040] p-2 text-sm;
     color: #000000;
     background: #ffffff;
     font-family: 'Consolas', 'Courier New', monospace;
     white-space: pre;
     overflow: auto;
     line-height: 1.4;
+    height: 100%;
   }
 
   .win-textarea-master-readable {

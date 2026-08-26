@@ -45,6 +45,7 @@ import {
   type CandidateTieEvidence,
   type TieResolutionMethod,
   type TieResolutionResult,
+  type RunProgressionTrace,
 } from './humanStyleTieResolution';
 import {
   HUMAN_DIAGNOSTIC_FIXTURE_MASTER,
@@ -104,6 +105,7 @@ export interface TieResolutionTrace {
   structuralDecisionUsed: boolean;
   structuralReason: string | null;
   evidence: CandidateTieEvidence[];
+  runProgression?: RunProgressionTrace | null;
 }
 
 export interface CounterfactualStepResult {
@@ -343,6 +345,7 @@ function buildStep1StateCounterfactual(result: AnalysisResult): CounterfactualSt
       structuralDecisionUsed: tie.structuralDecisionUsed,
       structuralReason: tie.structuralReason,
       evidence: tie.evidence,
+      runProgression: tie.runProgression,
     },
   };
 }
@@ -439,6 +442,7 @@ function buildStep2StateCounterfactual(
       structuralDecisionUsed: tie.structuralDecisionUsed,
       structuralReason: tie.structuralReason,
       evidence: tie.evidence,
+      runProgression: tie.runProgression,
     },
   };
 }
@@ -569,6 +573,31 @@ export function formatCounterfactualStep(step: CounterfactualStepResult): string
     lines.push(
       `tieResolution: margin=${tr.margin.toFixed(4)} threshold=${tr.threshold} method=${tr.resolutionMethod} uncertain=${tr.uncertain} deeperDrill=${tr.deeperDrillUsed} structural=${tr.structuralDecisionUsed}${tr.structuralReason ? ` reason=${tr.structuralReason}` : ''}`,
     );
+    if (tr.runProgression) {
+      const rp = tr.runProgression;
+      lines.push('runProgression:');
+      lines.push(`  selectedPattern: ${rp.selectedPattern ?? '—'}`);
+      lines.push(`  activeRun: ${rp.activeRun}`);
+      lines.push(`  historicalRuns tail: [${rp.historicalRunsTail.join(',')}]`);
+      lines.push(
+        `  typicalCenter: ${rp.typicalCenter ?? '—'} typicalUpperBoundary: ${rp.typicalUpperBoundary ?? '—'}`,
+      );
+      lines.push(`  phase: ${rp.phase}`);
+      lines.push(
+        `  continuationShape: ${rp.continuationShapeTotal?.toFixed(2) ?? '—'} switchShape: ${rp.terminationShapeTotal?.toFixed(2) ?? '—'}`,
+      );
+      lines.push(
+        `  structuralPreference: ${rp.structuralPreference} confidence: ${rp.confidence.toFixed(2)}`,
+      );
+      lines.push(`  reason: ${rp.reason}`);
+      const winnerCand = step.candidates.find((c) => c.id === step.winnerId);
+      if (winnerCand) {
+        lines.push(
+          `  childBehavior: ${winnerCand.childBehavior} parentImplication: ${winnerCand.parentImplication}`,
+        );
+      }
+      lines.push(`  final winner: ${step.winnerId} method=${tr.resolutionMethod}`);
+    }
   }
   if (step.step3Trace) {
     lines.push('');

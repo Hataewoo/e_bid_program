@@ -23,6 +23,11 @@ import {
 import type { CodeValueSubPatterns } from './codeValueSubAnalysis';
 import type { DigitSubBand } from './digitSubBand';
 import type { StateTransitionKind } from './humanStyleStateSimulation';
+import {
+  analyzeRunProgression,
+  RUN_PROGRESSION_CONFIDENCE_THRESHOLD,
+  type RunProgressionEvidence,
+} from './humanStyleRunProgression';
 
 /** Conservative fixed threshold — no grid search. */
 export const TIE_MARGIN_THRESHOLD = 0.08;
@@ -71,7 +76,22 @@ export type TieResolutionMethod =
   | 'naturalness_total'
   | 'deeper_discrimination'
   | 'structural_decision'
+  | 'run_progression_structural'
   | 'uncertain_fallback';
+
+export interface RunProgressionTrace {
+  selectedPattern: PatternField | null;
+  activeRun: number;
+  historicalRunsTail: number[];
+  typicalCenter: number | null;
+  typicalUpperBoundary: number | null;
+  phase: RunProgressionEvidence['phase'];
+  continuationShapeTotal: number | null;
+  terminationShapeTotal: number | null;
+  structuralPreference: RunProgressionEvidence['structuralPreference'];
+  confidence: number;
+  reason: string;
+}
 
 export interface TieResolutionResult {
   winnerId: string;
@@ -85,6 +105,7 @@ export interface TieResolutionResult {
   firstDiscriminatingPattern: PatternField | null;
   evidence: CandidateTieEvidence[];
   structuralTraces: StructuralDecisionTrace[];
+  runProgression: RunProgressionTrace | null;
 }
 
 export interface StateCandidateForTieResolution {
@@ -300,6 +321,95 @@ export function tryStructuralDecision(
   return null;
 }
 
+function buildRunProgressionTrace(rp: RunProgressionEvidence): RunProgressionTrace {
+  const tail = rp.historicalRuns.slice(-5);
+  return {
+    selectedPattern: rp.selectedPattern,
+    activeRun: rp.activeRun,
+    historicalRunsTail: tail,
+    typicalCenter: rp.typicalCenter,
+    typicalUpperBoundary: rp.typicalUpperBoundary,
+    phase: rp.phase,
+    continuationShapeTotal: rp.continuationShape?.total ?? null,
+    terminationShapeTotal: rp.terminationShape?.total ?? null,
+    structuralPreference: rp.structuralPreference,
+    confidence: rp.confidence,
+    reason: rp.reason,
+  };
+}
+
+function computeBaselineRunProgression(
+  fallbackBaseline: BaselineStateContext,
+): RunProgressionEvidence {
+  const { path } = analyzeBaselinePath(fallbackBaseline);
+  return analyzeRunProgression({
+    sequence: fallbackBaseline.sequence,
+    sequenceLabel: 'baseline run progression',
+    side: fallbackBaseline.side,
+    sub: fallbackBaseline.sub,
+    liveRunLength: fallbackBaseline.liveRunLength,
+    altPatternsAtRoot: fallbackBaseline.altPatternsAtRoot,
+    recursivePath: path,
+  });
+}
+
+/**
+ * Run progression structural signal — only when shape comparison and recursive evidence agree.
+ * Phase alone never forces SWITCH.
+ */
+export function tryRunProgressionStructuralDecision(
+  candidates: StateCandidateForTieResolution[],
+  runProgression: RunProgressionEvidence,
+  traces: StructuralDecisionTrace[],
+): { winnerId: string; reason: string } | null {
+  if (
+    runProgression.structuralPreference === 'neutral' ||
+    runProgression.confidence < RUN_PROGRESSION_CONFIDENCE_THRESHOLD ||
+    runProgression.phase === 'insufficient_evidence'
+  ) {
+    return null;
+  }
+
+  const continuationCand = candidates.find(
+    (c) => c.candidateMatchesCurrent && c.stateKind === 'continuation',
+  );
+  const switchCand = candidates.find(
+    (c) => !c.candidateMatchesCurrent && c.stateKind === 'switch',
+  );
+
+  const preferredId =
+    runProgression.structuralPreference === 'continue'
+      ? continuationCand?.id
+      : switchCand?.id;
+  if (!preferredId) return null;
+
+  const prefTrace = traces.find((t) => t.candidateId === preferredId);
+  if (!prefTrace) return null;
+
+  const contTotal = runProgression.continuationShape?.total ?? 0;
+  const termTotal = runProgression.terminationShape?.total ?? 0;
+
+  if (runProgression.structuralPreference === 'continue') {
+    if (prefTrace.deeperParentImplication === 'switch') return null;
+    if (contTotal <= termTotal) return null;
+  } else {
+    if (prefTrace.deeperParentImplication === 'keep') return null;
+    if (termTotal <= contTotal) return null;
+    if (
+      runProgression.phase !== 'approaching_termination' &&
+      runProgression.phase !== 'at_termination_zone' &&
+      runProgression.phase !== 'beyond_typical_shape'
+    ) {
+      return null;
+    }
+  }
+
+  return {
+    winnerId: preferredId,
+    reason: `run_progression_${runProgression.phase}_${runProgression.structuralPreference}`,
+  };
+}
+
 function discriminationScore(
   primaryTotal: number,
   delta: FutureShapeDelta,
@@ -332,6 +442,9 @@ export function resolveStateStepWinner(
   candidates: StateCandidateForTieResolution[],
   fallbackBaseline: BaselineStateContext,
 ): TieResolutionResult {
+  const runProgressionRaw = computeBaselineRunProgression(fallbackBaseline);
+  const runProgression = buildRunProgressionTrace(runProgressionRaw);
+
   if (candidates.length < 2) {
     const only = candidates[0]!;
     return {
@@ -346,6 +459,7 @@ export function resolveStateStepWinner(
       firstDiscriminatingPattern: null,
       evidence: [],
       structuralTraces: [],
+      runProgression,
     };
   }
 
@@ -412,6 +526,7 @@ export function resolveStateStepWinner(
       firstDiscriminatingPattern: firstDisc,
       evidence,
       structuralTraces: evidence.map((e) => e.structural),
+      runProgression,
     };
   }
 
@@ -433,6 +548,30 @@ export function resolveStateStepWinner(
       firstDiscriminatingPattern: firstDisc,
       evidence,
       structuralTraces,
+      runProgression,
+    };
+  }
+
+  const runProgDecision = tryRunProgressionStructuralDecision(
+    candidates,
+    runProgressionRaw,
+    structuralTraces,
+  );
+  if (runProgDecision) {
+    const winner = candidates.find((c) => c.id === runProgDecision.winnerId)!;
+    return {
+      winnerId: winner.id,
+      winnerLabel: winner.label,
+      margin,
+      resolutionMethod: 'run_progression_structural',
+      uncertain: false,
+      deeperDrillUsed: firstDisc !== null,
+      structuralDecisionUsed: true,
+      structuralReason: runProgDecision.reason,
+      firstDiscriminatingPattern: firstDisc,
+      evidence,
+      structuralTraces,
+      runProgression,
     };
   }
 
@@ -455,6 +594,7 @@ export function resolveStateStepWinner(
       firstDiscriminatingPattern: firstDisc,
       evidence,
       structuralTraces,
+      runProgression,
     };
   }
 
@@ -472,6 +612,7 @@ export function resolveStateStepWinner(
     firstDiscriminatingPattern: firstDisc,
     evidence,
     structuralTraces,
+    runProgression,
   };
 }
 

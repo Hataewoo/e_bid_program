@@ -10,23 +10,22 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { AnalysisResult } from '@/shared/utils/analysisEngine';
-import { ResizableSplitter } from '@/components/layout/ResizableSplitter';
 import { type AnalysisPanelId, useWorkspaceLayoutStore } from '@/stores/workspace-layout-store';
 import { useAnalysisStore } from '../stores/analysis-store';
 import { useI18n } from '@/i18n/use-i18n';
 import type { MessageKey } from '@/i18n/messages';
 import { SortableDockPanel } from '@/components/layout/SortableDockPanel';
-import { AnalysisMasterList } from './AnalysisMasterList';
 import { MasterValuePanel } from './HighlightedMasterValue';
 
 interface AnalysisMainPanelProps {
   result: AnalysisResult;
-  showMasterList?: boolean;
+  /** 목록 숨김 시 마스터 번호 콤보박스 표시 */
+  showMasterPicker?: boolean;
 }
 
 const PANEL_HEIGHT: Record<AnalysisPanelId, string> = {
-  masterValue: 'h-[480px]',
-  ibInfo: 'h-[160px]',
+  masterValue: 'h-[480px] shrink-0',
+  ibInfo: 'h-[160px] shrink-0',
 };
 
 const PANEL_TITLE_KEYS: Record<AnalysisPanelId, MessageKey> = {
@@ -38,8 +37,8 @@ const IbInformationBox = memo(function IbInformationBox({ result }: { result: An
   const { t } = useI18n();
 
   return (
-    <div className="flex gap-2 border border-[#404040] bg-[#ffffe0] p-2 text-sm text-black">
-      <div className="flex-1 space-y-0.5">
+    <div className="border border-[#404040] bg-[#ffffe0] p-2 text-sm text-black">
+      <div className="space-y-0.5">
         <div>
           <span className="font-semibold">{t('analysis.ib.masterNo')} </span>
           {result.masterNo}
@@ -57,16 +56,13 @@ const IbInformationBox = memo(function IbInformationBox({ result }: { result: An
           {t('analysis.ib.caseUnit', { count: result.highCount, rate: result.highRate })}
         </div>
       </div>
-      <div className="flex w-16 shrink-0 items-center justify-center border border-dashed border-[#808080] text-[10px] text-[#404040]">
-        LOGO
-      </div>
     </div>
   );
 });
 
 export const AnalysisMainPanel = memo(function AnalysisMainPanel({
   result,
-  showMasterList = true,
+  showMasterPicker = false,
 }: AnalysisMainPanelProps) {
   const { t } = useI18n();
   const panelOrder = useWorkspaceLayoutStore((s) => s.analysisPanelOrder);
@@ -101,16 +97,7 @@ export const AnalysisMainPanel = memo(function AnalysisMainPanel({
   const renderPanelContent = (panelId: AnalysisPanelId) => {
     switch (panelId) {
       case 'masterValue':
-        return showMasterList ? (
-          <ResizableSplitter
-            storageKey="analysis-master-value-list-width"
-            defaultLeftWidth={96}
-            minLeftWidth={72}
-            minRightWidth={240}
-            left={<AnalysisMasterList />}
-            right={<MasterValuePanel digits={result.digits} highlightIndices={new Set()} />}
-          />
-        ) : (
+        return showMasterPicker ? (
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
             <div className="flex shrink-0 items-center gap-2 border-b border-[#c0c0c0] bg-[#ece9d8] px-2 py-1">
               <label className="text-xs font-semibold text-[#000080]" htmlFor="analysis-master-picker-inline">
@@ -133,6 +120,8 @@ export const AnalysisMainPanel = memo(function AnalysisMainPanel({
               <MasterValuePanel digits={result.digits} highlightIndices={new Set()} />
             </div>
           </div>
+        ) : (
+          <MasterValuePanel digits={result.digits} highlightIndices={new Set()} />
         );
       case 'ibInfo':
         return (
@@ -146,17 +135,17 @@ export const AnalysisMainPanel = memo(function AnalysisMainPanel({
   };
 
   return (
-    <div className="flex w-full flex-col">
+    <div className="flex w-full shrink-0 flex-col">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={panelOrder} strategy={verticalListSortingStrategy}>
-          <div className="flex w-full flex-col gap-px bg-[#404040] p-px">
+          <div className="flex w-full shrink-0 flex-col gap-px bg-[#404040] p-px">
             {panelOrder.map((panelId) => (
               <SortableDockPanel
                 key={panelId}
                 id={panelId}
                 title={t(PANEL_TITLE_KEYS[panelId])}
                 isFocused={panelId === 'masterValue'}
-                className={`shrink-0 ${PANEL_HEIGHT[panelId]}`}
+                className={PANEL_HEIGHT[panelId]}
               >
                 {renderPanelContent(panelId)}
               </SortableDockPanel>
