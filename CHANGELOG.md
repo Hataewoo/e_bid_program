@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.8] — 2026-08-26
+
+Human-style V2 STEP3 sequential selection 및 child/parent namespace 분리.
+
+### Added
+
+- **STEP3 sequential final digit selector** — recent anchor → repeat code → eliminate → pair (`humanStyleFinalDigitSelector`).
+- **STEP3 structural repeat decision** — `parentImplication`(keep/switch) 기반 REPEAT/TERMINATE (child terminates ≠ digit terminate).
+
+### Changed
+
+- V2 STEP3: simultaneous pool naturalness scoring → sequential recent-candidate flow.
+- CASE C: `decideRepeatFromPattern` child→digit 직접 매핑 제거, STEP1/2와 동일 parent implication hierarchy 적용.
+
+---
+
 ## [1.2.7] — 2026-08-25
 
 Human-style V2 진단·Analysis 병렬 표시.
