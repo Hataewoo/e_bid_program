@@ -5,11 +5,8 @@
 
 import type { AnalysisResult } from './analysisEngine';
 import { analyzeMasterValue, buildRuns, toClassSequence } from './analysisEngine';
-import { buildLegacyCodeContentRow } from './legacyCodeContentEngine';
-import { getSidePointValues } from './pointValuesCodeFlow';
 import {
   getDigitSubBand,
-  getDigitsInSubBand,
   getMainBandLabel,
   getSubBandLabel,
   type DigitBand,
@@ -55,6 +52,11 @@ import {
   runHumanStyleDiagnostic,
   type HumanStyleDiagnosticResult,
 } from './humanStyleDiagnosticPredictor';
+import {
+  formatHumanStyleStep3Trace,
+  selectHumanStyleFinalDigit,
+  type HumanStyleStep3Trace,
+} from './humanStyleFinalDigitSelector';
 import { predictNextDigitStep } from './nextDigitEngine';
 import { buildCodeValueStats } from './analysisEngine';
 
@@ -63,6 +65,7 @@ export {
   HUMAN_FIXTURE_EXPECTED,
   TIE_MARGIN_THRESHOLD,
 };
+export type { HumanStyleStep3Trace };
 export type {
   PatternNaturalness,
   PatternLayerTrace,
@@ -112,6 +115,8 @@ export interface CounterfactualStepResult {
   winnerId: string;
   winnerLabel: string;
   tieResolution?: TieResolutionTrace;
+  /** STEP3 sequential selection trace */
+  step3Trace?: HumanStyleStep3Trace;
 }
 
 export interface HumanStyleV2Result {
@@ -203,61 +208,6 @@ function evaluateStateCandidate(options: {
     simulatedSequence: options.sequence,
     candidateMatchesCurrent: options.candidateMatchesCurrent,
     level: options.level,
-  };
-}
-
-function evaluateDigitCandidate(options: {
-  id: string;
-  label: string;
-  virtualMaster: string;
-  virtualChange: string;
-  virtualResult: AnalysisResult;
-  sequenceLabel: string;
-  side: 'low' | 'high';
-  sub: DigitSubBand;
-  candidateMatchesCurrent: boolean;
-  gapSequence: readonly number[];
-  altPatternsAtRoot?: CodeValueSubPatterns;
-}): CounterfactualCandidateResult {
-  const path = analyzeRecursivePatternFlow({
-    sequence: [...options.gapSequence],
-    sequenceLabel: options.sequenceLabel,
-    side: options.side,
-    currentSub: options.sub,
-    liveRunLength: liveRunAtTail(options.virtualMaster).side === options.side
-      ? liveRunAtTail(options.virtualMaster).length
-      : 1,
-    altPatternsAtRoot: options.altPatternsAtRoot,
-  });
-
-  const live = liveRunAtTail(options.virtualMaster);
-  const leaf = getPatternLayerLeaf(path);
-  const dup =
-    leaf.tailFlow?.oneDuplicateRelation ??
-    classifyOneDuplicateRunRelation(
-      leaf.sequence,
-      live.side === options.side ? live.length : 1,
-    );
-  const childBehavior: ChildPatternBehavior = dup?.childBehavior ?? 'uncertain';
-  const naturalness = computePatternNaturalness(
-    path,
-    live.side === options.side ? live.length : 1,
-  );
-  const parentImplication = inferParentBranchImplication(childBehavior, 'digit', {
-    candidateMatchesCurrent: options.candidateMatchesCurrent,
-    naturalness,
-  });
-
-  return {
-    id: options.id,
-    label: options.label,
-    virtualAppend: options.virtualMaster.slice(-1),
-    virtualChange: options.virtualChange,
-    recursivePath: path,
-    futureShape: futureShapeSignature(path),
-    childBehavior,
-    parentImplication,
-    naturalness,
   };
 }
 
@@ -493,115 +443,37 @@ function buildStep2StateCounterfactual(
   };
 }
 
-function pickWinner(candidates: CounterfactualCandidateResult[]): CounterfactualCandidateResult {
-  return candidates.reduce((best, c) =>
-    c.naturalness.total > best.naturalness.total ? c : best,
-  );
-}
-
-function legacyCodeForSubBand(sub: DigitSubBand): { code: string; description: string } {
-  if (sub === 'lowLow') return { code: '01', description: '저점,저점' };
-  if (sub === 'lowHigh') return { code: '23', description: '저점,고점' };
-  if (sub === 'highLow') return { code: '01', description: '고점,저점' };
-  return { code: '23', description: '고점,고점' };
-}
-
 function buildStep3DigitCounterfactual(
   baseResult: AnalysisResult,
   masterNo: string,
   mainBand: DigitBand,
   subBand: DigitSubBand,
 ): CounterfactualStepResult {
-  const baseMaster = baseResult.digits;
-  const side: DigitBand = mainBand;
-  const tailDigit = Number(baseMaster.at(-1));
-  const digits = getDigitsInSubBand(subBand);
-  const legacySpec = legacyCodeForSubBand(subBand);
-
-  const digitResults = new Map<number, AnalysisResult>();
-  for (const digit of digits) {
-    digitResults.set(digit, analyzeMasterValue(masterNo, baseMaster + String(digit)));
-  }
-
-  const opponentPatternSets: CodeValueSubPatterns[] = [];
-  for (const d of digits) {
-    const vr = digitResults.get(d)!;
-    const row = buildLegacyCodeContentRow(
-      getSidePointValues(vr, '', side),
-      {
-        id: 1,
-        code: legacySpec.code,
-        type: mainBand === 'low' ? '저점' : '고점',
-        description: legacySpec.description,
-      },
-      mainBand,
-    );
-    opponentPatternSets.push(extractCodeValuesFromBaseSequence(row.gaps));
-  }
-
-  const candidates: CounterfactualCandidateResult[] = digits.map((digit) => {
-    const virtualResult = digitResults.get(digit)!;
-    const virtualMaster = baseMaster + String(digit);
-    const pointValues = getSidePointValues(virtualResult, '', side);
-    const row = buildLegacyCodeContentRow(
-      pointValues,
-      {
-        id: 1,
-        code: legacySpec.code,
-        type: mainBand === 'low' ? '저점' : '고점',
-        description: legacySpec.description,
-      },
-      mainBand,
-    );
-    const selfPatterns = extractCodeValuesFromBaseSequence(row.gaps);
-    const altPatterns = opponentPatternSets.filter(
-      (_, idx) => digits[idx] !== digit,
-    );
-    let bestAlt: CodeValueSubPatterns | undefined;
-    let bestScore = -1;
-    for (const opp of altPatterns) {
-      let score = 0;
-      for (const field of Object.keys(selfPatterns) as (keyof CodeValueSubPatterns)[]) {
-        if (selfPatterns[field]?.length || opp[field]?.length) score += 1;
-      }
-      if (score > bestScore) {
-        bestScore = score;
-        bestAlt = opp;
-      }
-    }
-
-    return evaluateDigitCandidate({
-      id: String(digit),
-      label: `Master digit ${digit}`,
-      virtualMaster,
-      virtualChange: `Master+${digit} → code ${legacySpec.code} gaps (${row.gaps.length}) 재생성`,
-      virtualResult,
-      sequenceLabel: `Code/Content ${legacySpec.code} digit=${digit}`,
-      side,
-      sub: subBand,
-      candidateMatchesCurrent: digit === tailDigit,
-      gapSequence: row.gaps,
-      altPatternsAtRoot: bestAlt,
-    });
+  const tailDigit = Number(baseResult.digits.at(-1));
+  const selection = selectHumanStyleFinalDigit({
+    baseResult,
+    masterNo,
+    mainBand,
+    subBand,
   });
 
-  const winner = pickWinner(candidates);
   let firstDisc: PatternField | null = null;
-  if (candidates.length >= 2) {
+  if (selection.candidates.length >= 2) {
     firstDisc = findFirstDiscriminatingPattern(
-      candidates[0]!.recursivePath,
-      candidates[1]!.recursivePath,
+      selection.candidates[0]!.recursivePath,
+      selection.candidates[1]!.recursivePath,
     );
   }
 
   return {
     step: 3,
-    title: `STEP3 — MasterDigit counterfactual (${getSubBandLabel(subBand)} only)`,
+    title: `STEP3 — MasterDigit sequential (${getSubBandLabel(subBand)})`,
     currentBranch: `${getSubBandLabel(subBand)} · tail ${tailDigit}`,
-    candidates,
+    candidates: selection.candidates,
     firstDiscriminatingPattern: firstDisc,
-    winnerId: winner.id,
-    winnerLabel: `Master digit ${winner.id}`,
+    winnerId: selection.winnerId,
+    winnerLabel: selection.winnerLabel,
+    step3Trace: selection.trace,
   };
 }
 
@@ -697,6 +569,10 @@ export function formatCounterfactualStep(step: CounterfactualStepResult): string
     lines.push(
       `tieResolution: margin=${tr.margin.toFixed(4)} threshold=${tr.threshold} method=${tr.resolutionMethod} uncertain=${tr.uncertain} deeperDrill=${tr.deeperDrillUsed} structural=${tr.structuralDecisionUsed}${tr.structuralReason ? ` reason=${tr.structuralReason}` : ''}`,
     );
+  }
+  if (step.step3Trace) {
+    lines.push('');
+    lines.push(...formatHumanStyleStep3Trace(step.step3Trace));
   }
   lines.push(`winner: ${step.winnerId} (${step.winnerLabel})`);
   return lines;

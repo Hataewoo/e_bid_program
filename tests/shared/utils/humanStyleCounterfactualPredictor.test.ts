@@ -52,11 +52,13 @@ describe('humanStyleCounterfactualPredictor V2 state counterfactual', () => {
     expect(v2.step2!.tieResolution).toBeDefined();
   });
 
-  it('STEP3 compares actual MasterDigits in selected subBand only', () => {
+  it('STEP3 uses sequential selection within selected subBand pool', () => {
     const v2 = runHumanStyleV2(HUMAN_DIAGNOSTIC_FIXTURE_MASTER);
-    const subWinner = v2.step2!.winnerId;
-    const len = subWinner === 'LOW_LOW' || subWinner === 'HIGH_HIGH' ? 2 : 3;
-    expect(v2.step3!.candidates).toHaveLength(len);
+    expect(v2.step3!.step3Trace).toBeDefined();
+    const poolLen =
+      v2.step2!.winnerId === 'LOW_LOW' || v2.step2!.winnerId === 'HIGH_HIGH' ? 2 : 3;
+    expect(v2.step3!.step3Trace!.pool).toHaveLength(poolLen);
+    expect(v2.step3!.step3Trace!.method).toMatch(/repeat|pair|singleton/);
   });
 
   it('reports human fixture without forcing', () => {
